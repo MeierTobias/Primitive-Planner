@@ -67,6 +67,7 @@ CATKIN_IGNORE
 *.zip
 *.ply
 *.bag
+.catkin_workspace
 src/CMakeLists.txt
 src/planner/plan_manage/primitive_library
 bags/
