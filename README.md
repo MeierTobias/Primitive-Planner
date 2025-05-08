@@ -99,3 +99,13 @@ If you want to get into the running container at a later stage or with a second 
 ```bash
 docker exec -it primitive-planner bash
 ```
+
+### Troubleshooting
+rviz might fail with the following error: `libGL error: MESA-LOADER: failed to retrieve device information`. Consequently, no rviz window will appear. This can be solved by adding the following option to `docker run` in `docker_run.sh`:
+
+```diff
+     --name="primitive-planner" \
++    --device=/dev/dri:/dev/dri \
+     primitive-planner
+```
+(at least this works on Arch Linux)
