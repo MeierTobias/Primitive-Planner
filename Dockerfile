@@ -13,8 +13,10 @@ RUN pip3 install toppra catkin_pkg PyYAML empy matplotlib pyrfc3339
 RUN groupadd --gid ${GROUP_ID} hostuser \
     && useradd --uid ${USER_ID} --gid ${GROUP_ID} --create-home --shell /bin/bash hostuser
 
+RUN apt install -y nano
+    
 # Add line to bashrc
-RUN echo "source ~/primitive-planner/devel/setup.bash" >> /home/hostuser/.bashrc \
+RUN echo "\n if [ -f ~/primitive-planner/devel/setup.bash ]; then\n source ~/primitive-planner/devel/setup.bash\n fi" >> /home/hostuser/.bashrc \
     && chown hostuser:hostuser /home/hostuser/.bashrc
 
 ENV HOME=/home/hostuser
