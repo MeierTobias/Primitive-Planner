@@ -17,4 +17,4 @@ ENV HOME=/home/hostuser
 WORKDIR /home/hostuser
 USER hostuser
 
-CMD ["bash"]
+CMD ["bash", "-c", "source primitive-planner/devel/setup.bash && roslaunch primitive_planner swarm.launch"]
