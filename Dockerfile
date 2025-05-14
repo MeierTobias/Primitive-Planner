@@ -13,8 +13,12 @@ RUN pip3 install toppra catkin_pkg PyYAML empy matplotlib pyrfc3339
 RUN groupadd --gid ${GROUP_ID} hostuser \
     && useradd --uid ${USER_ID} --gid ${GROUP_ID} --create-home --shell /bin/bash hostuser
 
+# Add line to bashrc
+RUN echo "source ~/primitive-planner/devel/setup.bash" >> /home/hostuser/.bashrc \
+    && chown hostuser:hostuser /home/hostuser/.bashrc
+
 ENV HOME=/home/hostuser
 WORKDIR /home/hostuser
 USER hostuser
 
-CMD ["bash", "-c", "source primitive-planner/devel/setup.bash && roslaunch primitive_planner swarm.launch"]
+CMD ["bash"]

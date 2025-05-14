@@ -86,6 +86,16 @@ Within the root folder of this repo execute the following command to build the d
 docker build -t primitive-planner .
 ```
 
+if you run it in WSL2 use
+
+```bash
+docker build \
+  --build-arg USER_ID=$(id -u) \
+  --build-arg GROUP_ID=$(id -g) \
+  -t primitive-planner \
+  .
+```
+
 ### Run container
 
 After the build as succeeded you can run the `docker_run.sh` file to start the container. (If you get a permission denied error you need to add the execution permission to the file with `chmod +x docker_run.sh`)
