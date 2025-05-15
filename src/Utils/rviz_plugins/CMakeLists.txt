@@ -27,6 +27,7 @@ if(rviz_QT_VERSION VERSION_LESS "5")
   include(${QT_USE_FILE})
   qt4_wrap_cpp(MOC_FILES
     src/goal_tool.h
+    src/trigger_panel.hpp
   )
 
 else()
@@ -36,6 +37,7 @@ else()
   set(QT_LIBRARIES Qt5::Widgets)
   qt5_wrap_cpp(MOC_FILES
     src/goal_tool.h
+    src/trigger_panel.hpp
   )
 endif()
 
@@ -51,6 +53,7 @@ add_definitions(-DQT_NO_KEYWORDS)
 set(SOURCE_FILES
   src/pose_tool.cpp
   src/goal_tool.cpp
+  src/trigger_panel.cpp
   ${MOC_FILES}
 )
 
