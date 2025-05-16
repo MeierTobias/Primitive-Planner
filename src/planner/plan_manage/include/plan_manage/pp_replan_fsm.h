@@ -67,7 +67,9 @@ namespace primitive_planner
             int goal_id_;
             int target_type_; // 1 mannual select, 2 hard code
             std::vector<Eigen::Vector3d> all_goal_;
+            // global_goal_ is always set to all_goal_[goal_id_]
             Eigen::Vector3d global_goal_;
+            Eigen::Vector3d starting_pos_;
             Eigen::Vector3d odom_pos_, odom_vel_, odom_x_dir_;
             Eigen::Quaterniond odom_q_;
             double odom_yaw_;
