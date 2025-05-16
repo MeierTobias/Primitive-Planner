@@ -1,7 +1,7 @@
 def generate_launch_file(num_drones, init_x, init_y_spacing, output_file='random_goal_flight.launch'):
     with open(output_file, 'w') as file:
         file.write('<launch>\n\n')
-        
+
         # 写入公共参数配置
         file.write('    <arg name="map_size_x" value="500.0"/>\n')
         file.write('    <arg name="map_size_y" value="500.0"/>\n')
@@ -37,7 +37,10 @@ def generate_launch_file(num_drones, init_x, init_y_spacing, output_file='random
         file.write('        <param name="pub_rate" value="1.0"/>\n')
         file.write('        <param name="min_distance" value="1.3"/>\n')
         file.write('    </node>\n\n')
-        
+
+        file.write('    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find primitive_planner)/launch/{}.rviz" required="true" />\n'.format("verbose" if num_drones <= 40 else "drone_1000"))
+        file.write('\n')
+
         file.write('    <!-- <include file="$(find random_goals)/launch/random_goals.launch"/> -->\n\n')
         
         file.write('    <include file="$(find odom_visualization)/launch/run_vis_rotate.launch"/>\n\n')
@@ -67,8 +70,18 @@ def generate_launch_file(num_drones, init_x, init_y_spacing, output_file='random
         # 写入XML尾部
         file.write('</launch>')
 
-# 使用示例
-num_drones = 20  # 假设我们需要启动5架飞机
-init_x = -8.0
-init_y_spacing = 1.0
-generate_launch_file(num_drones, init_x, init_y_spacing)
+if __name__ == "__main__":
+    import sys
+    import os
+
+    if len(sys.argv) >= 2:
+        drone_num = int(sys.argv[1])
+    else:
+        drone_num = 20
+    launch_dir = os.path.dirname(os.path.abspath(__file__)) + '/../planner/plan_manage/launch/'
+
+    # 使用示例
+    init_x = -8.0
+    init_y_spacing = 1.0
+
+    generate_launch_file(drone_num, init_x, init_y_spacing, os.path.join(launch_dir, 'random_goal_flight.launch'))
