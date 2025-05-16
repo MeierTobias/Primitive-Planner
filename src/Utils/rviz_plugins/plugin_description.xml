@@ -39,4 +39,10 @@
     </description>
   </class>
 
+  <class name="trigger_panel"
+	       type="rviz::RvizTriggerPanel"
+         base_class_type="rviz::Panel">
+    <description>A panel to trigger the drones.</description>
+  </class>
+
 </library>

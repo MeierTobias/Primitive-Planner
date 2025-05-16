@@ -279,6 +279,8 @@ Panels:
     Name: Time
     SyncMode: 0
     SyncSource: simulation_map
+  - Class: trigger_panel
+    Name: trigger_panel
 Preferences:
   PromptSaveOnExit: true
 Toolbars:

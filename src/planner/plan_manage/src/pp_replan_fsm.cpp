@@ -1,5 +1,7 @@
 #include <plan_manage/pp_replan_fsm.h>
 #include <plan_manage/shared_memory.h>
+#include <cmath>
+#include <vector>
 
 #define USE_SHARED_MEMORY false
 
@@ -106,6 +108,7 @@ void PPReplanFSM::init(ros::NodeHandle &nh)
       ros::spinOnce();
       ros::Duration(0.001).sleep();
     }
+    starting_pos_ = odom_pos_;
 
     exec_timer_ = nh.createTimer(ros::Duration(0.01), &PPReplanFSM::execFSMCallback, this);
 
@@ -231,7 +234,23 @@ void PPReplanFSM::triggerCallback(const geometry_msgs::PoseStampedPtr &msg)
 
     have_trigger_ = true;
     have_log_files_ = true;
-    std::cout << "Triggered!" << std::endl;
+
+    if(target_type_ == 2 && !have_target_){
+      std::vector<Eigen::Vector3d> new_all_goal;
+      new_all_goal.reserve(all_goal_.size());
+      // Insert every waypoint into the list, except the last
+      for(int i = all_goal_.size() - 2; i >= 0; i--){
+        new_all_goal.push_back(all_goal_[i]);
+      }
+      // Instead, "last goal" and "starting_position" swap places
+      new_all_goal.push_back(starting_pos_);
+      starting_pos_ = all_goal_.back();
+      all_goal_ = new_all_goal;
+
+      goal_id_ = 0;
+      global_goal_ = all_goal_[goal_id_];
+      have_target_ = true;
+    }
 }
 
 void PPReplanFSM::RecvBroadcastPrimitiveCallback(const traj_utils::swarmPrimitiveTrajConstPtr &msg)
