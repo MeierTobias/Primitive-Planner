@@ -83,17 +83,10 @@ If you don't want to install the whole ros setup on your local machine you can b
 Within the root folder of this repo execute the following command to build the docker container.
 
 ```bash
-docker build -t primitive-planner .
-```
-
-if you run it in WSL2 use
-
-```bash
 docker build \
   --build-arg USER_ID=$(id -u) \
   --build-arg GROUP_ID=$(id -g) \
-  -t primitive-planner \
-  .
+  -t primitive-planner .
 ```
 
 ### Run container
