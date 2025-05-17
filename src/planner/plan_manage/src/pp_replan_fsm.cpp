@@ -269,24 +269,26 @@ void PPReplanFSM::RecvBroadcastPrimitiveCallback(const traj_utils::swarmPrimitiv
       }
     }
 
-    // parse data
-    Eigen::Vector3d start_pos, start_vel, end_pos;
+    // get positions
+    Eigen::Vector3d start_pos, end_pos;
     start_pos << msg->start_p[0], msg->start_p[1], msg->start_p[2];
     end_pos << msg->end_p[0], msg->end_p[1], msg->end_p[2];
+    double start_dist = (start_pos - odom_pos_).norm();
+    double end_dist = (end_pos - odom_pos_).norm();
 
-    Eigen::Matrix<double, 3, 3> Rwv;
-    Rwv << msg->rot_mat[0], msg->rot_mat[1], msg->rot_mat[2], 
-        msg->rot_mat[3], msg->rot_mat[4], msg->rot_mat[5], 
-        msg->rot_mat[6], msg->rot_mat[7], msg->rot_mat[8];
-
-    std::vector<int> path_id;
-    path_id.push_back(msg->select_path_id);
-
-    bool far_away = (start_pos - odom_pos_).norm() > planner_manager_->arc_length_ * 2 && 
-      (end_pos - odom_pos_).norm() > planner_manager_->arc_length_ * 2;
+    bool far_away = start_dist > planner_manager_->arc_length_ * 2 && 
+      end_dist > planner_manager_->arc_length_ * 2;
 
     if(!far_away)
     {
+      Eigen::Matrix<double, 3, 3> Rwv;
+      Rwv << msg->rot_mat[0], msg->rot_mat[1], msg->rot_mat[2], 
+          msg->rot_mat[3], msg->rot_mat[4], msg->rot_mat[5], 
+          msg->rot_mat[6], msg->rot_mat[7], msg->rot_mat[8];
+
+      std::vector<int> path_id;
+      path_id.push_back(msg->select_path_id);
+
       std::vector<Eigen::Vector3d> traj_pos;
       double traj_duration;
       int vel_id = msg->vel_id;
@@ -304,7 +306,7 @@ void PPReplanFSM::RecvBroadcastPrimitiveCallback(const traj_utils::swarmPrimitiv
 
       // Check collision bewteen current traj and other new traj
 #if not USE_SHARED_MEMORY
-      if (recv_id < planner_manager_->drone_id && checkCollision(recv_id)) 
+      if (static_cast<int>(recv_id) < planner_manager_->drone_id && checkCollision(recv_id)) 
       {
         changeFSMExecState(REPLAN_TRAJ, "SWARM_CHECK");
       }
@@ -358,7 +360,7 @@ bool PPReplanFSM::readLocalTrajPos(Eigen::Vector3d& start_pos, int& vel_id, Eige
 {
   int best_path_id;
 
-  if ( vel_id >= primitve_pos_.size() )
+  if ( vel_id >= static_cast<int>(primitve_pos_.size()) )
   {
     ROS_ERROR("vel_id >= primitve_pos_.size()!");
     return false;
@@ -368,7 +370,7 @@ bool PPReplanFSM::readLocalTrajPos(Eigen::Vector3d& start_pos, int& vel_id, Eige
 
   int idx = 0;
   while(true){
-    if (path_id[idx] >= primitve_pos_[vel_id].size()) {
+    if (path_id[idx] >= static_cast<int>(primitve_pos_[vel_id].size())) {
       idx++;
     }
     else{
@@ -437,26 +439,31 @@ bool PPReplanFSM::readPrimitivePos()
 
     filePtr = fopen(fileName.c_str(), "r");
     if (filePtr != NULL) {
-      while (primitve_pos_.size() < vel_id + 1)
+      while (static_cast<int>(primitve_pos_.size()) < vel_id + 1)
       {
         vector<std::pair<double, vector<Eigen::Vector3d>>> blank;
         primitve_pos_.push_back(blank);
       }
 
-      int pointNum, val1, val2, val3;
+      int pointNum, val1, val2, val3, val4, val5;
       double pos_x, pos_y, pos_z, traj_duration;
-      fscanf(filePtr, "%d", &pointNum);
-      fscanf(filePtr, "%lf", &traj_duration);
+      val1 = fscanf(filePtr, "%d", &pointNum);
+      val2 = fscanf(filePtr, "%lf", &traj_duration);
+
+      if (val1 != 1 || val2 != 1){
+        printf("\nError reading number of points or trajectory duration, exit.\n\n");
+          exit(1);
+      }
 
       vector<Eigen::Vector3d> one_primitive_pos;
       for(int i = 0; i < pointNum; i++){
         // read trajectory_pos
-        val1 = fscanf(filePtr, "%lf", &pos_x);
-        val2 = fscanf(filePtr, "%lf", &pos_y);
-        val3 = fscanf(filePtr, "%lf", &pos_z);
+        val3 = fscanf(filePtr, "%lf", &pos_x);
+        val4 = fscanf(filePtr, "%lf", &pos_y);
+        val5 = fscanf(filePtr, "%lf", &pos_z);
 
-        if (val1 != 1 || val2 != 1 || val3 != 1) {
-          printf("\nError reading input files, exit.\n\n");
+        if (val3 != 1 || val4 != 1 || val5 != 1) {
+          printf("\nError reading trajectory position, exit.\n\n");
           exit(1);
         }
 
@@ -531,7 +538,7 @@ void PPReplanFSM::odometryCallback(const nav_msgs::OdometryConstPtr &msg)
 
           const double SAFE_DIST = 0.3232; // m
           bool safe = true;
-          for(int j = 0; j < plannerCloud->points.size(); j++)
+          for(size_t j = 0; j < plannerCloud->points.size(); j++)
           {
             Eigen::Vector3d pc(plannerCloud->points[j].x, plannerCloud->points[j].y, plannerCloud->points[j].z);
             double dist = (odom_pos_ - pc).norm();
@@ -804,7 +811,7 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
         {
           yaw_cmd_count_ = 0;
           changeFSMExecState(EXEC_TRAJ, "CRASH");
-          ROS_INFO("Recover from crash! id=%d, crash_rec_stage_=1");
+          ROS_INFO("Recover from crash! id=%d, crash_rec_stage_=1", planner_manager_->drone_id);
         }
         else if ( !flag_pub_first_yaw_ || fabs(yaw_diff(odom_yaw_, final_yaw_des_)) < 0.05 )
         {
@@ -1027,7 +1034,7 @@ bool PPReplanFSM::planPrimitive(bool first_plan, double xV_offset /*= 0.0*/ )
         //vis
         std::vector<Eigen::Vector3d> traj_pos_vis;
         traj_pos_vis.push_back(traj_pos[0]);
-        for ( int i=1; i<traj_pos.size() ; ++i )
+        for (size_t i=1; i<traj_pos.size() ; ++i )
           if ( (traj_pos[i] - traj_pos_vis.back()).norm() > 0.1 )
             traj_pos_vis.push_back(traj_pos[i]);
         traj_pos_vis.push_back(traj_pos.back());
