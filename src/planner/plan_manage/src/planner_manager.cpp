@@ -14,6 +14,9 @@ void PPPlannerManager::initPlanModules(ros::NodeHandle &nh, PlanningVisualizatio
   nh.param("manager/boxX", boxX_, 8.0);
   nh.param("manager/boxY", boxY_, 9.0);
   nh.param("manager/boxZ", boxZ_, 9.0);
+  nh.param("manager/sim_distributed_communication", sim_dist_com_, false); // simulate that the drones are only able to communicate to neighbors within a certain range.
+  nh.param("manager/drone_com_r", drone_com_r_, 15.0);                     // drone communication radius
+  nh.param("manager/base_com_r", base_com_r_, 30.0);                       // base station communication radius
   nh.param("manager/arc_length", arc_length_, 5.0);
   nh.param("manager/voxelSize", voxelSize_, 0.1);
   // nh.param("manager/pathNum", pathNum_, 61);

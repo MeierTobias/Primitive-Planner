@@ -51,6 +51,9 @@ public:
 
   int drone_id;
   double max_vel_;
+  bool sim_dist_com_;
+  double drone_com_r_;
+  double base_com_r_;
   double arc_length_;
   double swarm_clearence_;
   std::string primitiveFolder_;

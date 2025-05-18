@@ -257,11 +257,13 @@ void PPReplanFSM::triggerCallback(const geometry_msgs::PoseStampedPtr &msg)
 
 void PPReplanFSM::RecvBroadcastPrimitiveCallback(const traj_utils::swarmPrimitiveTrajConstPtr &msg)
 {
-  const size_t recv_id = (size_t)msg->drone_id;
-  if ((int)recv_id == planner_manager_->drone_id) // myself
+  // get sender id
+  const size_t recv_id = static_cast<size_t>(msg->drone_id);
+  // ignore own messages
+  if ((int)recv_id == planner_manager_->drone_id)
     return;
 
-  // std::cout << "recv_id: " << recv_id << std::endl;
+  // extend the trajectory vector if messages from unknown drones arrive
   if (planner_manager_->swarm_traj.size() <= recv_id)
   {
     for (size_t i = planner_manager_->swarm_traj.size(); i <= recv_id; i++)
@@ -273,13 +275,23 @@ void PPReplanFSM::RecvBroadcastPrimitiveCallback(const traj_utils::swarmPrimitiv
     }
   }
 
-  // get positions
+  // get start and end positions of trajectory
   Eigen::Vector3d start_pos, end_pos;
   start_pos << msg->start_p[0], msg->start_p[1], msg->start_p[2];
   end_pos << msg->end_p[0], msg->end_p[1], msg->end_p[2];
   double start_dist = (start_pos - odom_pos_).norm();
   double end_dist = (end_pos - odom_pos_).norm();
 
+  if (planner_manager_->sim_dist_com_)
+  {
+    // simulate restricted communication range
+    if (start_dist > planner_manager_->drone_com_r_)
+    {
+      return;
+    }
+  }
+
+  // check if the received trajectories are close enough to cause interference
   bool far_away = start_dist > planner_manager_->arc_length_ * 2 &&
                   end_dist > planner_manager_->arc_length_ * 2;
 
@@ -307,8 +319,6 @@ void PPReplanFSM::RecvBroadcastPrimitiveCallback(const traj_utils::swarmPrimitiv
     planner_manager_->swarm_traj[recv_id].traj_duration = traj_duration;
     planner_manager_->swarm_traj[recv_id].traj_pos = traj_pos;
 
-    // std::cout << "===swarm_traj===" << std::endl;
-
     // Check collision bewteen current traj and other new traj
 #if not USE_SHARED_MEMORY
     if (static_cast<int>(recv_id) < planner_manager_->drone_id && checkCollision(recv_id))
@@ -316,8 +326,6 @@ void PPReplanFSM::RecvBroadcastPrimitiveCallback(const traj_utils::swarmPrimitiv
       changeFSMExecState(REPLAN_TRAJ, "SWARM_CHECK");
     }
 #endif
-
-    // std::cout << "path_id: " << path_id[0] << std::endl;
   }
   else
   {
