@@ -396,17 +396,18 @@ bool PPReplanFSM::readLocalTrajPos(Eigen::Vector3d &start_pos, int &vel_id, Eige
 
     if (idx >= (int)path_id.size())
     {
-      printf("[FSM]path id ");
+      string msg = "[FSM] path id ";
       for (auto it : path_id)
-        printf("%d ", it);
-      printf("not exist for vel_id %d.\n", vel_id);
+        msg += " " + std::to_string(it);
+      msg += " not exist for vel_id " + std::to_string(vel_id) + ".";
+      ROS_WARN(msg.c_str());
       idx = 0;
       vel_id--;
     }
 
     if (vel_id < 0)
     {
-      ROS_ERROR("[FSM]No suitable path exists!!!");
+      ROS_ERROR("[FSM] No suitable path exists!!!");
       return false;
     }
   }
@@ -472,7 +473,7 @@ bool PPReplanFSM::readPrimitivePos()
 
       if (val1 != 1 || val2 != 1)
       {
-        printf("\nError reading number of points or trajectory duration, exit.\n\n");
+        ROS_ERROR("Error reading number of points or trajectory duration, exit.");
         exit(1);
       }
 
@@ -486,7 +487,7 @@ bool PPReplanFSM::readPrimitivePos()
 
         if (val3 != 1 || val4 != 1 || val5 != 1)
         {
-          printf("\nError reading trajectory position, exit.\n\n");
+          ROS_ERROR("Error reading trajectory position, exit.");
           exit(1);
         }
 
@@ -770,7 +771,9 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
       if (goal_id_ == (waypoint_num_ - 1))
       {
         changeFSMExecState(APPROACH_GOAL, "FSM");
-        cout << "odom_pos_=" << odom_pos_.transpose() << " global_goal_=" << global_goal_.transpose() << " norm=" << (odom_pos_ - global_goal_).norm() << " thres=" << no_replan_thresh_ << endl;
+        std::stringstream ss;
+        ss << "odom_pos_=" << odom_pos_.transpose() << " global_goal_=" << global_goal_.transpose() << " norm=" << (odom_pos_ - global_goal_).norm() << " thres=" << no_replan_thresh_;
+        ROS_DEBUG(ss.str().c_str());
       }
       else
       {
@@ -821,10 +824,14 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
   }
 
   case CRASH_RECOVER: {
-    cout << "ID=" << planner_manager_->drone_id << " crash_rec_stage_=" << crash_rec_stage_ << endl;
+    std::stringstream ss;
+    ss << "ID=" << planner_manager_->drone_id << " crash_rec_stage_=" << crash_rec_stage_;
+    ROS_DEBUG(ss.str().c_str());
     if (crash_rec_stage_ == 1)
     {
-      cout << "ID=" << planner_manager_->drone_id << "A=" << yaw_cmd_count_ << " B=" << flag_pub_first_yaw_ << " C=" << odom_yaw_ << " D=" << final_yaw_des_ << " E=" << yaw_diff(odom_yaw_, final_yaw_des_) << endl;
+      std::stringstream ss;
+      ss << "ID=" << planner_manager_->drone_id << "A=" << yaw_cmd_count_ << " B=" << flag_pub_first_yaw_ << " C=" << odom_yaw_ << " D=" << final_yaw_des_ << " E=" << yaw_diff(odom_yaw_, final_yaw_des_) << endl;
+      ROS_DEBUG(ss.str().c_str());
       if (planPrimitive(true))
       {
         yaw_cmd_count_ = 0;
@@ -890,34 +897,34 @@ void PPReplanFSM::changeFSMExecState(FSM_EXEC_STATE new_state, std::string pos_c
   static std::string state_str[8] = {"INIT", "WAIT_TARGET", "GEN_NEW_TRAJ", "REPLAN_TRAJ", "EXEC_TRAJ", "EMERGENCY_STOP", "APPROACH_GOAL", "CRASH_RECOVER"};
   int pre_s = int(exec_state_);
   exec_state_ = new_state;
-  std::cout << "[" + pos_call + "]" << "Drone " << planner_manager_->drone_id << " from " + state_str[pre_s] + " to " + state_str[int(new_state)] << " t=" << ros::Time::now() - ros::Duration(1725265839) << std::endl;
+  ROS_DEBUG("[%s] Drone %d from %s to %s", pos_call.c_str(), planner_manager_->drone_id, state_str[pre_s].c_str(), state_str[int(new_state)].c_str());
 }
 
 void PPReplanFSM::printFSMExecState()
 {
   static std::string state_str[8] = {"INIT", "WAIT_TARGET", "GEN_NEW_TRAJ", "REPLAN_TRAJ", "EXEC_TRAJ", "EMERGENCY_STOP", "APPROACH_GOAL", "CRASH_RECOVER"};
 
-  std::cout << "\r[FSM]: state: " + state_str[int(exec_state_)];
+  std::string msg = "[FSM] Drone " + std::to_string(planner_manager_->drone_id) + " State: " + state_str[int(exec_state_)];
 
   // some warnings
   if (!have_odom_ || !have_target_ || !have_trigger_)
   {
-    std::cout << ". Waiting for ";
+    msg += ". Waiting for ";
   }
   if (!have_odom_)
   {
-    std::cout << "odom,";
+    msg += "odom,";
   }
   if (!have_target_)
   {
-    std::cout << "target,";
+    msg += "target,";
   }
   if (!have_trigger_)
   {
-    std::cout << "trigger,";
+    msg += "trigger,";
   }
 
-  std::cout << std::endl;
+  ROS_DEBUG(msg.c_str());
 }
 
 bool PPReplanFSM::planPrimitive(bool first_plan, double xV_offset /*= 0.0*/)
@@ -1102,7 +1109,7 @@ bool PPReplanFSM::planPrimitive(bool first_plan, double xV_offset /*= 0.0*/)
   // std::cout << "planPrimitive: " << plan_success << std::endl;
 
   ros::Time t2 = ros::Time::now();
-  printf("\033[44;97mID=%d, plan_time=%.2f ms \033[0m\n", planner_manager_->drone_id, (t2 - t0).toSec() * 1000);
+  ROS_DEBUG("\033[44;97mDroneID=%d, plan_time=%.2f ms \033[0m\n", planner_manager_->drone_id, (t2 - t0).toSec() * 1000);
   return plan_success;
 }
 
