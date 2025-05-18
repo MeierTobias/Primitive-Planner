@@ -27,18 +27,15 @@ def generate_launch_file(num_drones, init_x, init_y_spacing, output_file='decent
         file.write('    <node pkg="assign_goals" name="assign_goals_node" type="assign_goals_node" output="screen"/>\n\n')
 
         # generate drone swarm
+        drone_com_r = 15.0
+        init_y = [drone_com_r * 1.2 + init_y_spacing * i for i in range(num_drones-1)]
+        init_y.insert(0, 0.0)
         for i in range(num_drones):
-            if num_drones % 2 == 0:
-                # If the number of planes is even, the center plane is at the origin
-                init_y = init_y_spacing * i - (num_drones - 1) * init_y_spacing / 2.0
-            else:
-                # If the number of planes is odd, the center plane is slightly offset from the origin
-                init_y = init_y_spacing * i - (num_drones - 1) * init_y_spacing / 2.0 - init_y_spacing / 2.0
             file.write('    <!-- Drone {} -->\n'.format(i))
             file.write('    <include file="$(find primitive_planner)/launch/run_in_sim.xml">\n')
             file.write('        <arg name="drone_id" value="{}"/>\n'.format(i))
             file.write('        <arg name="init_x" value="{}"/>\n'.format(init_x))
-            file.write('        <arg name="init_y" value="{}"/>\n'.format(init_y))
+            file.write('        <arg name="init_y" value="{}"/>\n'.format(init_y[i]))
             file.write('        <arg name="init_z" value="1.0"/>\n')
             file.write('        <arg name="flight_type" value="3"/>\n')
             file.write('        <arg name="map_size_x" value="$(arg map_size_x)"/>\n')

@@ -127,6 +127,7 @@ void PPReplanFSM::init(ros::NodeHandle &nh)
   switch (target_type_)
   {
   case 1:
+  case 3:
     waypoint_sub_ = nh.subscribe("/goal_with_id", 100, &PPReplanFSM::waypointCallback, this);
     break;
 
@@ -182,10 +183,8 @@ void PPReplanFSM::init(ros::NodeHandle &nh)
     }
     break;
   }
-  case 3:
-
-    break;
   default:
+    ROS_ERROR("Unknown flight type");
     break;
   }
 }
@@ -233,6 +232,7 @@ void PPReplanFSM::waypointCallback(const quadrotor_msgs::GoalSetPtr &msg)
   if (msg->drone_id != planner_manager_->drone_id)
     return;
 
+  ++goal_tag_;
   ROS_INFO("Received goal: %f, %f, %f", msg->goal[0], msg->goal[1], msg->goal[2]);
   newGoalReceived(Eigen::Vector3d(msg->goal[0], msg->goal[1], msg->goal[2]));
 }
@@ -281,7 +281,7 @@ void PPReplanFSM::RecvBroadcastPrimitiveCallback(const traj_utils::swarmPrimitiv
   // get sender id
   const size_t recv_id = static_cast<size_t>(msg->drone_id);
   // ignore own messages
-  if ((int)recv_id == planner_manager_->drone_id)
+  if (static_cast<int>(recv_id) == planner_manager_->drone_id)
     return;
 
   // extend the trajectory vector if messages from unknown drones arrive
