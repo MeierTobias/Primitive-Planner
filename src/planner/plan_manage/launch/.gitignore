@@ -2,3 +2,4 @@
 primitive_swarm.launch
 random_goal_flight.launch
 swarm.launch
+decentralized_goal_flight.launch

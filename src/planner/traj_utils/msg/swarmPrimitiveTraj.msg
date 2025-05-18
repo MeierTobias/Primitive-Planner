@@ -6,3 +6,5 @@ float32[3] end_p
 float32[9] rot_mat
 int32 vel_id
 int32 select_path_id
+int32 goal_tag
+float32[3] goal

@@ -55,6 +55,15 @@ void PPReplanFSM::init(ros::NodeHandle &nh)
   nh.param("fsm/no_replan_thresh", no_replan_thresh_, 4.0);
   nh.param("fsm/waypoint_num", waypoint_num_, -1);
 
+  // Raise the default logger level
+  // TODO: This can be removed after development.
+  if (ros::console::set_logger_level(
+          ROSCONSOLE_DEFAULT_NAME,
+          ros::console::levels::Debug))
+  {
+    ros::console::notifyLoggerLevelsChanged();
+  }
+
 #if USE_SHARED_MEMORY
   // shared memory
   const size_t size = TOTAL_DRONE_NUM_ * sizeof(SharedMemory);
@@ -63,18 +72,18 @@ void PPReplanFSM::init(ros::NodeHandle &nh)
   swarm_traj_ptr_ = static_cast<SharedMemory *>(shared_memory_);
 #endif
 
-  /* initialize main modules */
+  // initialize main modules
   visualization_.reset(new PlanningVisualization(nh));
   planner_manager_.reset(new PPPlannerManager);
   planner_manager_->initPlanModules(nh, visualization_);
 
   readPrimitivePos();
 
+  // external trigger
   have_trigger_ = !flag_realworld_experiment_;
   trigger_sub_ = nh.subscribe("/traj_start_trigger", 100, &PPReplanFSM::triggerCallback, this);
 
-  /* callback */
-
+  // commands
   odom_sub_ = nh.subscribe("odom_world", 100, &PPReplanFSM::odometryCallback, this);
   mandatory_stop_sub_ = nh.subscribe("mandatory_stop", 100, &PPReplanFSM::mandatoryStopCallback, this);
   select_path_end_sub_ = nh.subscribe("planning/select_path_end", 100, &PPReplanFSM::pathEndCallback, this);
@@ -115,12 +124,13 @@ void PPReplanFSM::init(ros::NodeHandle &nh)
   exec_timer_ = nh.createTimer(ros::Duration(0.01), &PPReplanFSM::execFSMCallback, this);
 
   // global goal
-  if (target_type_ == 1)
+  switch (target_type_)
   {
+  case 1:
     waypoint_sub_ = nh.subscribe("/goal_with_id", 100, &PPReplanFSM::waypointCallback, this);
-  }
-  else if (target_type_ == 2)
-  {
+    break;
+
+  case 2: {
     for (int i = 0; i < waypoint_num_; i++)
     {
       nh.param("fsm/waypoint" + std::to_string(i) + "_x", waypoints_[i][0], -1.0);
@@ -170,20 +180,22 @@ void PPReplanFSM::init(ros::NodeHandle &nh)
       }
       have_target_ = true;
     }
+    break;
+  }
+  case 3:
+
+    break;
+  default:
+    break;
   }
 }
 
-void PPReplanFSM::waypointCallback(const quadrotor_msgs::GoalSetPtr &msg)
+void PPReplanFSM::newGoalReceived(const Eigen::Vector3d &goal)
 {
-  if (msg->drone_id != planner_manager_->drone_id)
-    return;
-
-  ROS_INFO("Received goal: %f, %f, %f", msg->goal[0], msg->goal[1], msg->goal[2]);
-
   waypoint_num_ = 1;
   goal_id_ = 0;
   all_goal_.clear();
-  all_goal_.push_back(Eigen::Vector3d(msg->goal[0], msg->goal[1], msg->goal[2]));
+  all_goal_.push_back(goal);
   global_goal_ = all_goal_[0];
 
   std_msgs::Float64MultiArray goal_msg;
@@ -214,6 +226,15 @@ void PPReplanFSM::waypointCallback(const quadrotor_msgs::GoalSetPtr &msg)
   have_target_ = true;
   have_trigger_ = true;
   changeFSMExecState(GEN_NEW_TRAJ, "NEW_GOAL");
+}
+
+void PPReplanFSM::waypointCallback(const quadrotor_msgs::GoalSetPtr &msg)
+{
+  if (msg->drone_id != planner_manager_->drone_id)
+    return;
+
+  ROS_INFO("Received goal: %f, %f, %f", msg->goal[0], msg->goal[1], msg->goal[2]);
+  newGoalReceived(Eigen::Vector3d(msg->goal[0], msg->goal[1], msg->goal[2]));
 }
 
 void PPReplanFSM::triggerCallback(const geometry_msgs::PoseStampedPtr &msg)
@@ -282,12 +303,23 @@ void PPReplanFSM::RecvBroadcastPrimitiveCallback(const traj_utils::swarmPrimitiv
   double start_dist = (start_pos - odom_pos_).norm();
   double end_dist = (end_pos - odom_pos_).norm();
 
+  // simulate restricted communication range
   if (planner_manager_->sim_dist_com_)
   {
-    // simulate restricted communication range
     if (start_dist > planner_manager_->drone_com_r_)
     {
       return;
+    }
+  }
+
+  if (target_type_ == 3) // decentralized global goal
+  {
+    // check we received a new goal position from a neighbor
+    if (msg->goal_tag > goal_tag_)
+    {
+      ++goal_tag_;
+      ROS_INFO("[FSM] Drone %d: New decentralized goal position (%f,%f,%f) from neighbor (id=%ld) received.", planner_manager_->drone_id, global_goal_[0], global_goal_[1], global_goal_[2], recv_id);
+      newGoalReceived(Eigen::Vector3d(msg->goal[0], msg->goal[1], msg->goal[2]));
     }
   }
 
@@ -1037,6 +1069,15 @@ bool PPReplanFSM::planPrimitive(bool first_plan, double xV_offset /*= 0.0*/)
     traj_msg.vel_id = vel_id;
 
     traj_msg.select_path_id = select_path_id[0];
+
+    // publish own goal for decentralized information propagation
+    if (target_type_ == 3)
+    {
+      traj_msg.goal_tag = goal_tag_;
+      traj_msg.goal[0] = global_goal_[0];
+      traj_msg.goal[1] = global_goal_[1];
+      traj_msg.goal[2] = global_goal_[2];
+    }
 
     path_id_pub_.publish(traj_msg);
 #if not USE_SHARED_MEMORY
