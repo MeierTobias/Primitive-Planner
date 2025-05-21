@@ -45,16 +45,10 @@ void PPPlannerManager::initPlanModules(ros::NodeHandle &nh, PlanningVisualizatio
     correspondences_[i].resize(0);
   }
 
-  // ros::Time t1, t2;
-  // t1 = ros::Time::now();
-
   pathNum_ = readPathList();
   readPathAll();
   readCorrespondences();
   readAgentCorrespondences();
-  // t2 = ros::Time::now();
-
-  // std::cout << "======readCorrespondences time====== " << (t2 - t1).toSec() << std::endl;
 
   depthCloudCount_ = 0;
   dep_odom_sub_ = nh.subscribe<nav_msgs::Odometry>("plan_manage/odom", 10, &PPPlannerManager::odomCallback, this);
@@ -81,17 +75,11 @@ void PPPlannerManager::odomCallback(const nav_msgs::OdometryConstPtr &odom)
   robot_pos_(1) = odom->pose.pose.position.y;
   robot_pos_(2) = odom->pose.pose.position.z;
 
-  // robot_q_.x() = odom->pose.pose.orientation.x;
-  // robot_q_.y() = odom->pose.pose.orientation.y;
-  // robot_q_.z() = odom->pose.pose.orientation.z;
-  // robot_q_.w() = odom->pose.pose.orientation.w;
-
   has_odom_ = true;
 }
 
 void PPPlannerManager::cloudCallback(const sensor_msgs::PointCloud2ConstPtr &img)
 {
-  // std::cout << "cloudCallback 0" << std::endl;
   // *latestCloud in world frame
   pcl::PointCloud<pcl::PointXYZ>::Ptr latestCloud(new pcl::PointCloud<pcl::PointXYZ>());
   pcl::fromROSMsg(*img, *latestCloud);
@@ -102,18 +90,11 @@ void PPPlannerManager::cloudCallback(const sensor_msgs::PointCloud2ConstPtr &img
     return;
   }
 
-  // std::cout << "cloudCallback 1" << std::endl;
-
   if (latestCloud->points.size() == 0)
     return;
 
-  // if (isnan(robot_pos_(0)) || isnan(robot_pos_(1)) || isnan(robot_pos_(2)))
-  //   return;
-
   depthCloudStack_[depthCloudCount_] = latestCloud;
   depthCloudCount_ = (depthCloudCount_ + 1) % depthCloudStackNum_;
-
-  // std::cout << "cloudCallback 2" << std::endl;
 
   static int cloud_num = 0;
   cloud_num++;
@@ -121,7 +102,6 @@ void PPPlannerManager::cloudCallback(const sensor_msgs::PointCloud2ConstPtr &img
   {
     cloud_num = 0;
     has_cloud_ = true;
-    // std::cout << "cloudCallback 4" << std::endl;
   }
 }
 
@@ -131,24 +111,15 @@ bool PPPlannerManager::labelObsCollisionPaths(const Eigen::Vector3d &start_pt, c
   clearPathList_.clear();
   clearPathList_.resize(pathNum_, 0);
 
-  // static Eigen::Matrix3d rotVW_last;
-  // static Eigen::Vector3d start_pt_last;
-
-  // has_cloud_ = true: label collision paths
+  // label collision paths
   if (has_cloud_)
   {
-    // std::cout << "labelCollisionPaths 0" << std::endl;
-    // std::cout <<  depthCloudStack_[0]->points.size() <<  std::endl;
-
     // downsample
     pcl::PointCloud<pcl::PointXYZ>::Ptr plannerCloudStack(new pcl::PointCloud<pcl::PointXYZ>());
     for (int i = 0; i < depthCloudStackNum_; i++)
     {
       *plannerCloudStack += *(depthCloudStack_[i]);
-      // std::cout << "labelCollisionPaths 1:" << i << std::endl;
     }
-
-    // std::cout << "labelCollisionPaths 1" << std::endl;
 
     // if cloud size is too large, consider setting up random sample(fixed size)
     pcl::PointCloud<pcl::PointXYZ>::Ptr plannerCloud(new pcl::PointCloud<pcl::PointXYZ>());
@@ -167,16 +138,11 @@ bool PPPlannerManager::labelObsCollisionPaths(const Eigen::Vector3d &start_pt, c
     // TODO:[real robot pointcloud noise] use raycast to avoid
 
     // plannerCloudStack transform to Body Frame
-    // Eigen::Matrix3d rotVW = rotWV.inverse();
     Eigen::Vector3d pos_v, pos_w;
     int plannerCloudSize = plannerCloud->points.size();
 
-    // std::cout << "downsample cloud size: " << plannerCloudSize << std::endl;
-
     int indX, indY, indZ, ind, occPathByVoxelNum;
 
-    // ros::Time t1, t2;
-    // t1 = ros::Time::now();
     // TODO: [???] GPU parallel computation
     for (int i = 0; i < plannerCloudSize; i++)
     {
@@ -198,72 +164,14 @@ bool PPPlannerManager::labelObsCollisionPaths(const Eigen::Vector3d &start_pt, c
 
         ind = voxelNumY_ * voxelNumZ_ * indX + voxelNumZ_ * indY + indZ;
         occPathByVoxelNum = correspondences_[ind].size();
-        // if ( occPathByVoxelNum >= pathNum_ )
-        // {
 
-        //   std::vector<double> d_list(plannerCloudSize);
-        //   for ( int j=0; j<plannerCloudSize; j++ )
-        //   {
-        //     d_list[j] = 9999;
-        //     for ( int k=0; k<plannerCloudSize; k++ )
-        //     {
-        //       if ( j != k )
-        //       {
-        //         Eigen::Vector3d x(plannerCloud->points[j].x, plannerCloud->points[j].y, plannerCloud->points[j].z);
-        //         Eigen::Vector3d y(plannerCloud->points[k].x, plannerCloud->points[k].y, plannerCloud->points[k].z);
-        //         double d=(x-y).norm();
-        //         if (d < d_list[j])
-        //           d_list[j] = d;
-        //       }
-        //     }
-        //   }
-
-        //   std::sort(d_list.begin(), d_list.end());
-        //   int small_c = 0, big_c = 0;
-        //   for ( int j=0; j<plannerCloudSize; j++ )
-        //   {
-        //     if (d_list[j] <= 0.1)
-        //       small_c ++;
-        //     else
-        //       big_c ++;
-        //     cout << " " << d_list[j];
-        //   }
-        //   cout << endl;
-        //   cout << "small_c=" << small_c <<" big_c=" <<big_c << endl;
-
-        //   plannerCloud_debug = *plannerCloud;
-        //   rotVW_debug = rotVW;
-        //   start_pt_debug = start_pt;
-        //   occ_now_debug = plannerCloud->points[i];
-        // ROS_ERROR("occPathByVoxelNum=%d, indX=%d, indY=%d, indZ=%d, pos_v=(%f, %f, %f), plannerCloudSize=%d",
-        //   occPathByVoxelNum, indX, indY, indZ, pos_v(0), pos_v(1), pos_v(2), plannerCloudSize);
-        // cout << "pos_w=" << pos_w.transpose() << " cp=" << plannerCloud->points[i].x << " " << plannerCloud->points[i].y << " " << plannerCloud->points[i].z << " start_pt=" << start_pt.transpose() << endl;
-
-        //   pos_w(0) = plannerCloud->points[i].x - start_pt_last(0);
-        //   pos_w(1) = plannerCloud->points[i].y - start_pt_last(1);
-        //   pos_w(2) = plannerCloud->points[i].z - start_pt_last(2);
-        //   Eigen::Vector3d pc(plannerCloud->points[i].x, plannerCloud->points[i].y, plannerCloud->points[i].z);
-        //   pos_v = rotVW_last * pos_w;
-        //   for ( int j=0; j<traj_pos_exec_.size(); ++j ) {
-        //     cout << "d=" << (traj_pos_exec_[j] - pc).norm() << " traj_pos_exec_[" << j << "]=" << traj_pos_exec_[j].transpose() << endl;
-        //   }
-        //   cout << "pos_w=" << pos_w.transpose() << " start_pt_debug=" << start_pt_debug.transpose() << endl;
-
-        //   exit(0);
-        // }
         for (int j = 0; j < occPathByVoxelNum; j++)
         {
           clearPathList_[correspondences_[ind][j]]++;
         }
       }
     }
-    // t2 = ros::Time::now();
-
-    // std::cout << "for loop time: " << (t2 - t1).toSec() << std::endl;
   }
-
-  // rotVW_last = rotVW;
-  // start_pt_last = start_pt;
 
   return true;
 }
@@ -278,7 +186,6 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
   TODO: 暂定倾向于靠近中心线的primitive(后续根据实验效果调整)
   */
   double cost, goal_dist;
-  // int best_path_id;
 
   std::map<double, int> mapCost;
   std::vector<int> select_path_id;
@@ -320,17 +227,8 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
       bound_cost = 10;
     }
 
-    // std::cout << "i = " << i << ": " << clearPathList_[i] << " " << goal_dist << " " << bound_cost << std::endl;
-
-    // cost = lamda_c_ * clearPathList_[i] + lamda_l_ * goal_dist + lamda_b_ * bound_cost;
     cost = lamda_l_ * goal_dist + lamda_b_ * bound_cost;
 
-    // std::cout << "cost = " << cost << std::endl;
-
-    // if(cost < best_cost){
-    //   best_cost = cost;
-    //   best_path_id = i;
-    // }
     mapCost.insert({cost, i});
   }
 
@@ -351,12 +249,6 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
     ROS_WARN("====[id:%d] All primitives are infeasible!====", drone_id);
   }
 
-  // std::cout << "select_path_id: ";
-  // for(int i = 0; i < (int)select_path_id.size(); i++){
-  //   std::cout << select_path_id[i] << " ";
-  // }
-
-  // revise to vector<int> select_path_id
   return select_path_id;
 }
 
@@ -364,8 +256,6 @@ void PPPlannerManager::readCorrespondences()
 {
   std::string fileName = primitiveFolder_ + "/obs_correspondence/obs_correspondence.txt";
 
-  // std::cout << "primitiveFolder:" << primitiveFolder_ << std::endl;
-  // std::cout << "file:" << fileName << std::endl;
   FILE *filePtr = fopen(fileName.c_str(), "rb");
   if (filePtr == NULL)
   {
@@ -376,8 +266,6 @@ void PPPlannerManager::readCorrespondences()
   int val1, voxelID, pathID;
   for (int i = 0; i < voxelNumAll_; i++)
   {
-    // std::cout << "voxelNum: " << i << std::endl;
-
     val1 = fread(&voxelID, 4, 1, filePtr);
     if (val1 != 1)
     {
@@ -394,8 +282,6 @@ void PPPlannerManager::readCorrespondences()
         exit(1);
       }
 
-      // std::cout << "pathID: " << pathID << std::endl;
-
       if (pathID != -1)
       {
         if (voxelID >= 0 && voxelID < voxelNumAll_ && pathID >= 0 && pathID < pathNum_)
@@ -410,17 +296,6 @@ void PPPlannerManager::readCorrespondences()
     }
   }
 
-  // check
-  // for (int i = 0; i < voxelNumAll_; i++) {
-  //   if(!correspondences_[i].empty()){
-  //     std::cout << "correspondences_[" << i << "]: " << std::endl;
-  //     for(int j = 0; j < (int)correspondences_[i].size(); j++){
-  //       std::cout << correspondences_[i][j] << " ";
-  //     }
-  //     std::cout << std::endl;
-  //   }
-  // }
-
   fclose(filePtr);
 }
 
@@ -433,7 +308,6 @@ void PPPlannerManager::readAgentCorrespondences()
     std::stringstream ss;
     ss << a << i << b;
     std::string fileName = ss.str();
-    // std::cout << "file:" << fileName << std::endl;
 
     FILE *filePtr = fopen(fileName.c_str(), "rb");
     if (filePtr == NULL)
@@ -464,8 +338,6 @@ void PPPlannerManager::readAgentCorrespondences()
           exit(1);
         }
 
-        // std::cout << "pathID: " << pathID << std::endl;
-
         if (pathID != -1)
         {
           int val2 = fread(&tStart, 4, 1, filePtr);
@@ -494,63 +366,7 @@ void PPPlannerManager::readAgentCorrespondences()
 
     allVelCorrespondences_.push_back(velCorrespondences);
   }
-
-  // check
-  // for (int i = 0; i <= int(max_vel_*10); i++) {
-  //   std::cout << "=====Output vel = " << i <<" correspondence=====" << std::endl;
-  //   for (int j = 0; j < voxelNumAll_; j++) {
-  //     if(!allVelCorrespondences_[i][j].empty()){
-  //       std::cout << "allVelCorrespondences_[" << i << "][" << j << "]: " << std::endl;
-  //       for(int k = 0; k < (int)allVelCorrespondences_[i][j].size(); k++){
-  //         std::cout << allVelCorrespondences_[i][j][k] << " ";
-  //       }
-  //       std::cout << std::endl;
-  //     }
-  //   }
-  // }
 }
-
-// void PPPlannerManager::readPathList()
-// {
-//   std::string fileName = primitiveFolder_ + "/obs_correspondence/path_end.ply";
-
-//   FILE *filePtr = fopen(fileName.c_str(), "r");
-//   if (filePtr == NULL) {
-//     printf ("\nCannot read input [path_end files], exit.\n\n");
-//     exit(1);
-//   }
-
-//   // if (pathNum != readPlyHeader(filePtr)) {
-//   //   printf ("\nIncorrect path number, exit.\n\n");
-//   //   exit(1);
-//   // }
-
-//   int val1, val2, val3, val4, pathID;
-//   double endX, endY, endZ;
-//   for (int i = 0; i < pathNum_; i++) {
-//     val1 = fscanf(filePtr, "%lf", &endX);
-//     val2 = fscanf(filePtr, "%lf", &endY);
-//     val3 = fscanf(filePtr, "%lf", &endZ);
-//     val4 = fscanf(filePtr, "%d", &pathID);
-
-//     if (val1 != 1 || val2 != 1 || val3 != 1 || val4 != 1) {
-//       printf ("\nError reading [pathList] input files, exit.\n\n");
-//         exit(1);
-//     }
-
-//     if (pathID >= 0 && pathID < pathNum_) {
-//       pathEndList_.push_back(Eigen::Vector3d(endX, endY, endZ));
-//     }
-//   }
-
-//   // check
-//   // for(int i = 0; i < (int)pathEndList_.size(); i++){
-//   //   std::cout << "pathEndList_[" << i << "]: " << pathEndList_[i] << std::endl;
-//   // }
-
-//   fclose(filePtr);
-
-// }
 
 int PPPlannerManager::readPathList()
 {
@@ -738,9 +554,6 @@ bool PPPlannerManager::labelAgentCollisionPaths(const Eigen::Vector3d &start_pt,
 
 bool PPPlannerManager::trajReplan(const Eigen::Vector3d &start_pt, const Eigen::Vector3d &start_v, const double &start_time, const Eigen::Matrix3d &RWV, const Eigen::Vector3d &global_goal, vector<int> &select_path_id)
 {
-  // std::cout << "trajReplan 0" << std::endl;
-  // Eigen::Vector3d rotWV = start_q;
-
   Eigen::Matrix3d RVW = RWV.inverse();
 
   bool success_obs, success_agents;
@@ -749,43 +562,17 @@ bool PPPlannerManager::trajReplan(const Eigen::Vector3d &start_pt, const Eigen::
   success_obs = labelObsCollisionPaths(start_pt, RVW);
   t1 = ros::Time::now();
 
-  // bool safe = false;
-  // for (auto it : clearPathList_)
-  //   if (it == 0)
-  //   {
-  //     safe = true;
-  //     break;
-  //   }
-  // if ( !safe )
-  //   cout << "A clearPathList_ all > 0" << endl;
-
-  // std::cout << "trajReplan 1" << std::endl;
-
   success_agents = labelAgentCollisionPaths(start_pt, start_v, start_time, RVW);
   t2 = ros::Time::now();
 
-  // safe = false;
-  // for (auto it : clearPathList_)
-  //   if (it == 0)
-  //   {
-  //     safe = true;
-  //     break;
-  //   }
-  // if ( !safe )
-  //   cout << "B clearPathList_ all > 0" << endl;
-
   if (!success_obs || !success_agents)
     return false;
-
-  // std::cout << "trajReplan 2" << std::endl;
 
   // visulize all path
   // visAllPaths(start_pt, RWV);
 
   select_path_id = scorePaths(start_pt, global_goal, RWV);
   t3 = ros::Time::now();
-
-  // printf("\033[44;97m In id=%d, t1=%.1f, t2=%.1f, t3=%.1f \033[0m\n", drone_id, (t1-t0).toSec() * 1000, (t2-t0).toSec() * 1000, (t3-t0).toSec() * 1000);
 
   if (select_path_id.empty())
     return false;

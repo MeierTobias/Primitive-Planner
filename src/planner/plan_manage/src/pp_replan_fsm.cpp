@@ -158,7 +158,6 @@ void PPReplanFSM::init(ros::NodeHandle &nh)
       double yaw_des = limit_yaw(atan2(dir_to_goal(1), dir_to_goal(0)));
       std_msgs::Float64 yaw_cmd;
       yaw_cmd.data = yaw_des;
-      // cout << "yaw_des=" << yaw_des << ", dir_to_goal=" << dir_to_goal.transpose() <<  endl;
 
       int count = 0;
       while (ros::ok())
@@ -166,7 +165,6 @@ void PPReplanFSM::init(ros::NodeHandle &nh)
         if (count++ % 100 == 0)
         {
           yaw_cmd_pub_.publish(yaw_cmd);
-          // cout <<"odom_yaw_" << odom_yaw_ << ", yaw_des=" << yaw_des << endl;
         }
 
         double diff = odom_yaw_ - yaw_des;
@@ -375,10 +373,7 @@ bool PPReplanFSM::checkCollision(int recv_id)
   if (planner_manager_->swarm_traj[recv_id].drone_id != recv_id)
     return false;
 
-  // std::cout << "===checkCollision 1 ===" << std::endl;
   double my_traj_start_time = myself_traj_.start_time;
-
-  // std::cout << "===checkCollision 2 ===" << std::endl;
 
   double other_traj_start_time = planner_manager_->swarm_traj[recv_id].start_time;
 
@@ -409,8 +404,6 @@ bool PPReplanFSM::readLocalTrajPos(Eigen::Vector3d &start_pos, int &vel_id, Eige
     ROS_ERROR("vel_id >= primitve_pos_.size()!");
     return false;
   }
-
-  // std::cout << "===readLocalTrajPos===" << std::endl;
 
   int idx = 0;
   while (true)
@@ -444,12 +437,6 @@ bool PPReplanFSM::readLocalTrajPos(Eigen::Vector3d &start_pos, int &vel_id, Eige
     }
   }
 
-  // printf ("\n");
-  // for (int i=0; i<path_id.size(); ++i)
-  //   printf ("%d ", path_id[i]);
-  // printf ("\n");
-  // std::cout << "vel_id: " << vel_id << " path_id[" << idx << "]: " << path_id[idx] << std::endl;
-
   Eigen::Vector3d pos_body, pos_world;
   int ptNum = primitve_pos_[vel_id][best_path_id].second.size();
   traj_duration = primitve_pos_[vel_id][best_path_id].first;
@@ -461,32 +448,26 @@ bool PPReplanFSM::readLocalTrajPos(Eigen::Vector3d &start_pos, int &vel_id, Eige
     pos_world = start_pos + Rwv * pos_body;
     // not push_back
     traj_pos.push_back(pos_world);
-    // std::cout << pos_body << std::endl;
   }
 
   path_id.clear();
   path_id.push_back(best_path_id);
   return true;
-  // std::cout << "===readLocalTrajPos===" << std::endl;
 }
 
 bool PPReplanFSM::readPrimitivePos()
 {
-  // vector<vector<std::pair<double, vector<Eigen::Vector3d>>>> primitve_pos_;
-
   FILE *filePtr;
   int path_id = 0;
   int vel_id = 0;
   std::string a = planner_manager_->primitiveFolder_ + "/trajectory_pos/";
   std::string b = "/";
   std::string c = "_trajectory.ply";
-  // vector<vector<Eigen::Vector3d>> one_speed_primitive_pos;
   while (true)
   {
 
     std::stringstream ss;
     ss << a << vel_id << b << path_id << c;
-    // std::string fileName = "../../primitive_library/trajectory/" + vel_id + "/" + path_id_[idx] + "_trajectory.ply";
     std::string fileName = ss.str();
 
     filePtr = fopen(fileName.c_str(), "r");
@@ -542,8 +523,6 @@ bool PPReplanFSM::readPrimitivePos()
         return true;
       }
     }
-
-    // one_speed_primitive_pos.push_back(one_primitive_pos);
   }
 
   return false;
@@ -566,7 +545,6 @@ void PPReplanFSM::odometryCallback(const nav_msgs::OdometryConstPtr &msg)
 
   odom_x_dir_ = odom_q_.toRotationMatrix().col(0);
   odom_yaw_ = atan2(odom_x_dir_(1), odom_x_dir_(0));
-  // std::cout << "odom_yaw_=" << odom_yaw_ <<std::endl;
 
   have_odom_ = true;
 
@@ -917,7 +895,6 @@ bool PPReplanFSM::planPrimitive(bool first_plan, double xV_offset /*= 0.0*/)
   // ros::Time t1 = ros::Time::now();
 #endif
 
-  // std::cout << "planPrimitive: " << odom_pos_ << std::endl;
   start_time_ = ros::Time::now();
   // build velocity frame {V}
   Eigen::Vector3d xV;
@@ -943,18 +920,8 @@ bool PPReplanFSM::planPrimitive(bool first_plan, double xV_offset /*= 0.0*/)
   RWV.col(1) = yV;
   RWV.col(2) = zV;
 
-  // start_q_ = odom_q_;
-  // std::cout << "planPrimitive: " << RWV << std::endl;
-
-  // ros::Time t1 = ros::Time::now();
   vector<int> select_path_id;
   bool plan_success = planner_manager_->trajReplan(start_pt_, start_v_, start_time_.toSec(), RWV, global_goal_, select_path_id);
-  // double duration = (ros::Time::now() - t1).toSec();
-  // static int countxx = 0;
-  // countxx ++;
-  // static double t_sum = 0.0;
-  // t_sum += duration;
-  // std::cout << "Duration: " << t_sum / countxx * 1000 << std::endl;
 
   std::vector<Eigen::Vector3d> traj_pos;
   double traj_duration;
@@ -963,10 +930,8 @@ bool PPReplanFSM::planPrimitive(bool first_plan, double xV_offset /*= 0.0*/)
   {
     plan_success &= readLocalTrajPos(start_pt_, vel_id, RWV, select_path_id, traj_pos, traj_duration);
   }
-  // std::cout << "plan_success: " << plan_success << std::endl;
   if (plan_success)
   {
-
     // if ( have_log_files_ )
     // {
     //   ros::Time end_time = ros::Time::now();
@@ -975,8 +940,6 @@ bool PPReplanFSM::planPrimitive(bool first_plan, double xV_offset /*= 0.0*/)
     //   std::string csv_data = computing_time_logger_.toCSV(start_time_, data);
     //   computing_time_logger_.appendData(csv_data);
     // }
-
-    // std::cout << "==========planPrimitive===========" << std::endl;
 
     myself_traj_.drone_id = planner_manager_->drone_id;
     myself_traj_.start_time = start_time_.toSec();
@@ -1029,50 +992,7 @@ bool PPReplanFSM::planPrimitive(bool first_plan, double xV_offset /*= 0.0*/)
         traj_pos_vis.push_back(traj_pos[i]);
     traj_pos_vis.push_back(traj_pos.back());
     visualization_->displayOptimalList(traj_pos_vis, 0);
-
-    // if ( planner_manager_->has_cloud_ && planner_manager_->depthCloudStack_.size() > 0)
-    // {
-    //   pcl::PointCloud<pcl::PointXYZ>::Ptr plannerCloud(new pcl::PointCloud<pcl::PointXYZ>());
-    //   for (int i = 0; i < planner_manager_->depthCloudStackNum_; i++) {
-    //     *plannerCloud += *(planner_manager_->depthCloudStack_[i]);
-    //   }
-    //   Eigen::Vector3d pos_v, pos_w;
-    //   int plannerCloudSize = plannerCloud->points.size();
-
-    //   static int count = 0;
-    //   std::vector<double> d_list(traj_pos.size());
-    //   std::vector<Eigen::Vector3d> pc_list(traj_pos.size());
-    //   double d_list_min = 9999;
-    //   Eigen::Vector3d pc_list_min, traj_pos_min;
-    //   for ( int i=0; i<traj_pos.size(); ++i )
-    //   {
-    //     d_list[i] = 9999;
-
-    //     for(int j = 0; j < plannerCloudSize; j++)
-    //     {
-    //       Eigen::Vector3d pc(plannerCloud->points[j].x, plannerCloud->points[j].y, plannerCloud->points[j].z);
-    //       double dist = (traj_pos[i] - pc).norm();
-    //       if ( dist < d_list[i] )
-    //       {
-    //         d_list[i] = dist;
-    //         pc_list[i] = pc;
-    //       }
-    //     }
-
-    //     if ( d_list[i] < d_list_min )
-    //     {
-    //       d_list_min = d_list[i];
-    //       pc_list_min = pc_list[i];
-    //       traj_pos_min = traj_pos[i];
-    //     }
-    //   }
-
-    //   cout << "d_list_min=" <<d_list_min << " id=" << planner_manager_->drone_id << " pc=" << pc_list_min.transpose() << " pt=" << traj_pos_min.transpose() << endl;
-
-    // }
   }
-
-  // std::cout << "planPrimitive: " << plan_success << std::endl;
 
   ros::Time t2 = ros::Time::now();
   ROS_DEBUG("\033[44;97mDroneID=%d, plan_time=%.2f ms \033[0m\n", planner_manager_->drone_id, (t2 - t0).toSec() * 1000);
@@ -1119,15 +1039,6 @@ void PPReplanFSM::pubPolyTraj(const Eigen::Vector3d &start_p, const Eigen::Vecto
   poly_traj.start_time = ros::Time::now();
   poly_traj.duration = t1;
   poly_pub_.publish(poly_traj);
-
-  // for ( double t=0; t<1; t+=0.05 )
-  // {
-  //   double tt1 = pow(t,1), tt2 = pow(t,2), tt3 = pow(t,3), tt4 = pow(t,4), tt5 = pow(t,5);
-  //   Eigen::Matrix<double, 3, 6> TT;
-  //   TT << tt5, tt4, tt3, tt2, tt1, 1,
-  //     5*tt4, 4*tt3, 3*tt2, 2*tt1, 1, 0,
-  //     20*tt3, 12*tt2, 6*tt1, 2, 0, 0;
-  // }
 }
 
 } // namespace primitive_planner
