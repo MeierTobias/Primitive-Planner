@@ -150,7 +150,6 @@ int main(int argc, char **argv)
       std::vector<Eigen::Vector3d> blank(1);
       blank[0] = Eigen::Vector3d::Zero();
       displayArrowList(blank, blank, 0.05, 0, visualization_msgs::Marker::DELETEALL);
-      cout << "DELETEALL Arrows." << endl;
     }
 
     ros::Duration(0.01).sleep();

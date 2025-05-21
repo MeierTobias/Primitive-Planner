@@ -41,9 +41,11 @@ def generate_launch_file(num_drones, init_x, init_y_spacing, output_file='random
         file.write('    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find primitive_planner)/launch/{}.rviz" required="true" />\n'.format("verbose" if num_drones <= 40 else "drone_1000"))
         file.write('\n')
 
+        file.write('    <node pkg="assign_goals" name="assign_goals_node" type="assign_goals_node" output="screen"/>\n\n')
+
         file.write('    <!-- <include file="$(find random_goals)/launch/random_goals.launch"/> -->\n\n')
         
-        file.write('    <include file="$(find odom_visualization)/launch/run_vis_rotate.launch"/>\n\n')
+        file.write('    <!-- <include file="$(find odom_visualization)/launch/run_vis_rotate.launch"/> -->\n\n')
     
         
         # 写入每架飞机的启动配置

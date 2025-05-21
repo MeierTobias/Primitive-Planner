@@ -64,8 +64,9 @@ namespace primitive_planner
 
             double waypoints_[10][3];
             int waypoint_num_;
-            int goal_id_;
-            int target_type_; // 1 mannual select, 2 hard code
+            int goal_id_ = 0;
+            int goal_tag_ = 0; // represents the identifier of the decentralized global goal
+            int target_type_; // 1 manual select, 2 hard code, 3 decentralized global goal
             std::vector<Eigen::Vector3d> all_goal_;
             // global_goal_ is always set to all_goal_[goal_id_]
             Eigen::Vector3d global_goal_;
@@ -128,6 +129,7 @@ namespace primitive_planner
             void cmdCallback(const quadrotor_msgs::PositionCommandPtr &cmd);
             void waypointCallback(const quadrotor_msgs::GoalSetPtr &msg);
 
+            void newGoalReceived(const Eigen::Vector3d& goal);
             bool readLocalTrajPos(Eigen::Vector3d& start_pos, int& vel_id, Eigen::Matrix<double, 3, 3>& Rwv, std::vector<int>& path_id, std::vector<Eigen::Vector3d>& traj_pos, double& traj_duration);
             bool checkCollision(int recv_id);
             bool readPrimitivePos();

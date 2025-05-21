@@ -80,25 +80,11 @@ If you don't want to install the whole ros setup on your local machine you can b
 
 ### Build container
 
-Within the root folder of this repo execute the following command to build the docker container.
-
-```bash
-docker build -t primitive-planner .
-```
-
-if you run it in WSL2 use
-
-```bash
-docker build \
-  --build-arg USER_ID=$(id -u) \
-  --build-arg GROUP_ID=$(id -g) \
-  -t primitive-planner \
-  .
-```
+Within the root folder of this repo execute the `docker_build.sh` file to build the docker container. (If you get a permission denied error you need to add the execution permission to the file with `chmod +x docker_build.sh`)
 
 ### Run container
 
-After the build as succeeded you can run the `docker_run.sh` file to start the container. (If you get a permission denied error you need to add the execution permission to the file with `chmod +x docker_run.sh`)
+After the build as succeeded you can run the `docker_run.sh` file to start the container.
 
 Now you can proceed with the second command of [step 1](#1-download-and-compile-the-code) (you can skip the first since you already cloned the repo).
 
@@ -111,6 +97,7 @@ docker exec -it primitive-planner bash
 ```
 
 ### Troubleshooting
+
 rviz might fail with the following error: `libGL error: MESA-LOADER: failed to retrieve device information`. Consequently, no rviz window will appear. This can be solved by adding the following option to `docker run` in `docker_run.sh`:
 
 ```diff
@@ -118,4 +105,5 @@ rviz might fail with the following error: `libGL error: MESA-LOADER: failed to r
 +    --device=/dev/dri:/dev/dri \
      primitive-planner
 ```
+
 (at least this works on Arch Linux)
