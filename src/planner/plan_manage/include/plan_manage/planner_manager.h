@@ -54,6 +54,7 @@ namespace primitive_planner
     double max_vel_;
     double arc_length_;
     double swarm_clearence_;
+    double goal_radius;
     std::string primitiveFolder_;
     SwarmTrajData swarm_traj;
 

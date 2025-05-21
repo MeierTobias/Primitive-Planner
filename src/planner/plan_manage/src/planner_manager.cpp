@@ -26,6 +26,7 @@ void PPPlannerManager::initPlanModules(ros::NodeHandle &nh, PlanningVisualizatio
   nh.param("manager/max_vel", max_vel_, -1.0);
   nh.param("manager/drone_id", drone_id, -1);
   nh.param("manager/swarm_clearence", swarm_clearence_, -1.0);
+  nh.param("goal_radius", goal_radius, 1.0);
 
 
   voxelNumX_ = int(boxX_ / voxelSize_);
@@ -291,18 +292,30 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
     // cost: lower -> better
     //rotWV * pathEndList_ + start_pt: body -> world;
     endPoint = rotWV * pathEndList_[i] + start_pt;
-    if ( (start_pt - global_goal).norm() > pathLengthMax_ || rotWV.col(0).dot(global_goal - start_pt) <= 0 ) {
-      goal_dist = (endPoint - global_goal).norm() - (start_pt - global_goal).norm();
+
+    // Check if endpoint is within the goal radius
+    double dist_to_goal = (endPoint - global_goal).norm();
+    if (dist_to_goal <= goal_radius) {
+      // Perfect goal match: set very low cost
+      mapCost.insert({-1e6, i});
+      continue;
     }
-    else {
+
+    // Otherwise proceed with scoring
+    if ((start_pt - global_goal).norm() > pathLengthMax_ || rotWV.col(0).dot(global_goal - start_pt) <= 0) {
+      goal_dist = dist_to_goal - (start_pt - global_goal).norm();
+    } else {
+      //goal_dist = std::numeric_limits<double>::max();
       goal_dist = 99999;
-      for ( size_t j = 0; j < pathAll_[i].size(); ++j )
-      {
+      for (size_t j = 0; j < pathAll_[i].size(); ++j) {
         Eigen::Vector3d traj_pt = rotWV * pathAll_[i][j] + start_pt;
-        double dist = (traj_pt - global_goal).norm();;
-        goal_dist = goal_dist > dist ? dist : goal_dist;
+        double dist = (traj_pt - global_goal).norm();
+        if (dist < goal_dist) {
+          goal_dist = dist;
+        }
       }
     }
+
     
 
     double bound_cost = 0;

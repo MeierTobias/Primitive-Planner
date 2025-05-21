@@ -39,9 +39,10 @@
         <arg name="init_x"     value="6.366197723675814"/>
         <arg name="init_y"     value="0.0"/>
         <arg name="init_z"     value="0.5"/>
-        <arg name="target0_x"   value="-6.366197723675814"/>
-        <arg name="target0_y"   value="-0.0"/>
+        <arg name="target0_x"   value="0.0"/>
+        <arg name="target0_y"   value="0.0"/>
         <arg name="target0_z"   value="0.5"/>
+        <arg name="goal_radius" value="1.0"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
         <arg name="map_size_y" value="$(arg map_size_y)"/>
         <arg name="map_size_z" value="$(arg map_size_z)"/>
@@ -52,9 +53,10 @@
         <arg name="init_x"     value="6.054613829125256"/>
         <arg name="init_y"     value="1.967263286166932"/>
         <arg name="init_z"     value="0.5"/>
-        <arg name="target0_x"   value="-6.054613829125256"/>
-        <arg name="target0_y"   value="-1.967263286166932"/>
+        <arg name="target0_x"   value="0.0"/>
+        <arg name="target0_y"   value="0.0"/>
         <arg name="target0_z"   value="0.5"/>
+        <arg name="goal_radius" value="1.0"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
         <arg name="map_size_y" value="$(arg map_size_y)"/>
         <arg name="map_size_z" value="$(arg map_size_z)"/>
@@ -65,9 +67,10 @@
         <arg name="init_x"     value="5.150362148004839"/>
         <arg name="init_y"     value="3.7419571351545566"/>
         <arg name="init_z"     value="0.5"/>
-        <arg name="target0_x"   value="-5.150362148004839"/>
-        <arg name="target0_y"   value="-3.7419571351545566"/>
+        <arg name="target0_x"   value="0.0"/>
+        <arg name="target0_y"   value="0.0"/>
         <arg name="target0_z"   value="0.5"/>
+        <arg name="goal_radius" value="1.0"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
         <arg name="map_size_y" value="$(arg map_size_y)"/>
         <arg name="map_size_z" value="$(arg map_size_z)"/>
@@ -78,9 +81,10 @@
         <arg name="init_x"     value="3.7419571351545566"/>
         <arg name="init_y"     value="5.150362148004839"/>
         <arg name="init_z"     value="0.5"/>
-        <arg name="target0_x"   value="-3.7419571351545566"/>
-        <arg name="target0_y"   value="-5.150362148004839"/>
+        <arg name="target0_x"   value="0.0"/>
+        <arg name="target0_y"   value="0.0"/>
         <arg name="target0_z"   value="0.5"/>
+        <arg name="goal_radius" value="1.0"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
         <arg name="map_size_y" value="$(arg map_size_y)"/>
         <arg name="map_size_z" value="$(arg map_size_z)"/>
@@ -91,9 +95,10 @@
         <arg name="init_x"     value="1.9672632861669324"/>
         <arg name="init_y"     value="6.054613829125256"/>
         <arg name="init_z"     value="0.5"/>
-        <arg name="target0_x"   value="-1.9672632861669324"/>
-        <arg name="target0_y"   value="-6.054613829125256"/>
+        <arg name="target0_x"   value="0.0"/>
+        <arg name="target0_y"   value="0.0"/>
         <arg name="target0_z"   value="0.5"/>
+        <arg name="goal_radius" value="1.0"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
         <arg name="map_size_y" value="$(arg map_size_y)"/>
         <arg name="map_size_z" value="$(arg map_size_z)"/>
@@ -104,9 +109,10 @@
         <arg name="init_x"     value="3.898171832519376e-16"/>
         <arg name="init_y"     value="6.366197723675814"/>
         <arg name="init_z"     value="0.5"/>
-        <arg name="target0_x"   value="-3.898171832519376e-16"/>
-        <arg name="target0_y"   value="-6.366197723675814"/>
+        <arg name="target0_x"   value="0.0"/>
+        <arg name="target0_y"   value="0.0"/>
         <arg name="target0_z"   value="0.5"/>
+        <arg name="goal_radius" value="1.0"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
         <arg name="map_size_y" value="$(arg map_size_y)"/>
         <arg name="map_size_z" value="$(arg map_size_z)"/>
@@ -117,9 +123,10 @@
         <arg name="init_x"     value="-1.9672632861669317"/>
         <arg name="init_y"     value="6.054613829125257"/>
         <arg name="init_z"     value="0.5"/>
-        <arg name="target0_x"   value="1.9672632861669317"/>
-        <arg name="target0_y"   value="-6.054613829125257"/>
+        <arg name="target0_x"   value="0.0"/>
+        <arg name="target0_y"   value="0.0"/>
         <arg name="target0_z"   value="0.5"/>
+        <arg name="goal_radius" value="1.0"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
         <arg name="map_size_y" value="$(arg map_size_y)"/>
         <arg name="map_size_z" value="$(arg map_size_z)"/>
@@ -130,9 +137,10 @@
         <arg name="init_x"     value="-3.7419571351545557"/>
         <arg name="init_y"     value="5.150362148004839"/>
         <arg name="init_z"     value="0.5"/>
-        <arg name="target0_x"   value="3.7419571351545557"/>
-        <arg name="target0_y"   value="-5.150362148004839"/>
+        <arg name="target0_x"   value="0.0"/>
+        <arg name="target0_y"   value="0.0"/>
         <arg name="target0_z"   value="0.5"/>
+        <arg name="goal_radius" value="1.0"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
         <arg name="map_size_y" value="$(arg map_size_y)"/>
         <arg name="map_size_z" value="$(arg map_size_z)"/>
@@ -143,9 +151,10 @@
         <arg name="init_x"     value="-5.150362148004839"/>
         <arg name="init_y"     value="3.741957135154557"/>
         <arg name="init_z"     value="0.5"/>
-        <arg name="target0_x"   value="5.150362148004839"/>
-        <arg name="target0_y"   value="-3.741957135154557"/>
+        <arg name="target0_x"   value="0.0"/>
+        <arg name="target0_y"   value="0.0"/>
         <arg name="target0_z"   value="0.5"/>
+        <arg name="goal_radius" value="1.0"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
         <arg name="map_size_y" value="$(arg map_size_y)"/>
         <arg name="map_size_z" value="$(arg map_size_z)"/>
@@ -156,9 +165,10 @@
         <arg name="init_x"     value="-6.054613829125256"/>
         <arg name="init_y"     value="1.9672632861669326"/>
         <arg name="init_z"     value="0.5"/>
-        <arg name="target0_x"   value="6.054613829125256"/>
-        <arg name="target0_y"   value="-1.9672632861669326"/>
+        <arg name="target0_x"   value="0.0"/>
+        <arg name="target0_y"   value="0.0"/>
         <arg name="target0_z"   value="0.5"/>
+        <arg name="goal_radius" value="1.0"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
         <arg name="map_size_y" value="$(arg map_size_y)"/>
         <arg name="map_size_z" value="$(arg map_size_z)"/>
@@ -169,9 +179,10 @@
         <arg name="init_x"     value="-6.366197723675814"/>
         <arg name="init_y"     value="7.796343665038752e-16"/>
         <arg name="init_z"     value="0.5"/>
-        <arg name="target0_x"   value="6.366197723675814"/>
-        <arg name="target0_y"   value="-7.796343665038752e-16"/>
+        <arg name="target0_x"   value="0.0"/>
+        <arg name="target0_y"   value="0.0"/>
         <arg name="target0_z"   value="0.5"/>
+        <arg name="goal_radius" value="1.0"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
         <arg name="map_size_y" value="$(arg map_size_y)"/>
         <arg name="map_size_z" value="$(arg map_size_z)"/>
@@ -182,9 +193,10 @@
         <arg name="init_x"     value="-6.054613829125257"/>
         <arg name="init_y"     value="-1.9672632861669312"/>
         <arg name="init_z"     value="0.5"/>
-        <arg name="target0_x"   value="6.054613829125257"/>
-        <arg name="target0_y"   value="1.9672632861669312"/>
+        <arg name="target0_x"   value="0.0"/>
+        <arg name="target0_y"   value="0.0"/>
         <arg name="target0_z"   value="0.5"/>
+        <arg name="goal_radius" value="1.0"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
         <arg name="map_size_y" value="$(arg map_size_y)"/>
         <arg name="map_size_z" value="$(arg map_size_z)"/>
@@ -195,9 +207,10 @@
         <arg name="init_x"     value="-5.15036214800484"/>
         <arg name="init_y"     value="-3.7419571351545557"/>
         <arg name="init_z"     value="0.5"/>
-        <arg name="target0_x"   value="5.15036214800484"/>
-        <arg name="target0_y"   value="3.7419571351545557"/>
+        <arg name="target0_x"   value="0.0"/>
+        <arg name="target0_y"   value="0.0"/>
         <arg name="target0_z"   value="0.5"/>
+        <arg name="goal_radius" value="1.0"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
         <arg name="map_size_y" value="$(arg map_size_y)"/>
         <arg name="map_size_z" value="$(arg map_size_z)"/>
@@ -208,9 +221,10 @@
         <arg name="init_x"     value="-3.741957135154557"/>
         <arg name="init_y"     value="-5.150362148004839"/>
         <arg name="init_z"     value="0.5"/>
-        <arg name="target0_x"   value="3.741957135154557"/>
-        <arg name="target0_y"   value="5.150362148004839"/>
+        <arg name="target0_x"   value="0.0"/>
+        <arg name="target0_y"   value="0.0"/>
         <arg name="target0_z"   value="0.5"/>
+        <arg name="goal_radius" value="1.0"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
         <arg name="map_size_y" value="$(arg map_size_y)"/>
         <arg name="map_size_z" value="$(arg map_size_z)"/>
@@ -221,9 +235,10 @@
         <arg name="init_x"     value="-1.967263286166933"/>
         <arg name="init_y"     value="-6.054613829125256"/>
         <arg name="init_z"     value="0.5"/>
-        <arg name="target0_x"   value="1.967263286166933"/>
-        <arg name="target0_y"   value="6.054613829125256"/>
+        <arg name="target0_x"   value="0.0"/>
+        <arg name="target0_y"   value="0.0"/>
         <arg name="target0_z"   value="0.5"/>
+        <arg name="goal_radius" value="1.0"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
         <arg name="map_size_y" value="$(arg map_size_y)"/>
         <arg name="map_size_z" value="$(arg map_size_z)"/>
@@ -234,9 +249,10 @@
         <arg name="init_x"     value="-1.1694515497558127e-15"/>
         <arg name="init_y"     value="-6.366197723675814"/>
         <arg name="init_z"     value="0.5"/>
-        <arg name="target0_x"   value="1.1694515497558127e-15"/>
-        <arg name="target0_y"   value="6.366197723675814"/>
+        <arg name="target0_x"   value="0.0"/>
+        <arg name="target0_y"   value="0.0"/>
         <arg name="target0_z"   value="0.5"/>
+        <arg name="goal_radius" value="1.0"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
         <arg name="map_size_y" value="$(arg map_size_y)"/>
         <arg name="map_size_z" value="$(arg map_size_z)"/>
@@ -247,9 +263,10 @@
         <arg name="init_x"     value="1.9672632861669308"/>
         <arg name="init_y"     value="-6.054613829125257"/>
         <arg name="init_z"     value="0.5"/>
-        <arg name="target0_x"   value="-1.9672632861669308"/>
-        <arg name="target0_y"   value="6.054613829125257"/>
+        <arg name="target0_x"   value="0.0"/>
+        <arg name="target0_y"   value="0.0"/>
         <arg name="target0_z"   value="0.5"/>
+        <arg name="goal_radius" value="1.0"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
         <arg name="map_size_y" value="$(arg map_size_y)"/>
         <arg name="map_size_z" value="$(arg map_size_z)"/>
@@ -260,9 +277,10 @@
         <arg name="init_x"     value="3.7419571351545553"/>
         <arg name="init_y"     value="-5.15036214800484"/>
         <arg name="init_z"     value="0.5"/>
-        <arg name="target0_x"   value="-3.7419571351545553"/>
-        <arg name="target0_y"   value="5.15036214800484"/>
+        <arg name="target0_x"   value="0.0"/>
+        <arg name="target0_y"   value="0.0"/>
         <arg name="target0_z"   value="0.5"/>
+        <arg name="goal_radius" value="1.0"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
         <arg name="map_size_y" value="$(arg map_size_y)"/>
         <arg name="map_size_z" value="$(arg map_size_z)"/>
@@ -273,9 +291,10 @@
         <arg name="init_x"     value="5.150362148004839"/>
         <arg name="init_y"     value="-3.741957135154558"/>
         <arg name="init_z"     value="0.5"/>
-        <arg name="target0_x"   value="-5.150362148004839"/>
-        <arg name="target0_y"   value="3.741957135154558"/>
+        <arg name="target0_x"   value="0.0"/>
+        <arg name="target0_y"   value="0.0"/>
         <arg name="target0_z"   value="0.5"/>
+        <arg name="goal_radius" value="1.0"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
         <arg name="map_size_y" value="$(arg map_size_y)"/>
         <arg name="map_size_z" value="$(arg map_size_z)"/>
@@ -286,9 +305,10 @@
         <arg name="init_x"     value="6.054613829125256"/>
         <arg name="init_y"     value="-1.9672632861669335"/>
         <arg name="init_z"     value="0.5"/>
-        <arg name="target0_x"   value="-6.054613829125256"/>
-        <arg name="target0_y"   value="1.9672632861669335"/>
+        <arg name="target0_x"   value="0.0"/>
+        <arg name="target0_y"   value="0.0"/>
         <arg name="target0_z"   value="0.5"/>
+        <arg name="goal_radius" value="1.0"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
         <arg name="map_size_y" value="$(arg map_size_y)"/>
         <arg name="map_size_z" value="$(arg map_size_z)"/>

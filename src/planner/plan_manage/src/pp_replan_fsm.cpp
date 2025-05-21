@@ -45,7 +45,7 @@ void PPReplanFSM::init(ros::NodeHandle &nh)
 
     exec_state_ = FSM_EXEC_STATE::INIT;
     nh.param("fsm/flight_type", target_type_, 2);
-    nh.param("fsm/thresh_replan_time", replan_thresh_, 1.0);
+    nh.param("fsm/thresh_replan_time", replan_thresh_, 0.2);
     nh.param("fsm/realworld_experiment", flag_realworld_experiment_, false);
     nh.param("fsm/fail_safe", enable_fail_safe_, true);
     nh.param("fsm/no_replan_thresh", no_replan_thresh_, 4.0);
@@ -723,27 +723,33 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
     case EXEC_TRAJ:
     {
         double delta_t = (ros::Time::now() - start_time_).toSec();
-        if((odom_pos_ - global_goal_).norm() < no_replan_thresh_ ){
-            if(goal_id_ == (waypoint_num_ - 1)){
+        double dist_to_goal = (odom_pos_ - global_goal_).norm();
+        if (dist_to_goal < planner_manager_->goal_radius) {
+            if (goal_id_ == (waypoint_num_ - 1)) {
+                // Final goal reached
+                global_goal_ = odom_pos_;  // snap goal to current position
+                ROS_INFO("[FSM] Drone %d reached final goal within radius %.2f m. Dist: %.2f m. Snapping to current position: (%.2f, %.2f, %.2f)",
+                        planner_manager_->drone_id,
+                        planner_manager_->goal_radius,
+                        dist_to_goal,
+                        odom_pos_.x(), odom_pos_.y(), odom_pos_.z());
                 changeFSMExecState(APPROACH_GOAL, "FSM");
-                cout << "odom_pos_=" <<odom_pos_.transpose() << " global_goal_=" <<global_goal_.transpose() << " norm=" << (odom_pos_ - global_goal_).norm() << " thres=" << no_replan_thresh_ <<endl;
-            } 
-            else{
+            } else {
+                // Proceed to next goal
                 goal_id_++;
                 global_goal_ = all_goal_[goal_id_];
-
-                // send global goal
+                ROS_INFO("[FSM] Advancing to next goal ID %d, New goal: (%.2f, %.2f, %.2f)",
+                        goal_id_,
+                        global_goal_.x(), global_goal_.y(), global_goal_.z());
+        
                 std_msgs::Float64MultiArray goal_msg;
-                for(int i = 0; i < 3; i++){
-                  goal_msg.data.push_back(global_goal_(i));
-                }
+                goal_msg.data = {global_goal_.x(), global_goal_.y(), global_goal_.z()};
                 global_pub_.publish(goal_msg);
             }
-        }
-        else if(delta_t > replan_thresh_){
+        } else if (delta_t > replan_thresh_) {
             changeFSMExecState(REPLAN_TRAJ, "FSM");
         }
-
+      
       break;
     }
 
