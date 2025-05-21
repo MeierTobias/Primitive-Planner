@@ -125,5 +125,11 @@ If you are working with vscode you can add the following lines to your `settings
 "[python]": {
      "editor.defaultFormatter": "ms-python.black-formatter"
 },
+"[xml]": {
+     "editor.defaultFormatter": "redhat.vscode-xml",
+},
+"xml.format.maxLineWidth": 0,
+"xml.format.spaceBeforeEmptyCloseTag": false,
+
 "editor.formatOnSave": true
 ```
