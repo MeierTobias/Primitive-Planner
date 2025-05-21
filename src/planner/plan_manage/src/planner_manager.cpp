@@ -438,20 +438,20 @@ void PPPlannerManager::readAgentCorrespondences()
     FILE *filePtr = fopen(fileName.c_str(), "rb");
     if (filePtr == NULL)
     {
-      printf("\nCannot read input [agentcorrespondence files], i=%d, exit.\n\n", i);
+      ROS_ERROR("Cannot read input [agentcorrespondence files], i=%d, exit.", i);
       exit(1);
     }
 
     std::vector<std::vector<int>> velCorrespondences(voxelNumAll_, std::vector<int>(0, 0));
 
-    int val1, val2, val3, voxelID, pathID, tStart, tEnd;
+    int voxelID, pathID, tStart, tEnd;
     for (int j = 0; j < voxelNumAll_; j++)
     {
 
-      val1 = fread(&voxelID, 4, 1, filePtr);
+      int val1 = fread(&voxelID, 4, 1, filePtr);
       if (val1 != 1)
       {
-        printf("\nError reading [voxelID] input files, exit.\n\n");
+        ROS_ERROR("Error reading [voxelID] input files, exit.");
         exit(1);
       }
 
@@ -460,7 +460,7 @@ void PPPlannerManager::readAgentCorrespondences()
         val1 = fread(&pathID, 4, 1, filePtr);
         if (val1 != 1)
         {
-          printf("\nError reading [pathID] input files, exit.\n\n");
+          ROS_ERROR("Error reading [pathID] input files, exit.");
           exit(1);
         }
 
@@ -468,8 +468,14 @@ void PPPlannerManager::readAgentCorrespondences()
 
         if (pathID != -1)
         {
-          val2 = fread(&tStart, 4, 1, filePtr);
-          val3 = fread(&tEnd, 4, 1, filePtr);
+          int val2 = fread(&tStart, 4, 1, filePtr);
+          int val3 = fread(&tEnd, 4, 1, filePtr);
+
+          if (val2 != 1 || val3 != 1)
+          {
+            ROS_ERROR("Error reading [tStart] or [tEnd] input files, exit.");
+            exit(1);
+          }
 
           if (voxelID >= 0 && voxelID < voxelNumAll_ && pathID >= 0 && pathID < pathNum_)
           {
@@ -557,7 +563,6 @@ int PPPlannerManager::readPathList()
     exit(1);
   }
 
-  int val1, val2, val3, val4;
   double endX, endY, endZ;
   int pathID;
   int totalLines = 0;
@@ -586,14 +591,19 @@ void PPPlannerManager::readPathAll()
   FILE *filePtr = fopen(fileName.c_str(), "r");
   if (filePtr == NULL)
   {
-    printf("\nCannot read [path_all] input files, exit.\n\n");
+    ROS_ERROR("Cannot read [path_all] input files, exit.");
     exit(1);
   }
 
   int pointNum, val_num, val1, val2, val3, val4, pathID, pathID_last = -666;
   Eigen::Vector3d pos, pos_last;
-  val_num = fscanf(filePtr, "%d", &pointNum);
   double length = 0;
+  val_num = fscanf(filePtr, "%d", &pointNum);
+  if (val_num != 1)
+  {
+    ROS_ERROR("Error reading [pointNum] input files, exit.");
+    exit(1);
+  }
 
   for (int i = 0; i < pointNum; i++)
   {
@@ -604,7 +614,7 @@ void PPPlannerManager::readPathAll()
 
     if (val1 != 1 || val2 != 1 || val3 != 1 || val4 != 1)
     {
-      printf("\nError reading [path_all] input files, exit.\n\n");
+      ROS_ERROR("Error reading [path_all] input files, exit.");
       exit(1);
     }
 
