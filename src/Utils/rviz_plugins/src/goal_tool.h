@@ -30,12 +30,12 @@
 #ifndef RVIZ_GOAL_TOOL_H
 #define RVIZ_GOAL_TOOL_H
 
-#ifndef Q_MOC_RUN  // See: https://bugreports.qt-project.org/browse/QTBUG-22829
-# include <QObject>
+#ifndef Q_MOC_RUN // See: https://bugreports.qt-project.org/browse/QTBUG-22829
+#include <QObject>
 
-# include <ros/ros.h>
+#include <ros/ros.h>
 
-# include "pose_tool.h"
+#include "pose_tool.h"
 #endif
 
 namespace rviz
@@ -44,12 +44,14 @@ class Arrow;
 class DisplayContext;
 class StringProperty;
 
-class Goal3DTool: public Pose3DTool
+class Goal3DTool : public Pose3DTool
 {
-Q_OBJECT
+  Q_OBJECT
 public:
   Goal3DTool();
-  virtual ~Goal3DTool() {}
+  virtual ~Goal3DTool()
+  {
+  }
   virtual void onInitialize();
 
 protected:
@@ -62,11 +64,9 @@ private:
   ros::NodeHandle nh_;
   ros::Publisher pub_goal_, pub_droneID_goal_;
 
-  StringProperty* topic_property_;
+  StringProperty *topic_property_;
 };
 
-}
+} // namespace rviz
 
 #endif
-
-

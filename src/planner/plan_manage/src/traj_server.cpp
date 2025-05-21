@@ -65,8 +65,10 @@ double yaw_diff(double yaw1, double yaw2)
 
 double limit_yaw(double yaw)
 {
-  if ( yaw > M_PI ) yaw -= 2 * M_PI;
-  if ( yaw < -M_PI ) yaw += 2 * M_PI;
+  if (yaw > M_PI)
+    yaw -= 2 * M_PI;
+  if (yaw < -M_PI)
+    yaw += 2 * M_PI;
 
   return yaw;
 }
@@ -97,7 +99,7 @@ void publish_cmd(Vector3d p, Vector3d v, Vector3d a, double y, double yd)
   pos_cmd_pub.publish(cmd);
 
   last_pos_ = p;
-  last_vel_ = v; 
+  last_vel_ = v;
 }
 
 void heartbeatCallback(std_msgs::EmptyPtr msg)
@@ -107,34 +109,34 @@ void heartbeatCallback(std_msgs::EmptyPtr msg)
 
 void odometryCallback(const nav_msgs::OdometryConstPtr msg)
 {
-    odom_pos_(0) = msg->pose.pose.position.x;
-    odom_pos_(1) = msg->pose.pose.position.y;
-    odom_pos_(2) = msg->pose.pose.position.z;
+  odom_pos_(0) = msg->pose.pose.position.x;
+  odom_pos_(1) = msg->pose.pose.position.y;
+  odom_pos_(2) = msg->pose.pose.position.z;
 
-    odom_q_.x() = msg->pose.pose.orientation.x;
-    odom_q_.y() = msg->pose.pose.orientation.y;
-    odom_q_.z() = msg->pose.pose.orientation.z;
-    odom_q_.w() = msg->pose.pose.orientation.w;
+  odom_q_.x() = msg->pose.pose.orientation.x;
+  odom_q_.y() = msg->pose.pose.orientation.y;
+  odom_q_.z() = msg->pose.pose.orientation.z;
+  odom_q_.w() = msg->pose.pose.orientation.w;
 
-    Eigen::Vector3d x_dir = odom_q_.toRotationMatrix().col(0);
-    odom_yaw_ = atan2(x_dir(1), x_dir(0));
-    // std::cout << "odom_yaw_=" << odom_yaw_ <<std::endl;
+  Eigen::Vector3d x_dir = odom_q_.toRotationMatrix().col(0);
+  odom_yaw_ = atan2(x_dir(1), x_dir(0));
+  // std::cout << "odom_yaw_=" << odom_yaw_ <<std::endl;
 
-    have_odom_ = true;
+  have_odom_ = true;
 }
 
 void stopCommandCallback(const std_msgs::Float64MultiArrayPtr msg)
 {
   Eigen::Vector3d stop_pos(msg->data[0], msg->data[1], msg->data[2]);
   ROS_WARN("[TRAJ_SERVER] No suitable path exists 2!!!");
-  publish_cmd(stop_pos, Vector3d::Zero(), Vector3d::Zero(),  last_yaw_, 0);
-  //TODO: After emergency stop, not restart
-  // receive_traj_ = false;
+  publish_cmd(stop_pos, Vector3d::Zero(), Vector3d::Zero(), last_yaw_, 0);
+  // TODO: After emergency stop, not restart
+  //  receive_traj_ = false;
 }
 
 void goalEndCallback(const std_msgs::Float64MultiArrayPtr msg)
 {
-  if(!have_odom_)
+  if (!have_odom_)
   {
     ROS_ERROR("[traj_server] no odom!");
     return;
@@ -144,7 +146,7 @@ void goalEndCallback(const std_msgs::Float64MultiArrayPtr msg)
   global_goal_(1) = msg->data[1];
   global_goal_(2) = msg->data[2];
 
-  if ( !receive_traj_ )
+  if (!receive_traj_)
     require_yaw_turning_ = true;
 
   init_odom_pos_ = odom_pos_;
@@ -161,7 +163,7 @@ void goalEndCallback(const std_msgs::Float64MultiArrayPtr msg)
 
 void yawCmdCallback(const std_msgs::Float64Ptr msg)
 {
-  if(!have_odom_)
+  if (!have_odom_)
   {
     ROS_ERROR("[traj_server] no odom!");
     return;
@@ -176,7 +178,6 @@ void yawCmdCallback(const std_msgs::Float64Ptr msg)
 
   require_yaw_turning_external_ = true;
   receive_traj_ = false;
-  
 
   // std::cout << "yaw_cmd_external_: " << yaw_cmd_external_ << std::endl;
 }
@@ -191,8 +192,8 @@ void trajCallback(traj_utils::swarmPrimitiveTrajPtr msg)
   Eigen::Vector3d start_pos;
   start_pos << msg->start_p[0], msg->start_p[1], msg->start_p[2];
   Eigen::Matrix<double, 3, 3> Rwv;
-  Rwv << msg->rot_mat[0], msg->rot_mat[1], msg->rot_mat[2], 
-      msg->rot_mat[3], msg->rot_mat[4], msg->rot_mat[5], 
+  Rwv << msg->rot_mat[0], msg->rot_mat[1], msg->rot_mat[2],
+      msg->rot_mat[3], msg->rot_mat[4], msg->rot_mat[5],
       msg->rot_mat[6], msg->rot_mat[7], msg->rot_mat[8];
 
   path_id_.clear();
@@ -203,7 +204,8 @@ void trajCallback(traj_utils::swarmPrimitiveTrajPtr msg)
   std::string a = primitiveFolder_ + "/trajectory/";
   std::string b = "/";
   std::string c = "_trajectory.ply";
-  while(true){
+  while (true)
+  {
     std::stringstream ss;
     ss << a << msg->vel_id << b << path_id_[idx] << c;
     // std::string fileName = "../../primitive_library/trajectory/" + vel_id + "/" + path_id_[idx] + "_trajectory.ply";
@@ -212,16 +214,19 @@ void trajCallback(traj_utils::swarmPrimitiveTrajPtr msg)
     // std::cout << "file: " << fileName << std::endl;
 
     filePtr = fopen(fileName.c_str(), "r");
-    if (filePtr == NULL) {
-      printf ("\n[TRAJ_SERVER]path %d not exist for vel_id %d.\n\n", path_id_[idx], msg->vel_id);
+    if (filePtr == NULL)
+    {
+      printf("\n[TRAJ_SERVER]path %d not exist for vel_id %d.\n\n", path_id_[idx], msg->vel_id);
       idx++;
     }
-    else{
+    else
+    {
       // success
       break;
     }
 
-    if(idx >= (int)path_id_.size()){
+    if (idx >= (int)path_id_.size())
+    {
       ROS_WARN("[TRAJ_SERVER]No suitable path exists 1!!!");
       publish_cmd(last_pos_, Vector3d::Zero(), Vector3d::Zero(), last_yaw_, 0);
     }
@@ -237,7 +242,8 @@ void trajCallback(traj_utils::swarmPrimitiveTrajPtr msg)
   traj_vel_.clear();
   traj_acc_.clear();
 
-  for(int i = 0; i < pointNum; i++){
+  for (int i = 0; i < pointNum; i++)
+  {
     val1 = fscanf(filePtr, "%lf", &pos_x);
     val2 = fscanf(filePtr, "%lf", &pos_y);
     val3 = fscanf(filePtr, "%lf", &pos_z);
@@ -248,12 +254,13 @@ void trajCallback(traj_utils::swarmPrimitiveTrajPtr msg)
     val8 = fscanf(filePtr, "%lf", &acc_y);
     val9 = fscanf(filePtr, "%lf", &acc_z);
 
-    if (val1 != 1 || val2 != 1 || val3 != 1 || val4 != 1 || val5 != 1 || val6 != 1 || val7 != 1 || val8 != 1 || val9 != 1) {
-      printf ("\nError reading input files, exit.\n\n");
-        exit(1);
+    if (val1 != 1 || val2 != 1 || val3 != 1 || val4 != 1 || val5 != 1 || val6 != 1 || val7 != 1 || val8 != 1 || val9 != 1)
+    {
+      printf("\nError reading input files, exit.\n\n");
+      exit(1);
     }
 
-    // std::cout << "trajCallback 4" << std::endl;    
+    // std::cout << "trajCallback 4" << std::endl;
     // velocity frame -> world frame start_pos + Rwv * pos
     pos_body = Eigen::Vector3d(pos_x, pos_y, pos_z);
     vel_body = Eigen::Vector3d(vel_x, vel_y, vel_z);
@@ -271,7 +278,8 @@ void trajCallback(traj_utils::swarmPrimitiveTrajPtr msg)
 
   // last end point position
   std_msgs::Float64MultiArray pos_msg;
-  for(int i = 0; i < 3; i++){
+  for (int i = 0; i < 3; i++)
+  {
     pos_msg.data.push_back(pos_world(i));
   }
   select_path_end_pub.publish(pos_msg);
@@ -294,14 +302,14 @@ void polytrajCallback(traj_utils::PolynomialPtr msg)
   traj_pos_.clear();
   traj_vel_.clear();
   traj_acc_.clear();
-  for ( double t=0; t<=msg->duration + 1e-5; t+=0.01 )
+  for (double t = 0; t <= msg->duration + 1e-5; t += 0.01)
   {
-    double tt1 = pow(t,1), tt2 = pow(t,2), tt3 = pow(t,3), tt4 = pow(t,4), tt5 = pow(t,5);
+    double tt1 = pow(t, 1), tt2 = pow(t, 2), tt3 = pow(t, 3), tt4 = pow(t, 4), tt5 = pow(t, 5);
     Eigen::Matrix<double, 3, 6> TT;
     TT << tt5, tt4, tt3, tt2, tt1, 1,
-      5*tt4, 4*tt3, 3*tt2, 2*tt1, 1, 0,
-      20*tt3, 12*tt2, 6*tt1, 2, 0, 0;
-    
+        5 * tt4, 4 * tt3, 3 * tt2, 2 * tt1, 1, 0,
+        20 * tt3, 12 * tt2, 6 * tt1, 2, 0, 0;
+
     Eigen::Matrix3d pva = coeff * TT.transpose();
     traj_pos_.push_back(pva.col(0));
     traj_vel_.push_back(pva.col(1));
@@ -333,17 +341,17 @@ std::pair<double, double> calculate_yaw(double t_cur, Eigen::Vector3d &pos, doub
   //                       : last_yaw_;
 
   int idx = floor(t_cur * 100);
-  idx = min(idx, (int)(traj_vel_.size()-1));
+  idx = min(idx, (int)(traj_vel_.size() - 1));
   Eigen::Vector3d dir = traj_vel_[idx];
   double yaw_des = dir.norm() > 0.1
-                        ? atan2(traj_vel_[idx](1), traj_vel_[idx](0))
-                        : last_yaw_;
+                       ? atan2(traj_vel_[idx](1), traj_vel_[idx](0))
+                       : last_yaw_;
 
   double yawdot = 0;
   double diff = yaw_diff(yaw_des, last_yaw_);
   int yaw_dir = diff > 0 ? 1 : -1;
   double yaw_temp = limit_yaw(last_yaw_ + yaw_dir * YAW_DOT_MAX_PER_SEC * loop_time_);
-  if ( yaw_dir * yaw_diff(yaw_des, yaw_temp) > 0 )
+  if (yaw_dir * yaw_diff(yaw_des, yaw_temp) > 0)
   {
     yaw_yawdot.first = yaw_temp;
     yaw_yawdot.second = yaw_dir * YAW_DOT_MAX_PER_SEC;
@@ -367,7 +375,7 @@ void cmdCallback(const ros::TimerEvent &e)
     return;
   }
 
-  if ( receive_traj_ )
+  if (receive_traj_)
   {
     ros::Time time_now = ros::Time::now();
 
@@ -380,8 +388,8 @@ void cmdCallback(const ros::TimerEvent &e)
     }
 
     double t_cur = (time_now - start_time_).toSec();
-    // std::cout << "t_cur: " << t_cur << std::endl; 
-    int idx_t = floor(t_cur *100) + time_delay_idx_; // 1000/10 10ms-traj resolution
+    // std::cout << "t_cur: " << t_cur << std::endl;
+    int idx_t = floor(t_cur * 100) + time_delay_idx_; // 1000/10 10ms-traj resolution
 
     // TODO:插值时间 6ms按照0处理 有偏移
     // std::cout << "idx_t: " << idx_t << std::endl;
@@ -390,7 +398,7 @@ void cmdCallback(const ros::TimerEvent &e)
     std::pair<double, double> yaw_yawdot(0, 0);
 
     static ros::Time time_last = ros::Time::now();
-    if (t_cur <= traj_duration_ && t_cur >= 0.0 && idx_t < traj_pos_.size() ) // to make sure the "vel = 0" command is published 
+    if (t_cur <= traj_duration_ && t_cur >= 0.0 && idx_t < traj_pos_.size()) // to make sure the "vel = 0" command is published
     {
       pos = traj_pos_[idx_t];
       vel = traj_vel_[idx_t];
@@ -401,35 +409,34 @@ void cmdCallback(const ros::TimerEvent &e)
       /*** calculate yaw ***/
 
       // compute total length
-      if(have_first_){
-        // TODO:[revise] to launch 
+      if (have_first_)
+      {
+        // TODO:[revise] to launch
         integ_dis_ = (pos - Eigen::Vector3d(_init_x, _init_y, _init_z)).norm();
         have_first_ = false;
       }
-      else{
+      else
+      {
         integ_dis_ = (pos - last_pos_).norm();
         integ_time_ = (time_now - time_last).toSec();
       }
       total_length_ += integ_dis_;
       total_time_ += integ_time_;
 
-
       time_last = time_now;
       last_yaw_ = yaw_yawdot.first;
       last_pos_ = pos;
-      last_vel_ = vel; 
+      last_vel_ = vel;
 
       // publish
       publish_cmd(pos, vel, acc, yaw_yawdot.first, yaw_yawdot.second);
-
     }
     else
     {
       receive_traj_ = false;
     }
-    
   }
-  else if ( (require_yaw_turning_ || require_yaw_turning_external_) && have_odom_ )
+  else if ((require_yaw_turning_ || require_yaw_turning_external_) && have_odom_)
   {
     const double YAW_DOT = M_PI / 2;
 
@@ -439,22 +446,21 @@ void cmdCallback(const ros::TimerEvent &e)
     init_odom_yaw_ = limit_yaw(init_odom_yaw_);
 
     double yaw_des = yaw_to_goal_;
-    if ( require_yaw_turning_external_ )
+    if (require_yaw_turning_external_)
       yaw_des = yaw_cmd_external_;
 
-    if ( yaw_dir_ * yaw_diff(yaw_des, init_odom_yaw_) < 0 )
+    if (yaw_dir_ * yaw_diff(yaw_des, init_odom_yaw_) < 0)
     {
       require_yaw_turning_ = false;
       require_yaw_turning_external_ = false;
       yaw_cmd_external_ = false;
     }
-    
+
     last_yaw_ = init_odom_yaw_;
     publish_cmd(init_odom_pos_, Eigen::Vector3d::Zero(), Vector3d::Zero(), init_odom_yaw_, yaw_dir_ * YAW_DOT);
 
     // cout << "C init_odom_pos_=" <<init_odom_pos_.transpose() << " C=" << require_yaw_turning_ <<" D=" << require_yaw_turning_external_ <<endl;
   }
-
 }
 
 int main(int argc, char **argv)
@@ -465,9 +471,9 @@ int main(int argc, char **argv)
   nh.param<std::string>("traj_server/primitiveFolder", primitiveFolder_, "none");
   nh.param("traj_server/max_vel", max_vel_, -1.0);
   nh.param("traj_server/time_delay_idx", time_delay_idx_, 1);
-  nh.param("init_x", _init_x,  0.0);
-  nh.param("init_y", _init_y,  0.0);
-  nh.param("init_z", _init_z,  0.0);
+  nh.param("init_x", _init_x, 0.0);
+  nh.param("init_y", _init_y, 0.0);
+  nh.param("init_z", _init_z, 0.0);
 
   ros::Subscriber selected_path_id = nh.subscribe("planning/selected_path_id", 10, trajCallback);
   ros::Subscriber heartbeat_sub = nh.subscribe("heartbeat", 10, heartbeatCallback);

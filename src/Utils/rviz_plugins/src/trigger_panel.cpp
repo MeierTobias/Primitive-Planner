@@ -5,7 +5,8 @@
 namespace rviz
 {
 
-RvizTriggerPanel::RvizTriggerPanel(QWidget* parent) : Panel(parent)
+RvizTriggerPanel::RvizTriggerPanel(QWidget *parent)
+  : Panel(parent)
 {
   // Create a label and a button, displayed vertically (the V in VBox means vertical)
   const auto layout = new QVBoxLayout(this);
@@ -36,7 +37,7 @@ void RvizTriggerPanel::buttonActivated()
   pub_trigger_.publish(message);
 }
 
-}  // namespace rviz
+} // namespace rviz
 
 #include <pluginlib/class_list_macros.h>
 

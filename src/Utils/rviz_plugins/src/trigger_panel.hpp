@@ -12,7 +12,7 @@ class RvizTriggerPanel : public rviz::Panel
 {
   Q_OBJECT
 public:
-  explicit RvizTriggerPanel(QWidget * parent = 0);
+  explicit RvizTriggerPanel(QWidget *parent = 0);
   ~RvizTriggerPanel() override;
 
   void onInitialize() override;
@@ -21,12 +21,12 @@ protected:
   ros::NodeHandle nh_;
   ros::Publisher pub_trigger_;
 
-  QLabel* label_;
-  QPushButton* button_;
+  QLabel *label_;
+  QPushButton *button_;
 
 private Q_SLOTS:
   void buttonActivated();
 };
-}  // namespace rviz
+} // namespace rviz
 
-#endif //RVIZ_TRIGGER_PANEL_H
+#endif // RVIZ_TRIGGER_PANEL_H

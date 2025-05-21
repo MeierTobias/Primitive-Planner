@@ -87,5 +87,12 @@
         "/home/hjl/project/A_personal_project/Primitive-Planner/devel/lib/python2.7/dist-packages",
         "/home/hjl/project/A_personal_project/primitive_swarm/devel/lib/python2.7/dist-packages",
         "/opt/ros/melodic/lib/python2.7/dist-packages"
-    ]
+    ],
+    "[cpp]": {
+        "editor.defaultFormatter": "xaver.clang-format"
+    },
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.black-formatter"
+    },
+    "editor.formatOnSave": true
 }

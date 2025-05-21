@@ -7,11 +7,14 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <sensor_msgs/PointCloud2.h>
 
-namespace mocka {
+namespace mocka
+{
 
-class Maps {
+class Maps
+{
 public:
-  typedef struct BasicInfo {
+  typedef struct BasicInfo
+  {
     ros::NodeHandle *nh_private;
     int sizeX;
     int sizeY;
@@ -46,7 +49,8 @@ private:
   void optimizeMap();
 };
 
-class MazePoint {
+class MazePoint
+{
 private:
   pcl::PointXYZ point;
   double dist1;
