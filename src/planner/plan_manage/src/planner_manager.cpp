@@ -668,70 +668,60 @@ void PPPlannerManager::visAllPaths(const Eigen::Vector3d &start_pt, const Eigen:
 
 bool PPPlannerManager::labelAgentCollisionPaths(const Eigen::Vector3d &start_pt, const Eigen::Vector3d &start_v, const double &start_time, const Eigen::Matrix3d &rotVW)
 {
-  // Eigen::Matrix3d rotVW = rotWV.inverse();
+  // determine velocity id from start velocity
   int vel_id = int(round(start_v.norm() * 10));
   if (vel_id > int(max_vel_ * 10))
   {
     vel_id = max_vel_ * 10;
   }
 
-  Eigen::Vector3d pos_v;
-  double other_start_time, other_cur_time;
-
-  // std::cout << "swarm_traj.size(): " << swarm_traj.size() <<  std::endl;
+  // loop over all agents in the swarm
   for (int i = 0; i < (int)swarm_traj.size(); i++)
   {
+    // skip agents that were determined to be to far away to cause a collision (id=-2) or have infeasible trajectories (id=-1) and skipp myself
     if (swarm_traj[i].drone_id < 0 || swarm_traj[i].drone_id == drone_id)
     {
-      // ROS_WARN("Drone %d trajectory is infeasible. status = %d", i, swarm_traj[i].drone_id);
       continue;
     }
 
-    other_start_time = swarm_traj[i].start_time;
-
-    // std::cout << "swarm_traj[" << i << "].traj_pos.size(): " << swarm_traj[i].traj_pos.size() << std::endl;
-
-    int indX, indY, indZ, ind, occPathNumByVoxel;
-
     // TODO:[??? param set] check time resolution = voxel_resolution/max_vel / 5
-    for (int j = 0; j < (int)swarm_traj[i].traj_pos.size(); j += std::max(1, (int)(floor(voxelSize_ / max_vel_ * 100 / 5))))
+
+    // loop over all positions of the given trajectory
+    for (int j = 0; j < static_cast<int>(swarm_traj[i].traj_pos.size()); j += std::max(1, static_cast<int>(floor(voxelSize_ / max_vel_ * 100 / 5))))
     {
-      pos_v = rotVW * (swarm_traj[i].traj_pos[j] - start_pt);
+      // transform the position of the other agent into our reference frame
+      Eigen::Vector3d pos_v = rotVW * (swarm_traj[i].traj_pos[j] - start_pt);
 
-      // std::cout << "pos_v: " << pos_v << "j: " << j << std::endl;
-
-      // TODO: whether in the range of box
+      // check if the position is inside the voxel box
       if ((pos_v(0) >= 1e-4 && pos_v(0) <= voxelX_ - 1e-4) &&
           (pos_v(1) >= -voxelY_ + 1e-4 && pos_v(1) <= voxelY_ - 1e-4) &&
           (pos_v(2) >= -voxelZ_ + 1e-4 && pos_v(2) <= voxelZ_ - 1e-4))
       {
-        indX = floor((voxelX_ - pos_v(0)) / voxelSize_);
-        indY = floor((voxelY_ - pos_v(1)) / voxelSize_);
-        indZ = floor((voxelZ_ - pos_v(2)) / voxelSize_);
+        // determine the position/index of the voxel containing the position of the other agent
+        int indX = floor((voxelX_ - pos_v(0)) / voxelSize_);
+        int indY = floor((voxelY_ - pos_v(1)) / voxelSize_);
+        int indZ = floor((voxelZ_ - pos_v(2)) / voxelSize_);
 
-        ind = voxelNumY_ * voxelNumZ_ * indX + voxelNumZ_ * indY + indZ;
+        // flatten the index
+        int ind = voxelNumY_ * voxelNumZ_ * indX + voxelNumZ_ * indY + indZ;
 
-        occPathNumByVoxel = allVelCorrespondences_[vel_id][ind].size() / 3;
+        // get the number of paths that intersect the voxel
+        int occPathNumByVoxel = allVelCorrespondences_[vel_id][ind].size() / 3;
 
-        // std::cout << "occPathNumByVoxel: " << occPathNumByVoxel << "j: " << j << std::endl;
-
-        // time unit must be same sec.
-        other_cur_time = other_start_time + j * 0.01;
+        // calculate the offset time
+        double other_cur_time = swarm_traj[i].start_time + j * 0.01;
+        // loop over the trajectories intersecting the voxel
         for (int k = 0; k < occPathNumByVoxel; k++)
         {
+          // check if the time range is critical (if the paths cross at the same time).
           if (other_cur_time > start_time + allVelCorrespondences_[vel_id][ind][3 * k + 1] / 1000 && other_cur_time < start_time + allVelCorrespondences_[vel_id][ind][3 * k + 2] / 1000)
           {
-            // std::cout << "=== labelAgentCollisionPaths ID === " << allVelCorrespondences_[vel_id][ind][3*k] << "  " <<
-            // allVelCorrespondences_[vel_id][ind][3*k+1] << "  " <<
-            // allVelCorrespondences_[vel_id][ind][3*k+2] << std::endl;
             clearPathList_[allVelCorrespondences_[vel_id][ind][3 * k]]++;
           }
         }
       }
     }
   }
-
-  // std::cout << "=== labelAgentCollisionPaths 3 ===" << std::endl;
 
   return true;
 }
