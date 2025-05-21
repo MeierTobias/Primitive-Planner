@@ -9,7 +9,6 @@
 #include <quadrotor_msgs/PositionCommand.h>
 #include <sensor_msgs/Joy.h>
 
-
 using namespace std;
 
 ros::Publisher mandatory_stop_pub_, cmd_pub_;
@@ -34,21 +33,21 @@ void joy_sub_cb(const sensor_msgs::Joy::ConstPtr &msg)
   recv_joy_time_ = now;
   joy_ = *msg;
 
-  if ( msg->buttons[0] || msg->buttons[1] || msg->buttons[2] || msg->buttons[3] )
+  if (msg->buttons[0] || msg->buttons[1] || msg->buttons[2] || msg->buttons[3])
   {
     flag_mandatory_stoped_ = true;
     std_msgs::Empty stop_msg;
     mandatory_stop_pub_.publish(stop_msg);
   }
 
-  if ( flag_mandatory_stoped_ && flag_planner_stop_cmds_ )
+  if (flag_mandatory_stoped_ && flag_planner_stop_cmds_)
   {
     constexpr double MAX_VEL = 0.2;
     static bool have_last_cmd = false;
     static ros::Time last_cmd_t;
     static Eigen::Vector4d last_cmd;
 
-    if ( !have_last_cmd )
+    if (!have_last_cmd)
     {
       have_last_cmd = true;
       last_cmd_t = now;
@@ -64,28 +63,27 @@ void joy_sub_cb(const sensor_msgs::Joy::ConstPtr &msg)
     last_cmd(2) += joy_.axes[1] * MAX_VEL * delta_t;
     last_cmd(3) += joy_.axes[0] * MAX_VEL * delta_t;
     cmd_msg.position.x = last_cmd(0);
-    cmd_msg.position.y = last_cmd(1); 
-    cmd_msg.position.z = last_cmd(2); 
-    cmd_msg.yaw = last_cmd(3); 
+    cmd_msg.position.y = last_cmd(1);
+    cmd_msg.position.z = last_cmd(2);
+    cmd_msg.yaw = last_cmd(3);
     cmd_msg.velocity.x = joy_.axes[4] * MAX_VEL;
-    cmd_msg.velocity.y = joy_.axes[3] * MAX_VEL; 
-    cmd_msg.velocity.z = joy_.axes[1] * MAX_VEL; 
+    cmd_msg.velocity.y = joy_.axes[3] * MAX_VEL;
+    cmd_msg.velocity.z = joy_.axes[1] * MAX_VEL;
     cmd_pub_.publish(cmd_msg);
 
     last_cmd_t = now;
   }
-  
 }
 
 // #      ^                ^
 // #    +1|              +4|
-// # <-+0      ->     <-+3      ->        
+// # <-+0      ->     <-+3      ->
 // #      |                |
 // #      V                V
 
 void position_cmd_sub_cb(const quadrotor_msgs::PositionCommand::ConstPtr &msg)
 {
-  if ( msg->header.frame_id != string("manual_take_over") )
+  if (msg->header.frame_id != string("manual_take_over"))
   {
     flag_recv_cmd_ = true;
     recv_cmd_time_ = ros::Time::now();
@@ -110,14 +108,14 @@ int main(int argc, char **argv)
   while (ros::ok())
   {
     ros::Time t_now = ros::Time::now();
-    
+
     constexpr double TIME_OUT = 1.0;
-    if ( flag_recv_joy_ && (t_now - recv_joy_time_).toSec() > TIME_OUT )
+    if (flag_recv_joy_ && (t_now - recv_joy_time_).toSec() > TIME_OUT)
     {
       ROS_ERROR("Lost manual take over joystick messages!");
     }
 
-    if ( flag_recv_cmd_ && (t_now - recv_cmd_time_).toSec() > TIME_OUT )
+    if (flag_recv_cmd_ && (t_now - recv_cmd_time_).toSec() > TIME_OUT)
     {
       flag_planner_stop_cmds_ = true;
     }
@@ -125,7 +123,6 @@ int main(int argc, char **argv)
     {
       flag_planner_stop_cmds_ = false;
     }
-    
 
     ros::Duration(0.4).sleep();
     ros::spinOnce();

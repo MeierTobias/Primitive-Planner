@@ -288,39 +288,47 @@ void RandomMapGenerateCylinder()
   _map_ok = true;
 }
 
+bool GenerateMapFromObstacleFile(const std::string file_path)
+{
 
-bool GenerateMapFromObstacleFile(const std::string file_path) {
-  
   std::ifstream file(file_path); // 替换为你的文件路径
-  if (!file.is_open()) {
-      std::cerr << "Failed to open file" << std::endl;
-      return false;
+  if (!file.is_open())
+  {
+    std::cerr << "Failed to open file" << std::endl;
+    return false;
   }
 
   std::vector<Eigen::Vector3d> vectors;
   std::string line;
-  while (std::getline(file, line)) {
-      std::string::size_type pos;
-      double x, y, z;
+  while (std::getline(file, line))
+  {
+    std::string::size_type pos;
+    double x, y, z;
+
+    pos = line.find(',');
+    if (pos != std::string::npos)
+    {
+      x = std::stod(line.substr(0, pos));
+      line.erase(0, pos + 1); // 移除已解析的部分
 
       pos = line.find(',');
-      if (pos != std::string::npos) {
-          x = std::stod(line.substr(0, pos));
-          line.erase(0, pos + 1); // 移除已解析的部分
+      if (pos != std::string::npos)
+      {
+        y = std::stod(line.substr(0, pos));
+        z = std::stod(line.substr(pos + 1)); // 解析剩余部分
 
-          pos = line.find(',');
-          if (pos != std::string::npos) {
-              y = std::stod(line.substr(0, pos));
-              z = std::stod(line.substr(pos + 1)); // 解析剩余部分
-
-              Eigen::Vector3d vec(x, y, z);
-              vectors.push_back(vec);
-          } else {
-              std::cerr << "Error parsing line: " << line << std::endl;
-          }
-      } else {
-          std::cerr << "Error parsing line: " << line << std::endl;
+        Eigen::Vector3d vec(x, y, z);
+        vectors.push_back(vec);
       }
+      else
+      {
+        std::cerr << "Error parsing line: " << line << std::endl;
+      }
+    }
+    else
+    {
+      std::cerr << "Error parsing line: " << line << std::endl;
+    }
   }
 
   file.close();
@@ -332,17 +340,18 @@ bool GenerateMapFromObstacleFile(const std::string file_path) {
   assert(vectors.size() > 0 && vectors.size() % 2 == 0);
 
   pcl::PointXYZ pt_random;
-  for ( int i=0; i<vectors.size()/2; ++i )
+  for (int i = 0; i < vectors.size() / 2; ++i)
   {
-      Eigen::Vector3d lb = vectors[i * 2], ub = vectors[i * 2 + 1];
-      for (double x = lb(0); x <= ub(0); x += _resolution)
-        for (double y = lb(1); y <= ub(1); y += _resolution)
-          for (double z = lb(2); z <= ub(2); z += _resolution) {
-            pt_random.x = x;
-            pt_random.y = y;
-            pt_random.z = z;
-            cloudMap.push_back(pt_random);
-          }
+    Eigen::Vector3d lb = vectors[i * 2], ub = vectors[i * 2 + 1];
+    for (double x = lb(0); x <= ub(0); x += _resolution)
+      for (double y = lb(1); y <= ub(1); y += _resolution)
+        for (double z = lb(2); z <= ub(2); z += _resolution)
+        {
+          pt_random.x = x;
+          pt_random.y = y;
+          pt_random.z = z;
+          cloudMap.push_back(pt_random);
+        }
   }
 
   cloudMap.width = cloudMap.points.size();
@@ -356,7 +365,6 @@ bool GenerateMapFromObstacleFile(const std::string file_path) {
   _map_ok = true;
 
   return true;
-
 }
 
 void RandomInclinedColumn()
@@ -405,7 +413,7 @@ void RandomInclinedColumn()
 
     int widNum = ceil((w * inf) / _resolution);
     // double radius = (w * inf) / 2;
-    Eigen::AngleAxisd R_v(rand_theta_tilt, Eigen::Vector3d(cos(rand_theta),sin(rand_theta),0));
+    Eigen::AngleAxisd R_v(rand_theta_tilt, Eigen::Vector3d(cos(rand_theta), sin(rand_theta), 0));
     Eigen::Matrix3d R_m = R_v.matrix();
 
     for (int r = -widNum / 2.0; r < widNum / 2.0; r++)
@@ -415,8 +423,8 @@ void RandomInclinedColumn()
         for (int t = -10; t < heiNum; t++)
         {
           Eigen::Vector3d temp_p(x + (r + 0.5) * _resolution + 1e-2, y + (s + 0.5) * _resolution + 1e-2, (t + 0.5) * _resolution + 1e-2);
-          temp_p = R_m * (temp_p - Eigen::Vector3d(x,y,0)) + Eigen::Vector3d(x,y,0);
-          
+          temp_p = R_m * (temp_p - Eigen::Vector3d(x, y, 0)) + Eigen::Vector3d(x, y, 0);
+
           pt_random.x = temp_p(0);
           pt_random.y = temp_p(1);
           pt_random.z = temp_p(2);

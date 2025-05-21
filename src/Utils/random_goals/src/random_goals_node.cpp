@@ -55,7 +55,7 @@ void odoms_sim_sub_cb(const nav_msgs::Odometry::ConstPtr &msg, const int &drone_
 void combined_odoms_sim_sub_cb(const nav_msgs::Odometry::ConstPtr &msg)
 {
   int id = atoi(msg->child_frame_id.substr(6, 10).c_str());
-  if ( msg->child_frame_id.substr(0, 6) != string("drone_") || id >= (int)drones_.size())
+  if (msg->child_frame_id.substr(0, 6) != string("drone_") || id >= (int)drones_.size())
   {
     ROS_ERROR("[random_goals_node] Wrong child_frame_id: %s, or wrong drone_id: %d", msg->child_frame_id.substr(0, 6).c_str(), id);
     return;
@@ -97,8 +97,8 @@ int main(int argc, char **argv)
 
   std::vector<int> count(goal_num);
   fill(count.begin(), count.end(), 0);
-  
-  // Wait for 4s 
+
+  // Wait for 4s
   ROS_INFO("[random goals] Wait for 5 seconds.");
   ros::Duration(5.0).sleep();
 
@@ -116,7 +116,7 @@ int main(int argc, char **argv)
         drones_[i].arrived_time = t_now;
       drones_[i].arrived_for_a_while |= ((t_now - drones_[i].arrived_time).toSec() > 2);
 
-      if ( (drones_[i].cur_p - drones_[i].last_goal).norm() < 0.3 && drones_[i].cur_v.norm() < 0.3 && (t_now - drones_[i].set_new_goal_time).toSec() > 3.0 ) // did not start
+      if ((drones_[i].cur_p - drones_[i].last_goal).norm() < 0.3 && drones_[i].cur_v.norm() < 0.3 && (t_now - drones_[i].set_new_goal_time).toSec() > 3.0) // did not start
       {
         drones_[i].set_new_goal_time = t_now;
         quadrotor_msgs::GoalSet msg;

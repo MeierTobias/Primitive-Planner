@@ -4,24 +4,26 @@
 import ast
 import os
 
+
 def read_from_txt(file_path):
     square_starts = None
     square_goals = None
 
-    with open(file_path, 'r') as file:
+    with open(file_path, "r") as file:
         lines = file.readlines()
 
         # 用ast.literal_eval来解析每一行，比eval更安全
         for line in lines:
             if "square_starts" in line:
-                square_starts = ast.literal_eval(line.split('=')[1].strip())
+                square_starts = ast.literal_eval(line.split("=")[1].strip())
             elif "square_goals" in line:
-                square_goals = ast.literal_eval(line.split('=')[1].strip())
+                square_goals = ast.literal_eval(line.split("=")[1].strip())
 
     return square_starts, square_goals
 
+
 def generate_launch_content(starts, goals):
-    launch_template = '''<launch>
+    launch_template = """<launch>
 
     <arg name="map_size_x" value="50.0"/>
     <arg name="map_size_y" value="50.0"/>
@@ -57,9 +59,9 @@ def generate_launch_content(starts, goals):
     </node>
     
     {includes}
-    '''
-    
-    includes_template = '''
+    """
+
+    includes_template = """
     <include file="$(find primitive_planner)/launch/run_in_sim.xml">
         <arg name="drone_id" value="{drone_id}"/>
         <arg name="init_x" value="{init_x}"/>
@@ -73,33 +75,41 @@ def generate_launch_content(starts, goals):
         <arg name="map_size_z" value="$(arg map_size_z)"/>
         <arg name="odom_topic" value="$(arg odom_topic)"/>
     </include>
-    '''
+    """
 
     includes_content = ""
     for drone_id, (start, goal) in enumerate(zip(starts, goals), start=0):
         includes_content += includes_template.format(
             drone_id=drone_id,
-            init_x=start[0], init_y=start[1], init_z=start[2],
-            target_x=goal[0], target_y=goal[1], target_z=goal[2]
+            init_x=start[0],
+            init_y=start[1],
+            init_z=start[2],
+            target_x=goal[0],
+            target_y=goal[1],
+            target_z=goal[2],
         )
 
     launch_content = launch_template.format(includes=includes_content)
     return launch_content + "\n</launch>"
 
+
 def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    file_path = script_dir + '/../scripts/start_and_goals.txt'
+    file_path = script_dir + "/../scripts/start_and_goals.txt"
     try:
         starts, goals = read_from_txt(file_path)
         launch_content = generate_launch_content(starts, goals)
 
         # 写入生成的ROS启动文件
-        with open(script_dir + '/../planner/plan_manage/launch/primitive_swarm.launch', 'w') as launch_file:
+        with open(
+            script_dir + "/../planner/plan_manage/launch/primitive_swarm.launch", "w"
+        ) as launch_file:
             launch_file.write(launch_content)
-        
+
         print("ROS launch file generated successfully.")
     except Exception as e:
         print(f"An error occurred: {e}")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

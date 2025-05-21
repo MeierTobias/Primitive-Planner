@@ -17,6 +17,6 @@ void encodeTRPYCommand(const quadrotor_msgs::TRPYCommand &trpy_command,
 
 void encodePPRGains(const quadrotor_msgs::Gains &gains,
                     std::vector<uint8_t> &output);
-}
+} // namespace quadrotor_msgs
 
 #endif

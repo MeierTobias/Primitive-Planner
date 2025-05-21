@@ -111,7 +111,7 @@ int serializeTopic(const MESSAGE_TYPE msg_type, const T &msg)
 {
   auto ptr = (uint8_t *)(udp_send_buf_);
 
-  *((MESSAGE_TYPE*)ptr) = msg_type;
+  *((MESSAGE_TYPE *)ptr) = msg_type;
   ptr += sizeof(MESSAGE_TYPE);
 
   namespace ser = ros::serialization;
@@ -231,8 +231,7 @@ void udp_recv_fun()
     switch (*((MESSAGE_TYPE *)ptr))
     {
 
-    case MESSAGE_TYPE::ODOM:
-    {
+    case MESSAGE_TYPE::ODOM: {
       if (valread == deserializeTopic(odom_msg_))
       {
         other_odoms_pub_.publish(odom_msg_);
@@ -246,8 +245,7 @@ void udp_recv_fun()
       break;
     }
 
-    case MESSAGE_TYPE::ONE_PRIMITIVE:
-    {
+    case MESSAGE_TYPE::ONE_PRIMITIVE: {
 
       if (valread == deserializeTopic(swarmPrimitiveTraj_msg_))
       {
@@ -262,8 +260,7 @@ void udp_recv_fun()
       break;
     }
 
-    case MESSAGE_TYPE::STOP:
-    {
+    case MESSAGE_TYPE::STOP: {
 
       if (valread == deserializeTopic(stop_msg_))
       {
@@ -278,9 +275,8 @@ void udp_recv_fun()
       break;
     }
 
-    case MESSAGE_TYPE::GOAL:
-    {
-      
+    case MESSAGE_TYPE::GOAL: {
+
       if (valread == deserializeTopic(goal_msg_))
       {
         goal_pub_.publish(goal_msg_);
@@ -294,9 +290,8 @@ void udp_recv_fun()
       break;
     }
 
-    case MESSAGE_TYPE::JOY:
-    {
-      
+    case MESSAGE_TYPE::JOY: {
+
       if (valread == deserializeTopic(joy_msg_))
       {
         joy_pub_.publish(joy_msg_);

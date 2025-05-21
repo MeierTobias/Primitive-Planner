@@ -26,114 +26,116 @@
 
 namespace primitive_planner
 {
-    class PPReplanFSM
-    {
-        public:
-            PPReplanFSM() {}
-            ~PPReplanFSM();
+class PPReplanFSM
+{
+public:
+  PPReplanFSM()
+  {
+  }
+  ~PPReplanFSM();
 
-            void init(ros::NodeHandle &nh);
+  void init(ros::NodeHandle &nh);
 
-            EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-        
-        private:
-            enum FSM_EXEC_STATE
-            {
-            INIT,
-            WAIT_TARGET,
-            GEN_NEW_TRAJ,
-            REPLAN_TRAJ,
-            EXEC_TRAJ,
-            EMERGENCY_STOP,
-            APPROACH_GOAL,
-            CRASH_RECOVER
-            };
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-            /* planning utils */
-            PPPlannerManager::Ptr planner_manager_;
-            PlanningVisualization::Ptr visualization_;
+private:
+  enum FSM_EXEC_STATE
+  {
+    INIT,
+    WAIT_TARGET,
+    GEN_NEW_TRAJ,
+    REPLAN_TRAJ,
+    EXEC_TRAJ,
+    EMERGENCY_STOP,
+    APPROACH_GOAL,
+    CRASH_RECOVER
+  };
 
-            FSM_EXEC_STATE exec_state_;
+  /* planning utils */
+  PPPlannerManager::Ptr planner_manager_;
+  PlanningVisualization::Ptr visualization_;
 
-            bool flag_realworld_experiment_, have_trigger_, have_odom_, have_target_, have_log_files_;
+  FSM_EXEC_STATE exec_state_;
 
-            ros::Timer exec_timer_;
-            ros::Subscriber trigger_sub_, odom_sub_, mandatory_stop_sub_, select_path_end_sub_, cmd_sub_, broadcast_primitive_sub_, waypoint_sub_;
+  bool flag_realworld_experiment_, have_trigger_, have_odom_, have_target_, have_log_files_;
 
-            ros::Publisher path_id_pub_, stop_pub_, heartbeat_pub_, global_pub_, broadcast_primitive_pub_, poly_pub_, yaw_cmd_pub_;
+  ros::Timer exec_timer_;
+  ros::Subscriber trigger_sub_, odom_sub_, mandatory_stop_sub_, select_path_end_sub_, cmd_sub_, broadcast_primitive_sub_, waypoint_sub_;
 
-            double waypoints_[10][3];
-            int waypoint_num_;
-            int goal_id_ = 0;
-            int goal_tag_ = 0; // represents the identifier of the decentralized global goal
-            int target_type_; // 1 manual select, 2 hard code, 3 decentralized global goal
-            std::vector<Eigen::Vector3d> all_goal_;
-            // global_goal_ is always set to all_goal_[goal_id_]
-            Eigen::Vector3d global_goal_;
-            Eigen::Vector3d starting_pos_;
-            Eigen::Vector3d odom_pos_, odom_vel_, odom_x_dir_;
-            Eigen::Quaterniond odom_q_;
-            double odom_yaw_;
+  ros::Publisher path_id_pub_, stop_pub_, heartbeat_pub_, global_pub_, broadcast_primitive_pub_, poly_pub_, yaw_cmd_pub_;
 
-            vector<vector<std::pair<double, vector<Eigen::Vector3d>>>> primitve_pos_;
+  double waypoints_[10][3];
+  int waypoint_num_;
+  int goal_id_ = 0;
+  int goal_tag_ = 0; // represents the identifier of the decentralized global goal
+  int target_type_;  // 1 manual select, 2 hard code, 3 decentralized global goal
+  std::vector<Eigen::Vector3d> all_goal_;
+  // global_goal_ is always set to all_goal_[goal_id_]
+  Eigen::Vector3d global_goal_;
+  Eigen::Vector3d starting_pos_;
+  Eigen::Vector3d odom_pos_, odom_vel_, odom_x_dir_;
+  Eigen::Quaterniond odom_q_;
+  double odom_yaw_;
 
-            Eigen::Vector3d latest_safe_pt_;
-            bool have_latest_safe_pt_;
+  vector<vector<std::pair<double, vector<Eigen::Vector3d>>>> primitve_pos_;
 
-            const int TOTAL_DRONE_NUM_ = 1000;
-            typedef std::pair<bool, traj_utils::swarmPrimitiveTraj> SharedMemory;
-            SharedMemory* swarm_traj_ptr_ = nullptr;
-            void* shared_memory_ = nullptr;
-            int shm_id_ = -1;
+  Eigen::Vector3d latest_safe_pt_;
+  bool have_latest_safe_pt_;
 
-            CSVLogger odom_logger_, computing_time_logger_;
+  const int TOTAL_DRONE_NUM_ = 1000;
+  typedef std::pair<bool, traj_utils::swarmPrimitiveTraj> SharedMemory;
+  SharedMemory *swarm_traj_ptr_ = nullptr;
+  void *shared_memory_ = nullptr;
+  int shm_id_ = -1;
 
-            Eigen::Vector3d start_pt_, start_v_;
-            Eigen::Quaterniond start_q_;
+  CSVLogger odom_logger_, computing_time_logger_;
 
-            double no_replan_thresh_, replan_thresh_;
-            ros::Time start_time_;
+  Eigen::Vector3d start_pt_, start_v_;
+  Eigen::Quaterniond start_q_;
 
-            bool enable_fail_safe_, flag_escape_emergency_;
-            
-            // crash recovery
-            ros::Time crash_rec_start_time_;
-            bool flag_wait_crash_rec_;
-            int crash_rec_stage_;
-            double final_yaw_des_;
-            bool flag_pub_first_yaw_;
-            int yaw_cmd_count_;
-            vector<double> past_yaw_list_;
-            int keep_fails_;
+  double no_replan_thresh_, replan_thresh_;
+  ros::Time start_time_;
 
-            Eigen::Vector3d select_path_end_, select_path_end_last_;
+  bool enable_fail_safe_, flag_escape_emergency_;
 
-            std::string primitiveFolder_;
+  // crash recovery
+  ros::Time crash_rec_start_time_;
+  bool flag_wait_crash_rec_;
+  int crash_rec_stage_;
+  double final_yaw_des_;
+  bool flag_pub_first_yaw_;
+  int yaw_cmd_count_;
+  vector<double> past_yaw_list_;
+  int keep_fails_;
 
-            LocalTrajData myself_traj_;
+  Eigen::Vector3d select_path_end_, select_path_end_last_;
 
-            /* state machine functions */
-            void execFSMCallback(const ros::TimerEvent &e);
-            void changeFSMExecState(FSM_EXEC_STATE new_state, std::string pos_call);
-            void printFSMExecState();
+  std::string primitiveFolder_;
 
-            bool planPrimitive(bool first_plan, double xV_offset = 0.0);
-            bool callEmergencyStop(Eigen::Vector3d stop_pos);
-            void mandatoryStopCallback(const std_msgs::Empty &msg);
-            void pubPolyTraj(const Eigen::Vector3d &start_p, const Eigen::Vector3d &start_v, const Eigen::Vector3d &end_p, const double dura);
+  LocalTrajData myself_traj_;
 
-            void triggerCallback(const geometry_msgs::PoseStampedPtr &msg);
-            void RecvBroadcastPrimitiveCallback(const traj_utils::swarmPrimitiveTrajConstPtr &msg);
-            void odometryCallback(const nav_msgs::OdometryConstPtr &msg);
-            void pathEndCallback(const std_msgs::Float64MultiArrayPtr &msg);
-            void cmdCallback(const quadrotor_msgs::PositionCommandPtr &cmd);
-            void waypointCallback(const quadrotor_msgs::GoalSetPtr &msg);
+  /* state machine functions */
+  void execFSMCallback(const ros::TimerEvent &e);
+  void changeFSMExecState(FSM_EXEC_STATE new_state, std::string pos_call);
+  void printFSMExecState();
 
-            void newGoalReceived(const Eigen::Vector3d& goal);
-            bool readLocalTrajPos(Eigen::Vector3d& start_pos, int& vel_id, Eigen::Matrix<double, 3, 3>& Rwv, std::vector<int>& path_id, std::vector<Eigen::Vector3d>& traj_pos, double& traj_duration);
-            bool checkCollision(int recv_id);
-            bool readPrimitivePos();
-    };
+  bool planPrimitive(bool first_plan, double xV_offset = 0.0);
+  bool callEmergencyStop(Eigen::Vector3d stop_pos);
+  void mandatoryStopCallback(const std_msgs::Empty &msg);
+  void pubPolyTraj(const Eigen::Vector3d &start_p, const Eigen::Vector3d &start_v, const Eigen::Vector3d &end_p, const double dura);
+
+  void triggerCallback(const geometry_msgs::PoseStampedPtr &msg);
+  void RecvBroadcastPrimitiveCallback(const traj_utils::swarmPrimitiveTrajConstPtr &msg);
+  void odometryCallback(const nav_msgs::OdometryConstPtr &msg);
+  void pathEndCallback(const std_msgs::Float64MultiArrayPtr &msg);
+  void cmdCallback(const quadrotor_msgs::PositionCommandPtr &cmd);
+  void waypointCallback(const quadrotor_msgs::GoalSetPtr &msg);
+
+  void newGoalReceived(const Eigen::Vector3d &goal);
+  bool readLocalTrajPos(Eigen::Vector3d &start_pos, int &vel_id, Eigen::Matrix<double, 3, 3> &Rwv, std::vector<int> &path_id, std::vector<Eigen::Vector3d> &traj_pos, double &traj_duration);
+  bool checkCollision(int recv_id);
+  bool readPrimitivePos();
+};
 
 } // namespace primitive_planner
 

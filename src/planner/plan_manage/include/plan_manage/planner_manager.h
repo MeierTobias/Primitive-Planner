@@ -29,8 +29,8 @@ namespace primitive_planner
 class PPPlannerManager
 {
 public:
-  PPPlannerManager() {};
-  ~PPPlannerManager() {};
+  PPPlannerManager(){};
+  ~PPPlannerManager(){};
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 

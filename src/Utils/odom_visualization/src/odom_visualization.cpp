@@ -137,9 +137,9 @@ void odom_callback(const nav_msgs::Odometry::ConstPtr &msg)
     pathPub.publish(pathROS);
   }
   ros::Time now_time = ros::Time::now();
-  if ( !zero_speed_start_time_updated )
+  if (!zero_speed_start_time_updated)
   {
-    if ( sqrt(vel(0) * vel(0) + vel(1) * vel(1) + vel(2) * vel(2)) < 0.01 )
+    if (sqrt(vel(0) * vel(0) + vel(1) * vel(1) + vel(2) * vel(2)) < 0.01)
     {
       zero_speed_start_time_updated = true;
       zero_speed_start_time = now_time;
@@ -147,10 +147,10 @@ void odom_callback(const nav_msgs::Odometry::ConstPtr &msg)
   }
   else
   {
-    if ( sqrt(vel(0) * vel(0) + vel(1) * vel(1) + vel(2) * vel(2)) > 0.01 )
+    if (sqrt(vel(0) * vel(0) + vel(1) * vel(1) + vel(2) * vel(2)) > 0.01)
     {
       zero_speed_start_time_updated = false;
-      if ( (now_time - zero_speed_start_time).toSec() > 1.0 )
+      if ((now_time - zero_speed_start_time).toSec() > 1.0)
       {
         pathROS.poses.clear();
       }

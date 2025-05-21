@@ -23,7 +23,7 @@
 #ifndef SELECTED_POINTS_PUBLISHER_HPP
 #define SELECTED_POINTS_PUBLISHER_HPP
 
-#ifndef Q_MOC_RUN  // See: https://bugreports.qt-project.org/browse/QTBUG-22829
+#ifndef Q_MOC_RUN // See: https://bugreports.qt-project.org/browse/QTBUG-22829
 #include <ros/node_handle.h>
 #include <ros/publisher.h>
 #include "rviz/tool.h"
@@ -44,8 +44,8 @@ class SelectedPointsPublisher : public rviz::SelectionTool
 public:
   SelectedPointsPublisher();
   virtual ~SelectedPointsPublisher();
-  virtual int processMouseEvent(rviz::ViewportMouseEvent& event);
-  virtual int processKeyEvent(QKeyEvent* event, rviz::RenderPanel* panel);
+  virtual int processMouseEvent(rviz::ViewportMouseEvent &event);
+  virtual int processKeyEvent(QKeyEvent *event, rviz::RenderPanel *panel);
 
 public Q_SLOTS:
   void updateTopic();
@@ -63,6 +63,6 @@ protected:
   bool selecting_;
   int num_selected_points_;
 };
-}  // namespace rviz_plugin_selected_points_publisher
+} // namespace rviz_plugin_selected_points_publisher
 
-#endif  // SELECTED_POINTS_PUBLISHER_HPP
+#endif // SELECTED_POINTS_PUBLISHER_HPP

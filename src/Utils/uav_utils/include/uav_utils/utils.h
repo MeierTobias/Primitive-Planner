@@ -11,8 +11,7 @@ namespace uav_utils
 
 /* judge if value belongs to [low,high] */
 template <typename T, typename T2>
-bool
-in_range(T value, const T2& low, const T2& high)
+bool in_range(T value, const T2 &low, const T2 &high)
 {
   ROS_ASSERT_MSG(low < high, "%f < %f?", low, high);
   return (low <= value) && (value <= high);
@@ -20,16 +19,14 @@ in_range(T value, const T2& low, const T2& high)
 
 /* judge if value belongs to [-limit, limit] */
 template <typename T, typename T2>
-bool
-in_range(T value, const T2& limit)
+bool in_range(T value, const T2 &limit)
 {
   ROS_ASSERT_MSG(limit > 0, "%f > 0?", limit);
   return in_range(value, -limit, limit);
 }
 
 template <typename T, typename T2>
-void
-limit_range(T& value, const T2& low, const T2& high)
+void limit_range(T &value, const T2 &low, const T2 &high)
 {
   ROS_ASSERT_MSG(low < high, "%f < %f?", low, high);
   if (value < low)
@@ -46,8 +43,7 @@ limit_range(T& value, const T2& low, const T2& high)
 }
 
 template <typename T, typename T2>
-void
-limit_range(T& value, const T2& limit)
+void limit_range(T &value, const T2 &limit)
 {
   ROS_ASSERT_MSG(limit > 0, "%f > 0?", limit);
   limit_range(value, -limit, limit);

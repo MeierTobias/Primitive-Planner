@@ -107,3 +107,23 @@ rviz might fail with the following error: `libGL error: MESA-LOADER: failed to r
 ```
 
 (at least this works on Arch Linux)
+
+## Development (in progress)
+
+Here are some useful tips to get you started:
+
+### Code Formatting
+
+Please use clang-format with the provided `.clang-format` style file for c++ files and `black-formatter` for python files. This keeps purely formatting changes isolated, so code reviews can focus on functional updates.
+
+If you are working with vscode you can add the following lines to your `settings.json`:
+
+```json
+"[cpp]": {
+     "editor.defaultFormatter": "xaver.clang-format"
+},
+"[python]": {
+     "editor.defaultFormatter": "ms-python.black-formatter"
+},
+"editor.formatOnSave": true
+```

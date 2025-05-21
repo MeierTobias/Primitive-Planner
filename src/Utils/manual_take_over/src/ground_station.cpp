@@ -7,7 +7,6 @@
 #include <iostream>
 #include <sensor_msgs/Joy.h>
 
-
 using namespace std;
 bool flag_mandatory_stoped_ = false;
 
@@ -16,16 +15,15 @@ ros::Publisher joy_pub_;
 void joy_sub_cb(const sensor_msgs::Joy::ConstPtr &msg)
 {
 
-  if ( msg->buttons[0] || msg->buttons[1] || msg->buttons[2] || msg->buttons[3] )
+  if (msg->buttons[0] || msg->buttons[1] || msg->buttons[2] || msg->buttons[3])
   {
     flag_mandatory_stoped_ = true;
   }
 
-  if ( flag_mandatory_stoped_ )
+  if (flag_mandatory_stoped_)
   {
     joy_pub_.publish(*msg);
   }
-  
 }
 
 int main(int argc, char **argv)
