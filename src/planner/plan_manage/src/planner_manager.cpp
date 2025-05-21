@@ -98,7 +98,7 @@ void PPPlannerManager::cloudCallback(const sensor_msgs::PointCloud2ConstPtr &img
 
   if (!has_odom_)
   {
-    std::cout << "no odom!" << std::endl;
+    ROS_DEBUG("no odom!");
     return;
   }
 
@@ -369,7 +369,7 @@ void PPPlannerManager::readCorrespondences()
   FILE *filePtr = fopen(fileName.c_str(), "rb");
   if (filePtr == NULL)
   {
-    printf("\nCannot read input [correspondence files], exit.\n\n");
+    ROS_ERROR("Cannot read input [correspondence files], exit.");
     exit(1);
   }
 
@@ -381,7 +381,7 @@ void PPPlannerManager::readCorrespondences()
     val1 = fread(&voxelID, 4, 1, filePtr);
     if (val1 != 1)
     {
-      printf("\nError reading [voxelID] input files, exit.\n\n");
+      ROS_ERROR("Error reading [voxelID] input files, exit.");
       exit(1);
     }
 
@@ -390,7 +390,7 @@ void PPPlannerManager::readCorrespondences()
       val1 = fread(&pathID, 4, 1, filePtr);
       if (val1 != 1)
       {
-        printf("\nError reading [pathID] input files, exit.\n\n");
+        ROS_ERROR("Error reading [pathID] input files, exit.");
         exit(1);
       }
 
@@ -559,7 +559,7 @@ int PPPlannerManager::readPathList()
   FILE *filePtr = fopen(fileName.c_str(), "r");
   if (filePtr == NULL)
   {
-    std::cerr << "\nCannot read input [path_end files], exit.\n\n";
+    ROS_ERROR("Cannot read input [path_end files], exit.");
     exit(1);
   }
 
