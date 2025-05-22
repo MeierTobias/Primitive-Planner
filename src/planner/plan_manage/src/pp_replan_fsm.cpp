@@ -921,7 +921,7 @@ bool PPReplanFSM::planPrimitive(bool first_plan, double xV_offset /*= 0.0*/)
   RWV.col(2) = zV;
 
   vector<int> select_path_id;
-  bool plan_success = planner_manager_->trajReplan(start_pt_, start_v_, start_time_.toSec(), RWV, global_goal_, select_path_id);
+  bool plan_success = planner_manager_->trajReplan(start_pt_, start_v_, start_time_.toSec(), RWV, global_goal_, select_path_id, myself_traj_);
 
   std::vector<Eigen::Vector3d> traj_pos;
   double traj_duration;

@@ -39,15 +39,16 @@ public:
   void cloudCallback(const sensor_msgs::PointCloud2ConstPtr &img);
   bool labelObsCollisionPaths(const Eigen::Vector3d &start_pt, const Eigen::Matrix3d &rotVW);
   bool labelAgentCollisionPaths(const Eigen::Vector3d &start_pt, const Eigen::Vector3d &start_v, const double &start_time, const Eigen::Matrix3d &rotVW);
-  vector<int> scorePaths(const Eigen::Vector3d &start_pt, const Eigen::Vector3d &global_goal, const Eigen::Matrix3d &rotWV);
+  vector<int> scorePaths(const Eigen::Vector3d &start_pt, const Eigen::Vector3d &global_goal, const Eigen::Matrix3d &rotWV, const primitive_planner::LocalTrajData &current_traj);
   void visAllPaths(const Eigen::Vector3d &start_pt, const Eigen::Matrix3d &rotWV);
-  bool trajReplan(const Eigen::Vector3d &start_pt, const Eigen::Vector3d &start_v, const double &start_time, const Eigen::Matrix3d &RWV, const Eigen::Vector3d &global_goal, vector<int> &select_path_id);
+  bool trajReplan(const Eigen::Vector3d &start_pt, const Eigen::Vector3d &start_v, const double &start_time, const Eigen::Matrix3d &RWV, const Eigen::Vector3d &global_goal, vector<int> &select_path_id, const primitive_planner::LocalTrajData &current_traj);
 
   void readCorrespondences();
   void readAgentCorrespondences();
   // int readPlyHeader(FILE *filePtr);
   int readPathList();
   void readPathAll();
+  void determineEndDirection();
 
   int drone_id;
   double max_vel_;
@@ -87,7 +88,8 @@ private:
   std::vector<std::vector<int>> correspondences_;
   std::vector<std::vector<std::vector<int>>> allVelCorrespondences_;
   std::vector<int> clearPathList_;
-  std::vector<Eigen::Vector3d> pathEndList_; // body frame
+  std::vector<Eigen::Vector3d> pathEndList_;               // body frame
+  std::vector<std::optional<Eigen::Vector3d>> pathEndDir_; // body frame
   std::vector<std::vector<Eigen::Vector3d>> pathAll_, pathAllWorld_;
   std::vector<double> pathLengthList_;
   double pathLengthMax_;

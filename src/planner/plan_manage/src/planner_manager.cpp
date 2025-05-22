@@ -50,6 +50,7 @@ void PPPlannerManager::initPlanModules(ros::NodeHandle &nh, PlanningVisualizatio
   readPathAll();
   readCorrespondences();
   readAgentCorrespondences();
+  determineEndDirection();
 
   depthCloudCount_ = 0;
   dep_odom_sub_ = nh.subscribe<nav_msgs::Odometry>("plan_manage/odom", 10, &PPPlannerManager::odomCallback, this);
@@ -178,7 +179,9 @@ bool PPPlannerManager::labelObsCollisionPaths(const Eigen::Vector3d &start_pt, c
 }
 
 vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
-                                         const Eigen::Vector3d &global_goal, const Eigen::Matrix3d &rotWV)
+                                         const Eigen::Vector3d &global_goal,
+                                         const Eigen::Matrix3d &rotWV,
+                                         const primitive_planner::LocalTrajData &current_traj)
 {
   /* score: 1. collision;
                     2. close to global goal; or delta_pitch/yaw(between endpoint and goal in body frame)
@@ -186,12 +189,25 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
                     3. low delta_w (smoothness) ;
   TODO: 暂定倾向于靠近中心线的primitive(后续根据实验效果调整)
   */
-  double cost, goal_dist;
 
+  // cost: lower -> better
   std::map<double, int> mapCost;
   std::vector<int> select_path_id;
-  Eigen::Vector3d endPoint;
-  // Eigen::Vector4d collision_color(1, 0, 0, 1);
+  Eigen::Vector3d currentTrajEndDir;
+  bool applyDirCost = true;
+
+  // determine the end heading of the currently executed trajectory
+  if (current_traj.traj_pos.size() > 1)
+  {
+    std::vector<Eigen::Vector3d>::const_iterator it_end = std::prev(current_traj.traj_pos.end());
+    currentTrajEndDir = (*it_end - *std::prev(it_end)).normalized();
+  }
+  else
+  {
+    ROS_DEBUG("Not enough points in trajectory to determine final heading!");
+    applyDirCost = false;
+  }
+
   for (int i = 0; i < pathNum_; i++)
   {
 
@@ -199,20 +215,22 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
     if (clearPathList_[i] > 0)
     {
       // TODO:[lable red]
+      // Eigen::Vector4d collision_color(1, 0, 0, 1);
       // visualization_->displayInitPathList(pathAllWorld_[i], 0.05, collision_color, 0);
       continue;
     }
 
-    // cost: lower -> better
+    // calculate goal distance cost
     // rotWV * pathEndList_ + start_pt: body -> world;
-    endPoint = rotWV * pathEndList_[i] + start_pt;
+    Eigen::Vector3d endPoint = rotWV * pathEndList_[i] + start_pt;
+    double goal_dist = 99999;
+    // check if the goal is out of reach for the planned trajectory
     if ((start_pt - global_goal).norm() > pathLengthMax_ || rotWV.col(0).dot(global_goal - start_pt) <= 0)
     {
       goal_dist = (endPoint - global_goal).norm() - (start_pt - global_goal).norm();
     }
     else
     {
-      goal_dist = 99999;
       for (size_t j = 0; j < pathAll_[i].size(); ++j)
       {
         Eigen::Vector3d traj_pt = rotWV * pathAll_[i][j] + start_pt;
@@ -222,18 +240,32 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
       }
     }
 
+    // calculate bound violation cost
     double bound_cost = 0;
     if (endPoint(0) < -x_size_ / 2 || endPoint(0) > x_size_ / 2 || endPoint(1) < -y_size_ / 2 || endPoint(1) > y_size_ / 2 || endPoint(2) < 0 || endPoint(2) > z_size_)
     {
       bound_cost = 10;
     }
 
-    cost = lamda_l_ * goal_dist + lamda_b_ * bound_cost;
+    // calculate direction change cost
+    double dir_cost = 0;
+    if (applyDirCost)
+    {
+      // check if the path has a valid end direction
+      if (pathEndDir_[i])
+      {
+        // calculate the direction difference cost [0, 1] (0 = direction is the same as current direction, 1 = direction is opposite then the current direction)
+        dir_cost = 0.5 * (1.0 - currentTrajEndDir.dot(*pathEndDir_[i]));
+      }
+    }
+
+    // calculate overall cost
+    double cost = lamda_l_ * goal_dist + lamda_b_ * bound_cost; // TODO: add dir_cost to the cost function
 
     mapCost.insert({cost, i});
   }
 
-  // TODO: map 数据结构需要修改 我们并不需要key 去查询 value (ATTENTION: the map is used to sort the values)
+  // TODO: map 数据结构需要修改 我们并不需要key 去查询 value (ATTENTION: the map is used to sort the values). It is maybe faster to store it in a min heap rather than a map.
   if (!mapCost.empty())
   {
     std::map<double, int>::iterator it;
@@ -476,6 +508,35 @@ void PPPlannerManager::readPathAll()
   fclose(filePtr);
 }
 
+void PPPlannerManager::determineEndDirection()
+{
+  pathEndDir_.resize(pathNum_);
+
+  // determine the end direction of each path
+  for (int i = 0; i < pathNum_; ++i)
+  {
+    if (pathAll_[i].size() > 1)
+    {
+      // compute the difference
+      std::vector<Eigen::Vector3d>::iterator it_end = std::prev(pathAll_[i].end());
+      Eigen::Vector3d d = (*it_end - *std::prev(it_end));
+      // check if the norm of the difference is large enough or if the points were to close and it is just noise
+      if (d.norm() < 1e-3)
+      {
+        pathEndDir_[i] = std::nullopt;
+      }
+      else
+      {
+        pathEndDir_[i] = d.normalized();
+      }
+    }
+    else
+    {
+      pathEndDir_[i] = std::nullopt;
+    }
+  }
+}
+
 void PPPlannerManager::visAllPaths(const Eigen::Vector3d &start_pt, const Eigen::Matrix3d &rotWV)
 {
   pathAllWorld_.clear();
@@ -564,7 +625,12 @@ bool PPPlannerManager::labelAgentCollisionPaths(const Eigen::Vector3d &start_pt,
   return true;
 }
 
-bool PPPlannerManager::trajReplan(const Eigen::Vector3d &start_pt, const Eigen::Vector3d &start_v, const double &start_time, const Eigen::Matrix3d &RWV, const Eigen::Vector3d &global_goal, vector<int> &select_path_id)
+bool PPPlannerManager::trajReplan(const Eigen::Vector3d &start_pt,
+                                  const Eigen::Vector3d &start_v, const double &start_time,
+                                  const Eigen::Matrix3d &RWV,
+                                  const Eigen::Vector3d &global_goal,
+                                  vector<int> &select_path_id,
+                                  const primitive_planner::LocalTrajData &current_traj)
 {
   Eigen::Matrix3d RVW = RWV.inverse();
 
@@ -583,7 +649,7 @@ bool PPPlannerManager::trajReplan(const Eigen::Vector3d &start_pt, const Eigen::
   // visulize all path
   // visAllPaths(start_pt, RWV);
 
-  select_path_id = scorePaths(start_pt, global_goal, RWV);
+  select_path_id = scorePaths(start_pt, global_goal, RWV, current_traj);
   t3 = ros::Time::now();
 
   if (select_path_id.empty())
