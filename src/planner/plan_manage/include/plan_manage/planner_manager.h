@@ -55,7 +55,7 @@ public:
   double drone_com_r_;
   double base_com_r_;
   double arc_length_;
-  double swarm_clearence_;
+  double swarm_clearance_;
   std::string primitiveFolder_;
   SwarmTrajData swarm_traj;
 
@@ -80,7 +80,7 @@ private:
 
   double boxX_, boxY_, boxZ_;
   double voxelX_, voxelY_, voxelZ_;
-  int voxelNumX_, voxelNumY_, voxelNumZ_, voxelNumAll_;
+  int voxelNumX_, voxelNumY_, voxelNumZ_, voxelNumAll_, voxelNum_swarm_clearance_;
 
   int pathNum_, sampleSize_;
 

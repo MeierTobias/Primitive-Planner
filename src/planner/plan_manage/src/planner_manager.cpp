@@ -29,7 +29,7 @@ void PPPlannerManager::initPlanModules(ros::NodeHandle &nh, PlanningVisualizatio
   nh.param("manager/map_size_z", z_size_, -1.0);
   nh.param("manager/max_vel", max_vel_, -1.0);
   nh.param("manager/drone_id", drone_id, -1);
-  nh.param("manager/swarm_clearence", swarm_clearence_, -1.0);
+  nh.param("manager/swarm_clearance", swarm_clearance_, -1.0);
 
   voxelNumX_ = int(boxX_ / voxelSize_);
   voxelNumY_ = int(boxY_ / voxelSize_);
@@ -38,6 +38,7 @@ void PPPlannerManager::initPlanModules(ros::NodeHandle &nh, PlanningVisualizatio
   voxelX_ = boxX_;
   voxelY_ = boxY_ / 2.0;
   voxelZ_ = boxZ_ / 2.0;
+  voxelNum_swarm_clearance_ = int(ceil(swarm_clearance_ / voxelSize_)); // number of voxels that represents the swarm_clearance distance
 
   correspondences_.resize(voxelNumAll_);
   for (int i = 0; i < voxelNumAll_; i++)
@@ -232,7 +233,7 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
     mapCost.insert({cost, i});
   }
 
-  // TODO: map 数据结构需要修改 我们并不需要key 去查询 value
+  // TODO: map 数据结构需要修改 我们并不需要key 去查询 value (ATTENTION: the map is used to sort the values)
   if (!mapCost.empty())
   {
     std::map<double, int>::iterator it;
@@ -524,25 +525,36 @@ bool PPPlannerManager::labelAgentCollisionPaths(const Eigen::Vector3d &start_pt,
           (pos_v(2) >= -voxelZ_ + 1e-4 && pos_v(2) <= voxelZ_ - 1e-4))
       {
         // determine the position/index of the voxel containing the position of the other agent
-        int indX = floor((voxelX_ - pos_v(0)) / voxelSize_);
-        int indY = floor((voxelY_ - pos_v(1)) / voxelSize_);
-        int indZ = floor((voxelZ_ - pos_v(2)) / voxelSize_);
-
-        // flatten the index
-        int ind = voxelNumY_ * voxelNumZ_ * indX + voxelNumZ_ * indY + indZ;
-
-        // get the number of paths that intersect the voxel
-        int occPathNumByVoxel = allVelCorrespondences_[vel_id][ind].size() / 3;
+        int indXCenter = floor((voxelX_ - pos_v(0)) / voxelSize_);
+        int indYCenter = floor((voxelY_ - pos_v(1)) / voxelSize_);
+        int indZCenter = floor((voxelZ_ - pos_v(2)) / voxelSize_);
 
         // calculate the offset time
         double other_cur_time = swarm_traj[i].start_time + j * 0.01;
-        // loop over the trajectories intersecting the voxel
-        for (int k = 0; k < occPathNumByVoxel; k++)
+
+        // loop over the center voxel and all adjacent voxel which are inside the swarm_clearance
+        for (int indX = max(0, indXCenter - voxelNum_swarm_clearance_); indX <= min(indXCenter + voxelNum_swarm_clearance_, voxelNumX_ - 1); ++indX)
         {
-          // check if the time range is critical (if the paths cross at the same time).
-          if (other_cur_time > start_time + allVelCorrespondences_[vel_id][ind][3 * k + 1] / 1000 && other_cur_time < start_time + allVelCorrespondences_[vel_id][ind][3 * k + 2] / 1000)
+          for (int indY = max(0, indYCenter - voxelNum_swarm_clearance_); indY <= min(indYCenter + voxelNum_swarm_clearance_, voxelNumY_ - 1); ++indY)
           {
-            clearPathList_[allVelCorrespondences_[vel_id][ind][3 * k]]++;
+            for (int indZ = max(0, indZCenter - voxelNum_swarm_clearance_); indZ <= min(indZCenter + voxelNum_swarm_clearance_, voxelNumZ_ - 1); ++indZ)
+            {
+              // flatten the index
+              int ind = voxelNumY_ * voxelNumZ_ * indX + voxelNumZ_ * indY + indZ;
+
+              // get the number of paths that intersect the voxel
+              int occPathNumByVoxel = allVelCorrespondences_[vel_id][ind].size() / 3;
+
+              // loop over the trajectories intersecting the voxel
+              for (int k = 0; k < occPathNumByVoxel; k++)
+              {
+                // check if the time range is critical (if the paths cross at the same time).
+                if (other_cur_time > start_time + allVelCorrespondences_[vel_id][ind][3 * k + 1] / 1000 && other_cur_time < start_time + allVelCorrespondences_[vel_id][ind][3 * k + 2] / 1000)
+                {
+                  clearPathList_[allVelCorrespondences_[vel_id][ind][3 * k]]++;
+                }
+              }
+            }
           }
         }
       }

@@ -386,7 +386,7 @@ bool PPReplanFSM::checkCollision(int recv_id)
   {
     // precise approach: interpolation pos by time [to be realized]
     // pos resolution: 10ms; 1000/10
-    if ((myself_traj_.traj_pos[round((t - my_traj_start_time) * 100)] - planner_manager_->swarm_traj[recv_id].traj_pos[round((t - other_traj_start_time) * 100)]).norm() < planner_manager_->swarm_clearence_)
+    if ((myself_traj_.traj_pos[round((t - my_traj_start_time) * 100)] - planner_manager_->swarm_traj[recv_id].traj_pos[round((t - other_traj_start_time) * 100)]).norm() < planner_manager_->swarm_clearance_)
     {
       return true;
     }
