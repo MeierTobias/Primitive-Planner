@@ -21,9 +21,10 @@ void PPPlannerManager::initPlanModules(ros::NodeHandle &nh, PlanningVisualizatio
   nh.param("manager/voxelSize", voxelSize_, 0.1);
   // nh.param("manager/pathNum", pathNum_, 61);
   nh.param("manager/sampleSize", sampleSize_, 2000);
-  // nh.param("manager/lamda_c", lamda_c_, 12.0);
-  nh.param("manager/lamda_l", lamda_l_, 12.0);
-  nh.param("manager/lamda_b", lamda_b_, 12.0);
+  // nh.param("manager/lambda_c", lambda_c_, 12.0);
+  nh.param("manager/lambda_l", lambda_l_, 12.0);
+  nh.param("manager/lambda_b", lambda_b_, 12.0);
+  nh.param("manager/lambda_d", lambda_d_, 12.0);
   nh.param("manager/map_size_x", x_size_, -1.0);
   nh.param("manager/map_size_y", y_size_, -1.0);
   nh.param("manager/map_size_z", z_size_, -1.0);
@@ -227,7 +228,7 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
     // check if the goal is out of reach for the planned trajectory
     if ((start_pt - global_goal).norm() > pathLengthMax_ || rotWV.col(0).dot(global_goal - start_pt) <= 0)
     {
-      goal_dist = (endPoint - global_goal).norm() - (start_pt - global_goal).norm();
+      goal_dist = (endPoint - global_goal).norm(); // TODO: add the correct improvement strategy (normed distance)
     }
     else
     {
@@ -235,7 +236,6 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
       {
         Eigen::Vector3d traj_pt = rotWV * pathAll_[i][j] + start_pt;
         double dist = (traj_pt - global_goal).norm();
-        ;
         goal_dist = goal_dist > dist ? dist : goal_dist;
       }
     }
@@ -258,9 +258,11 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
         dir_cost = 0.5 * (1.0 - currentTrajEndDir.dot(*pathEndDir_[i]));
       }
     }
+    
+    // TODO: add a cost for trajectory change or discount the current selected trajectory
 
     // calculate overall cost
-    double cost = lamda_l_ * goal_dist + lamda_b_ * bound_cost; // TODO: add dir_cost to the cost function
+    double cost = lambda_l_ * goal_dist + lambda_b_ * bound_cost + lambda_d_ * dir_cost;
 
     mapCost.insert({cost, i});
   }
@@ -594,6 +596,7 @@ bool PPPlannerManager::labelAgentCollisionPaths(const Eigen::Vector3d &start_pt,
         double other_cur_time = swarm_traj[i].start_time + j * 0.01;
 
         // loop over the center voxel and all adjacent voxel which are inside the swarm_clearance
+        // TODO: don't check the first few voxels in the x direction
         for (int indX = max(0, indXCenter - voxelNum_swarm_clearance_); indX <= min(indXCenter + voxelNum_swarm_clearance_, voxelNumX_ - 1); ++indX)
         {
           for (int indY = max(0, indYCenter - voxelNum_swarm_clearance_); indY <= min(indYCenter + voxelNum_swarm_clearance_, voxelNumY_ - 1); ++indY)

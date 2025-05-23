@@ -94,7 +94,7 @@ private:
   std::vector<double> pathLengthList_;
   double pathLengthMax_;
 
-  double lamda_c_, lamda_l_, lamda_b_; // TODO:待定，实验效果测试
+  double lambda_c_, lambda_l_, lambda_b_, lambda_d_; // TODO:待定，实验效果测试
 
   double x_size_, y_size_, z_size_;
 
