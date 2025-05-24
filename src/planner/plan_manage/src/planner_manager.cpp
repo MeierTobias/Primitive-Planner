@@ -566,9 +566,13 @@ bool PPPlannerManager::labelAgentCollisionPaths(const Eigen::Vector3d &start_pt,
   {
     vel_id = max_vel_ * 10;
   }
-
+  
+  // ignore the first few voxels in the x direction (body frame) since all trajectories intersect the same voxels and the collision check in these few voxels make the planner unstable 
+  double x_dist = 0.3; // [m]
+  int x_offset = static_cast<int>(ceil(x_dist / voxelSize_));
+  
   // loop over all agents in the swarm
-  for (int i = 0; i < (int)swarm_traj.size(); i++)
+  for (int i = 0; i < static_cast<int>(swarm_traj.size()); i++)
   {
     // skip agents that were determined to be to far away to cause a collision (id=-2) or have infeasible trajectories (id=-1) and skipp myself
     if (swarm_traj[i].drone_id < 0 || swarm_traj[i].drone_id == drone_id)
@@ -598,8 +602,7 @@ bool PPPlannerManager::labelAgentCollisionPaths(const Eigen::Vector3d &start_pt,
         double other_cur_time = swarm_traj[i].start_time + j * 0.01;
 
         // loop over the center voxel and all adjacent voxel which are inside the swarm_clearance
-        // TODO: don't check the first few voxels in the x direction
-        for (int indX = max(0, indXCenter - voxelNum_swarm_clearance_); indX <= min(indXCenter + voxelNum_swarm_clearance_, voxelNumX_ - 1); ++indX)
+        for (int indX = max(x_offset, indXCenter - voxelNum_swarm_clearance_); indX <= min(indXCenter + voxelNum_swarm_clearance_, voxelNumX_ - 1); ++indX)
         {
           for (int indY = max(0, indYCenter - voxelNum_swarm_clearance_); indY <= min(indYCenter + voxelNum_swarm_clearance_, voxelNumY_ - 1); ++indY)
           {
