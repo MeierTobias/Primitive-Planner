@@ -9,6 +9,8 @@ namespace primitive_planner
 
 void PPPlannerManager::initPlanModules(ros::NodeHandle &nh, PlanningVisualization::Ptr vis)
 {
+  drone_counter_.init(nh, robot_pos_);
+
   nh.param<std::string>("manager/primitiveFolder", primitiveFolder_, "none");
   nh.param("manager/depthCloudStackNum", depthCloudStackNum_, 4); // local map 12Hz - save 1s pointcloud
   nh.param("manager/boxX", boxX_, 8.0);
