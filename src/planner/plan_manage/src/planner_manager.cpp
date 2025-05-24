@@ -1,5 +1,6 @@
 #include <plan_manage/planner_manager.h>
 #include <thread>
+#include <limits>
 #include "visualization_msgs/Marker.h"
 
 using namespace std;
@@ -224,20 +225,23 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
     // calculate goal distance cost
     // rotWV * pathEndList_ + start_pt: body -> world;
     Eigen::Vector3d endPoint = rotWV * pathEndList_[i] + start_pt;
-    double goal_dist = 99999;
+    double goal_cost = 1;
     // check if the goal is out of reach for the planned trajectory
     if ((start_pt - global_goal).norm() > pathLengthMax_ || rotWV.col(0).dot(global_goal - start_pt) <= 0)
     {
-      goal_dist = (endPoint - global_goal).norm(); // TODO: add the correct improvement strategy (normed distance)
+      Eigen::Vector3d start_gaol_vec = global_goal - start_pt;
+      goal_cost = (start_pt + pathLengthMax_ * start_gaol_vec / start_gaol_vec.norm() - endPoint).norm() / (2 * pathLengthMax_);
     }
     else
     {
+      double goal_dist = std::numeric_limits<double>::max();
       for (size_t j = 0; j < pathAll_[i].size(); ++j)
       {
         Eigen::Vector3d traj_pt = rotWV * pathAll_[i][j] + start_pt;
         double dist = (traj_pt - global_goal).norm();
         goal_dist = goal_dist > dist ? dist : goal_dist;
       }
+      goal_cost = goal_dist / (2 * pathLengthMax_);
     }
 
     // calculate bound violation cost
@@ -259,10 +263,8 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
       }
     }
     
-    // TODO: add a cost for trajectory change or discount the current selected trajectory
-
     // calculate overall cost
-    double cost = lambda_l_ * goal_dist + lambda_b_ * bound_cost + lambda_d_ * dir_cost;
+    double cost = lambda_l_ * goal_cost + lambda_b_ * bound_cost + lambda_d_ * dir_cost;
 
     mapCost.insert({cost, i});
   }
