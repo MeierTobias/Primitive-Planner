@@ -16,6 +16,7 @@ namespace primitive_planner
 
 void DroneCounter::init(ros::NodeHandle &nh, const Eigen::Vector3d &position)
 {
+  this->position = &position;
   count_pub_ = nh.advertise<quadrotor_msgs::CountDrones>("/distributed_count", 100);
   count_sub_ = nh.subscribe<const quadrotor_msgs::CountDrones &>("/distributed_count", 100, &DroneCounter::countMessageCallback, this);
   debug_sub_ = nh.subscribe<const std_msgs::Empty &>("/debug_count", 100, &DroneCounter::debugMessageCallback, this);

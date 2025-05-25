@@ -76,7 +76,7 @@ public:
   int drone_total;
 
 private:
-  const Eigen::Vector3d *position;
+  const Eigen::Vector3d *position = nullptr;
 
   std::unique_ptr<Phase> phase = nullptr;
 
