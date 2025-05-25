@@ -27,6 +27,9 @@ void DroneCounter::init(ros::NodeHandle &nh, int id, const Eigen::Vector3d &posi
   rootUuid = uuid;
   parentUuid = uuid;
   children.clear();
+
+  min_neighbour = I_HAVE_NO_NEIGHBOURS;
+  min_neighbour_root = I_HAVE_NO_NEIGHBOURS;
 }
 
 constexpr double MAX_RECV_RADIUS = 5;
@@ -60,6 +63,7 @@ void DroneCounter::countMessageCallback(const quadrotor_msgs::CountDrones &msg)
   {
     if (msg.rootUuid == rootUuid)
     {
+      // Our neighbour just joined our tree, so we can't consider them as a neighbour anymore
       min_neighbour = I_HAVE_NO_NEIGHBOURS;
       min_neighbour_root = I_HAVE_NO_NEIGHBOURS;
     }
@@ -105,7 +109,7 @@ struct NonRoot : Phase
     dc.rootUuid = dc.min_neighbour_root;
     dc.min_neighbour = I_HAVE_NO_NEIGHBOURS;
     dc.min_neighbour_root = I_HAVE_NO_NEIGHBOURS;
-    dc.sendMessage(ATTACH_CHILD, dc.min_neighbour, 0);
+    dc.sendMessage(ATTACH_CHILD, dc.parentUuid, 0);
   };
 
   enum
@@ -129,9 +133,11 @@ struct NonRoot : Phase
     }
     else if (msg.type == FIND_NEIGHBOURS_ANSWER and msg.recipient == node.uuid)
     {
-      ROS_ASSERT(waiting_for == NEIGHBOURS);
-
-      nb_children_answered++;
+      if (waiting_for == NEIGHBOURS)
+      {
+        // There can be a race condition leading this to be an unsolicited answer.
+        nb_children_answered++;
+      }
       if (msg.payload < node.min_neighbour_root)
       {
         node.min_neighbour_root = msg.payload;
@@ -176,10 +182,12 @@ struct NonRoot : Phase
       waiting_for = NOT_WAITING;
     }
 
+    /*
     if (msg.type == UPDATE && msg.payload == node.uuid)
     {
       node.add_child(msg.sender);
     }
+      */
 
     if (msg.type == UPDATE and msg.sender == node.parentUuid)
     {
@@ -280,8 +288,6 @@ struct SearchForMinNeighbour : Phase
 
 int DroneCounter::countDrones()
 {
-  min_neighbour = I_HAVE_NO_NEIGHBOURS;
-  min_neighbour_root = I_HAVE_NO_NEIGHBOURS;
   sendMessage(NEIGHBOUR_ADVERTISEMENT, EVERYONE, 0);
 
   // Spin for 5 secs
@@ -309,6 +315,7 @@ int DroneCounter::countDrones()
   while (phase)
   {
     ros::spinOnce();
+    r.sleep();
   }
   return drone_total;
 }
