@@ -1,32 +1,29 @@
 #include "plan_manage/drone_counter.h"
 #include <std_msgs/Empty.h>
 #include <quadrotor_msgs/CountDrones.h>
+#include <ros/callback_queue.h>
 #include <ros/assert.h>
 #include <ros/console.h>
 #include <ros/console_backend.h>
 #include <ros/init.h>
 #include <Eigen/Core>
 #include <Eigen/StdVector>
-#include <cstddef>
 #include <cassert>
 #include <sstream>
 
 namespace primitive_planner
 {
 
-void DroneCounter::init(ros::NodeHandle &nh, const Eigen::Vector3d &position)
+void DroneCounter::init(ros::NodeHandle &nh, int id, const Eigen::Vector3d &position)
 {
   this->position = &position;
+  ROS_DEBUG("[COUNT] init");
   count_pub_ = nh.advertise<quadrotor_msgs::CountDrones>("/distributed_count", 100);
   count_sub_ = nh.subscribe<const quadrotor_msgs::CountDrones &>("/distributed_count", 100, &DroneCounter::countMessageCallback, this);
   debug_sub_ = nh.subscribe<const std_msgs::Empty &>("/debug_count", 100, &DroneCounter::debugMessageCallback, this);
 
-  while (true)
-  {
-    uuid = std::rand();
-    if (uuid != Recipient::EVERYONE and uuid != Recipient::MY_CHILDREN)
-      break;
-  }
+  uuid = id;
+  ROS_ASSERT(uuid != Recipient::EVERYONE and uuid != Recipient::MY_CHILDREN);
   rootUuid = uuid;
   parentUuid = uuid;
   children.clear();
@@ -39,6 +36,8 @@ void DroneCounter::countMessageCallback(const quadrotor_msgs::CountDrones &msg)
   Eigen::Vector3d sender_position(msg.position.x, msg.position.y, msg.position.z);
 
   if ((sender_position - *position).norm() > MAX_RECV_RADIUS)
+    return;
+  if ((sender_position - *position).norm() < 1e-6) // probably a message from myself
     return;
 
   if (msg.rootUuid < min_neighbour_root || min_neighbour_root == I_HAVE_NO_NEIGHBOURS)
@@ -100,7 +99,14 @@ void DroneCounter::set_phase()
 struct NonRoot : Phase
 {
   NonRoot(DroneCounter &dc)
-    : Phase(dc) {};
+    : Phase(dc)
+  {
+    dc.parentUuid = dc.min_neighbour;
+    dc.rootUuid = dc.min_neighbour_root;
+    dc.min_neighbour = I_HAVE_NO_NEIGHBOURS;
+    dc.min_neighbour_root = I_HAVE_NO_NEIGHBOURS;
+    dc.sendMessage(ATTACH_CHILD, dc.min_neighbour, 0);
+  };
 
   enum
   {
@@ -275,18 +281,24 @@ struct SearchForMinNeighbour : Phase
 int DroneCounter::countDrones()
 {
   min_neighbour = I_HAVE_NO_NEIGHBOURS;
+  min_neighbour_root = I_HAVE_NO_NEIGHBOURS;
   sendMessage(NEIGHBOUR_ADVERTISEMENT, EVERYONE, 0);
-  for (int i = 0; i < 3; i++)
+
+  // Spin for 5 secs
+  ros::Rate r(10); // 10 hz
+  for (int i = 0; i < 70; i++)
   {
     ros::spinOnce();
+    r.sleep();
   }
+
   /* We've received all neigbours ads we will get */
   if (min_neighbour == I_HAVE_NO_NEIGHBOURS)
   {
     return 1;
   }
 
-  if (min_neighbour < uuid)
+  if (min_neighbour > uuid)
   { // We're still root
     set_phase<SearchForMinNeighbour>();
   }
@@ -305,10 +317,11 @@ void DroneCounter::debugMessageCallback(const std_msgs::Empty &msg)
 {
   int total = countDrones();
   std::stringstream ss;
-  ss << "[COUNT] " << "- uuid:" << uuid << "\n"
+  ss << "[COUNT]:\n"
+     << "- uuid:" << uuid << "\n"
      << "- rootUuid:" << rootUuid << "\n"
      << "- total" << total << "\n";
-  ROS_DEBUG(ss.str().c_str());
+  ROS_INFO(ss.str().c_str());
 }
 
 void DroneCounter::add_child(int child_id)

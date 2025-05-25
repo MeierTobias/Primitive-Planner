@@ -50,7 +50,7 @@ struct DecideOnBranch;
 class DroneCounter
 {
 public:
-  void init(ros::NodeHandle &nh, const Eigen::Vector3d &position);
+  void init(ros::NodeHandle &nh, int id, const Eigen::Vector3d &position);
 
   int countDrones();
 
