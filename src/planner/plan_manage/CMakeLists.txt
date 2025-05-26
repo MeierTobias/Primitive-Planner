@@ -41,6 +41,7 @@ add_executable(primitive_planner_node
   src/primitive_planner_node.cpp 
   src/pp_replan_fsm.cpp
   src/planner_manager.cpp
+  src/drone_counter.cpp
   )
 target_link_libraries(primitive_planner_node 
   ${catkin_LIBRARIES} ${PCL_LIBRARIES}
