@@ -30,6 +30,7 @@ constexpr double MAX_RECV_RADIUS = 5;
 
 void DroneCounter::startCounting()
 {
+  ROS_DEBUG("[COUNT] drone %d starting to count children, root is %d", uuid, rootUuid);
   drone_total = 1;
   is_counting_nodes = true;
   nb_neighbours_answers_missing = 0;
@@ -56,6 +57,14 @@ void DroneCounter::countMessageCallback(const quadrotor_msgs::CountDrones &msg)
   {
     if (msg.payload < rootUuid)
     {
+      if (isRoot())
+      {
+        ROS_DEBUG("[COUNT] drone %d leaves root status, has parent %d to root %d", uuid, msg.sender, msg.payload);
+      }
+      else
+      {
+        ROS_DEBUG("[COUNT] drone %d updates root, has parent %d to root %d", uuid, msg.sender, msg.payload);
+      }
       rootUuid = msg.payload;
       parentUuid = msg.sender;
       is_counting_nodes = false;
@@ -81,6 +90,11 @@ void DroneCounter::countMessageCallback(const quadrotor_msgs::CountDrones &msg)
         if (msg.recipient == uuid)
         {
           nb_neighbours_answers_missing += 1;
+          ROS_DEBUG("[COUNT] node %d, got acknowledgement from %d", uuid, msg.sender);
+        }
+        else
+        {
+          ROS_DEBUG("[COUNT] node %d, neighbour %d acknowledged someone else (%d)", uuid, msg.sender, msg.recipient);
         }
       }
     }
@@ -182,6 +196,7 @@ int DroneCounter::countDrones()
     r.sleep();
   }
 
+  ROS_DEBUG("[COUNT] drone %d RESETTING SEARCH", uuid);
   sendMessage(FLOOD_FORWARD, EVERYONE, uuid);
 
   // Spin for 5 secs
