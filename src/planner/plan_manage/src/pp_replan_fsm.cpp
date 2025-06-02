@@ -108,16 +108,14 @@ void PPReplanFSM::init(ros::NodeHandle &nh)
 
   // Wait 3s --- ensure to save 30 frames pointCloud
   ROS_INFO("Wait for 3 seconds.");
-  int count = 0;
-  while (ros::ok() && count++ < 3000)
+  ros::Time start_time = ros::Time::now();
+  while (ros::ok() && ((ros::Time::now() - start_time).toSec() < 3.0))
   {
     ros::spinOnce();
-    ros::Duration(0.001).sleep();
   }
   while (ros::ok() && !have_odom_)
   {
     ros::spinOnce();
-    ros::Duration(0.001).sleep();
   }
   starting_pos_ = odom_pos_;
 
@@ -166,6 +164,7 @@ void PPReplanFSM::init(ros::NodeHandle &nh)
     ROS_ERROR("Unknown flight type");
     break;
   }
+  ROS_DEBUG("[FSM] Drone %d: Init finished", planner_manager_->drone_id);
 }
 
 void PPReplanFSM::turnTowardsGoal(double yaw_des)
