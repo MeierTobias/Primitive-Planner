@@ -226,10 +226,10 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
     Eigen::Vector3d endPoint = rotWV * pathEndList_[i] + start_pt;
     double goal_cost = 1;
     // check if the goal is out of reach for the planned trajectory
-    if ((start_pt - global_goal).norm() > pathLengthMax_ || rotWV.col(0).dot(global_goal - start_pt) <= 0)
+    if ((start_pt - global_goal).norm() > pathLengthMax_) //  || rotWV.col(0).dot(global_goal - start_pt) <= 0)
     {
-      Eigen::Vector3d start_gaol_vec = global_goal - start_pt;
-      goal_cost = (start_pt + pathLengthMax_ * start_gaol_vec / start_gaol_vec.norm() - endPoint).norm() / (2 * pathLengthMax_);
+      Eigen::Vector3d start_goal_vec = global_goal - start_pt;
+      goal_cost = (start_pt + pathLengthMax_ * start_goal_vec / start_goal_vec.norm() - endPoint).norm() / (2 * pathLengthMax_);
     }
     else
     {
@@ -238,9 +238,12 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
       {
         Eigen::Vector3d traj_pt = rotWV * pathAll_[i][j] + start_pt;
         double dist = (traj_pt - global_goal).norm();
-        goal_dist = goal_dist > dist ? dist : goal_dist;
+        goal_dist = dist < goal_dist ? dist : goal_dist;
       }
       goal_cost = goal_dist / (2 * pathLengthMax_);
+      // TODO: This normalization may scale to harshly since this statement only applies if we are close enough to the goal and hence the proportion compared to the other score metrics gets very small.
+
+      // TODO: add a heading discount factor since the goal point is no longer at the end of the trajectory or calculate the actual heading of each point (not ony the end point) in advance and then select the corresponding one.
     }
 
     // calculate bound violation cost
