@@ -197,6 +197,7 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
   std::vector<int> select_path_id;
   Eigen::Vector3d currentTrajEndDir;
   bool applyDirCost = true;
+  std::vector<int> collisionPaths, validPaths;
 
   // determine the end heading of the currently executed trajectory
   if (current_traj.traj_pos.size() > 1)
@@ -216,9 +217,7 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
     // collision paths
     if (clearPathList_[i] > 0)
     {
-      // TODO:[lable red]
-      // Eigen::Vector4d collision_color(1, 0, 0, 1);
-      // visualization_->displayInitPathList(pathAllWorld_[i], 0.05, collision_color, 0);
+      collisionPaths.push_back(i);
       continue;
     }
 
@@ -262,11 +261,12 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
         dir_cost = 0.5 * (1.0 - currentTrajEndDir.dot(rotWV * (*pathEndDir_[i])));
       }
     }
-    
     // calculate overall cost
     double cost = lambda_l_ * goal_cost + lambda_b_ * bound_cost + lambda_d_ * dir_cost;
 
     mapCost.insert({cost, i});
+
+    validPaths.push_back(i);
   }
 
   // TODO: map 数据结构需要修改 我们并不需要key 去查询 value (ATTENTION: the map is used to sort the values). It is maybe faster to store it in a min heap rather than a map.
@@ -277,13 +277,12 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
     {
       select_path_id.push_back((*it).second);
     }
-    // TODO:[label green]
-    // Eigen::Vector4d select_color(0, 1, 0, 1);
-    // visualization_->displayInitPathList(pathAllWorld_[select_path_id.front()], 0.05, select_color, 0);
+    visualization_->displayPathSelection(collisionPaths, validPaths, select_path_id.front(), pathAll_, start_pt, rotWV);
   }
   else
   {
     ROS_WARN("====[id:%d] All primitives are infeasible!====", drone_id);
+    visualization_->displayPathSelection(collisionPaths, validPaths, -1, pathAll_, start_pt, rotWV);
   }
 
   return select_path_id;
@@ -566,11 +565,11 @@ bool PPPlannerManager::labelAgentCollisionPaths(const Eigen::Vector3d &start_pt,
   {
     vel_id = max_vel_ * 10;
   }
-  
-  // ignore the first few voxels in the x direction (body frame) since all trajectories intersect the same voxels and the collision check in these few voxels make the planner unstable 
+
+  // ignore the first few voxels in the x direction (body frame) since all trajectories intersect the same voxels and the collision check in these few voxels make the planner unstable
   double x_dist = 0.3; // [m]
   int x_offset = static_cast<int>(ceil(x_dist / voxelSize_));
-  
+
   // loop over all agents in the swarm
   for (int i = 0; i < static_cast<int>(swarm_traj.size()); i++)
   {
