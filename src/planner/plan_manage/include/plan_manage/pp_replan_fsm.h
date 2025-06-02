@@ -136,6 +136,7 @@ private:
   bool readLocalTrajPos(Eigen::Vector3d &start_pos, int &vel_id, Eigen::Matrix<double, 3, 3> &Rwv, std::vector<int> &path_id, std::vector<Eigen::Vector3d> &traj_pos, double &traj_duration);
   bool checkCollision(int recv_id);
   bool readPrimitivePos();
+  void turnTowardsGoal(double yaw_des);
 };
 
 } // namespace primitive_planner

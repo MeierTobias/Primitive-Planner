@@ -156,27 +156,8 @@ void PPReplanFSM::init(ros::NodeHandle &nh)
 
       Eigen::Vector3d dir_to_goal = global_goal_ - odom_pos_;
       double yaw_des = limit_yaw(atan2(dir_to_goal(1), dir_to_goal(0)));
-      std_msgs::Float64 yaw_cmd;
-      yaw_cmd.data = yaw_des;
+      turnTowardsGoal(yaw_des);
 
-      int count = 0;
-      while (ros::ok())
-      {
-        if (count++ % 100 == 0)
-        {
-          yaw_cmd_pub_.publish(yaw_cmd);
-        }
-
-        double diff = odom_yaw_ - yaw_des;
-        diff = std::fmod(diff + M_PI, 2 * M_PI) - M_PI;
-        if (diff < -M_PI)
-          diff += 2 * M_PI;
-        if (abs(diff) < 0.1)
-          break;
-
-        ros::spinOnce();
-        ros::Duration(0.01).sleep();
-      }
       have_target_ = true;
     }
     break;
@@ -184,6 +165,30 @@ void PPReplanFSM::init(ros::NodeHandle &nh)
   default:
     ROS_ERROR("Unknown flight type");
     break;
+  }
+}
+
+void PPReplanFSM::turnTowardsGoal(double yaw_des)
+{
+  std_msgs::Float64 yaw_cmd;
+  yaw_cmd.data = yaw_des;
+  int count = 0;
+  while (ros::ok())
+  {
+    if (count++ % 100 == 0)
+    {
+      yaw_cmd_pub_.publish(yaw_cmd);
+    }
+
+    double diff = odom_yaw_ - yaw_des;
+    diff = std::fmod(diff + M_PI, 2 * M_PI) - M_PI;
+    if (diff < -M_PI)
+      diff += 2 * M_PI;
+    if (abs(diff) < 0.1)
+      break;
+
+    ros::spinOnce();
+    ros::Duration(0.01).sleep();
   }
 }
 
@@ -202,23 +207,11 @@ void PPReplanFSM::newGoalReceived(const Eigen::Vector3d &goal)
   }
   global_pub_.publish(goal_msg);
   visualization_->displayGoalPoint(global_goal_, Eigen::Vector4d(0, 0.5, 0.5, 1), 0.15, 0);
-
-  Eigen::Vector3d dir_to_goal = global_goal_ - odom_pos_;
-  double yaw_des = atan2(dir_to_goal(1), dir_to_goal(0));
   if (exec_state_ == WAIT_TARGET)
   {
-    while (ros::ok())
-    {
-      double diff = odom_yaw_ - yaw_des;
-      diff = std::fmod(diff + M_PI, 2 * M_PI) - M_PI;
-      if (diff < -M_PI)
-        diff += 2 * M_PI;
-      if (abs(diff) < 0.1)
-        break;
-
-      ros::spinOnce();
-      ros::Duration(0.01).sleep();
-    }
+    Eigen::Vector3d dir_to_goal = global_goal_ - odom_pos_;
+    double yaw_des = atan2(dir_to_goal(1), dir_to_goal(0));
+    turnTowardsGoal(yaw_des);
   }
   have_target_ = true;
   have_trigger_ = true;
@@ -231,7 +224,7 @@ void PPReplanFSM::waypointCallback(const quadrotor_msgs::GoalSetPtr &msg)
     return;
 
   ++goal_tag_;
-  ROS_INFO("Received goal: %f, %f, %f", msg->goal[0], msg->goal[1], msg->goal[2]);
+  ROS_INFO("[FSM] Drone %d: Received goal: %f, %f, %f", planner_manager_->drone_id, msg->goal[0], msg->goal[1], msg->goal[2]);
   newGoalReceived(Eigen::Vector3d(msg->goal[0], msg->goal[1], msg->goal[2]));
 }
 

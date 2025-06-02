@@ -567,8 +567,9 @@ bool PPPlannerManager::labelAgentCollisionPaths(const Eigen::Vector3d &start_pt,
   }
 
   // ignore the first few voxels in the x direction (body frame) since all trajectories intersect the same voxels and the collision check in these few voxels make the planner unstable
-  double x_dist = 0.3; // [m]
-  int x_offset = static_cast<int>(ceil(x_dist / voxelSize_));
+  // double x_dist = 0.3; // [m]
+  // int x_offset = static_cast<int>(ceil(x_dist / voxelSize_));
+  int x_offset = 0;
 
   // loop over all agents in the swarm
   for (int i = 0; i < static_cast<int>(swarm_traj.size()); i++)
