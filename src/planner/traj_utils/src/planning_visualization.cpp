@@ -1,7 +1,5 @@
 #include <traj_utils/planning_visualization.h>
 
-using std::cout;
-using std::endl;
 namespace primitive_planner
 {
 PlanningVisualization::PlanningVisualization(ros::NodeHandle &nh)
@@ -30,13 +28,12 @@ void PlanningVisualization::displayMarkerList(ros::Publisher &pub, const std::ve
                                               Eigen::Vector4d color, int id, bool show_sphere /* = true */)
 {
   visualization_msgs::Marker sphere, line_strip;
-  sphere.header.frame_id = line_strip.header.frame_id = "world";
-  sphere.header.stamp = line_strip.header.stamp = ros::Time::now();
   sphere.type = visualization_msgs::Marker::SPHERE_LIST;
   line_strip.type = visualization_msgs::Marker::LINE_STRIP;
+
+  sphere.header.frame_id = line_strip.header.frame_id = "world";
+  sphere.header.stamp = line_strip.header.stamp = ros::Time::now();
   sphere.action = line_strip.action = visualization_msgs::Marker::ADD;
-  sphere.id = id;
-  line_strip.id = id + 1000;
 
   sphere.pose.orientation.w = line_strip.pose.orientation.w = 1.0;
   sphere.color.r = line_strip.color.r = color(0);
@@ -46,10 +43,14 @@ void PlanningVisualization::displayMarkerList(ros::Publisher &pub, const std::ve
   sphere.scale.x = scale;
   sphere.scale.y = scale;
   sphere.scale.z = scale;
+
+  sphere.id = id;
+  line_strip.id = id + 1000;
   line_strip.scale.x = scale / 2;
-  geometry_msgs::Point pt;
+
   for (int i = 0; i < int(list.size()); i++)
   {
+    geometry_msgs::Point pt;
     pt.x = list[i](0);
     pt.y = list[i](1);
     pt.z = list[i](2);
@@ -220,6 +221,10 @@ void PlanningVisualization::displayPathSelection(const std::vector<int> &collisi
   {
     return;
   }
+
+  visualization_msgs::Marker clearAll;
+  clearAll.action = visualization_msgs::Marker::DELETEALL;
+  init_list_pub.publish(clearAll);
 
   for (int id : collisionPaths)
   {
