@@ -31,8 +31,6 @@ void PPPlannerManager::initPlanModules(ros::NodeHandle &nh, PlanningVisualizatio
   nh.param("manager/drone_id", drone_id, -1);
   nh.param("manager/swarm_clearence", swarm_clearence_, -1.0);
 
-  drone_counter_.init(nh, drone_id, robot_pos_);
-
   voxelNumX_ = int(boxX_ / voxelSize_);
   voxelNumY_ = int(boxY_ / voxelSize_);
   voxelNumZ_ = int(boxZ_ / voxelSize_);

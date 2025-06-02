@@ -55,6 +55,10 @@ void PPReplanFSM::init(ros::NodeHandle &nh)
   nh.param("fsm/no_replan_thresh", no_replan_thresh_, 4.0);
   nh.param("fsm/waypoint_num", waypoint_num_, -1);
 
+  int total_drones;
+  nh.param("/total_drones", total_drones);
+  this->drone_counter_.init(nh, planner_manager_->getRobotPos(), static_cast<unsigned int>(total_drones));
+
   // Raise the default logger level
   // TODO: This can be removed after development.
   if (ros::console::set_logger_level(
@@ -703,6 +707,7 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
   case WAIT_TARGET: {
     if (have_target_ && have_trigger_)
     {
+      drone_counter_.unsetReachedGoal();
       changeFSMExecState(GEN_NEW_TRAJ, "FSM");
     }
     break;
@@ -835,7 +840,11 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
 
     have_target_ = false;
     have_trigger_ = false;
-    changeFSMExecState(WAIT_TARGET, "FSM");
+    drone_counter_.setReachedGoal();
+    if (drone_counter_.allDronesArrived())
+    {
+      changeFSMExecState(WAIT_TARGET, "FSM");
+    }
 
     break;
   }

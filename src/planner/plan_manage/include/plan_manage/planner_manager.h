@@ -21,8 +21,6 @@
 
 #include <pcl/filters/random_sample.h>
 
-#include "plan_manage/drone_counter.h"
-
 namespace primitive_planner
 {
 // Primitive Planner Manager
@@ -51,6 +49,11 @@ public:
   int readPathList();
   void readPathAll();
 
+  const Eigen::Vector3d &getRobotPos() const
+  {
+    return robot_pos_;
+  }
+
   int drone_id;
   double max_vel_;
   bool sim_dist_com_;
@@ -71,7 +74,6 @@ public:
 
 private:
   PlanningVisualization::Ptr visualization_;
-  DroneCounter drone_counter_;
 
   ros::Subscriber dep_odom_sub_, dep_cloud_sub_;
 

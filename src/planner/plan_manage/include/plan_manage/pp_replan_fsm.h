@@ -8,6 +8,7 @@
 #include <string>
 #include <ros/ros.h>
 #include <plan_manage/planner_manager.h>
+#include "plan_manage/drone_counter.h"
 #include <traj_utils/planning_visualization.h>
 #include <nav_msgs/Odometry.h>
 #include <std_msgs/Empty.h>
@@ -113,6 +114,8 @@ private:
   std::string primitiveFolder_;
 
   LocalTrajData myself_traj_;
+
+  DroneCounter drone_counter_;
 
   /* state machine functions */
   void execFSMCallback(const ros::TimerEvent &e);
