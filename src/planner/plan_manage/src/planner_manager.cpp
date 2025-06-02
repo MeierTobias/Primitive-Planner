@@ -226,7 +226,7 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
     Eigen::Vector3d endPoint = rotWV * pathEndList_[i] + start_pt;
     double goal_cost = 1;
     // check if the goal is out of reach for the planned trajectory
-    if ((start_pt - global_goal).norm() > pathLengthMax_) //  || rotWV.col(0).dot(global_goal - start_pt) <= 0)
+    if (((start_pt - global_goal).norm() > pathLengthMax_) || (rotWV.col(0).dot(global_goal - start_pt) <= 0))
     {
       Eigen::Vector3d start_goal_vec = global_goal - start_pt;
       goal_cost = (start_pt + pathLengthMax_ * start_goal_vec / start_goal_vec.norm() - endPoint).norm() / (2 * pathLengthMax_);
