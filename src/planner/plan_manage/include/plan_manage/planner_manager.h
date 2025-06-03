@@ -12,6 +12,7 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <optional>
 
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/point_cloud.h>
@@ -29,8 +30,8 @@ namespace primitive_planner
 class PPPlannerManager
 {
 public:
-  PPPlannerManager(){};
-  ~PPPlannerManager(){};
+  PPPlannerManager() {};
+  ~PPPlannerManager() {};
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
