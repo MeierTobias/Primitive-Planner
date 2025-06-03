@@ -621,13 +621,10 @@ bool PPPlannerManager::labelAgentCollisionPaths(const Eigen::Vector3d &start_pt,
               for (int k = 0; k < occPathNumByVoxel; k++)
               {
                 // check if the time range is critical (if the paths cross at the same time).
-                if (other_cur_time > start_time + allVelCorrespondences_[vel_id][ind][3 * k + 1] / 1000) //  && other_cur_time < start_time + allVelCorrespondences_[vel_id][ind][3 * k + 2] / 1000)
+                // TODO: The end time of the trajectories 132-179 are 0.0 and hence the original condition never holds. If one fixes this the planner gets very unstable when the drone is close to obstacles or other drones. To fix this one has to do some more structural work and overthink the whole crash/no infeasible policy state. I created an github issue on their repo.
+                if (other_cur_time > start_time + allVelCorrespondences_[vel_id][ind][3 * k + 1] / 1000 && other_cur_time < start_time + allVelCorrespondences_[vel_id][ind][3 * k + 2] / 1000)
                 {
-                  // TODO: The end time of the trajectories 132-179 are 0.0 and hence the original condition never holds. This is a quick fix to mark all the infeasible trajectories correctly·
-                  if ((allVelCorrespondences_[vel_id][ind][3 * k + 2] / 1000 < 0.01) || (other_cur_time < start_time + allVelCorrespondences_[vel_id][ind][3 * k + 2] / 1000))
-                  {
-                    clearPathList_[allVelCorrespondences_[vel_id][ind][3 * k]]++;
-                  }
+                  clearPathList_[allVelCorrespondences_[vel_id][ind][3 * k]]++;
                 }
               }
             }
