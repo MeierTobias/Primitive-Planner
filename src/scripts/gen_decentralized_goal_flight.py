@@ -14,7 +14,6 @@ def generate_launch_file(
         file.write('    <arg name="sim_distributed_communication" value="true"/>\n')
         file.write('    <arg name="drone_com_r" value="15.0"/>\n')
         file.write('    <arg name="base_com_r" value="30.0"/>\n')
-        file.write('    <arg name="total_drones" value="{}"/>\n'.format(num_drones))
 
         # swarm_bridge
         file.write("    <!-- swarm topic transmitter bridge-->\n")
@@ -60,6 +59,7 @@ def generate_launch_file(
             )
             file.write('        <arg name="drone_com_r" value="$(arg drone_com_r)"/>\n')
             file.write('        <arg name="base_com_r" value="$(arg base_com_r)"/>\n')
+            file.write('        <arg name="total_drones" value="{}"/>\n'.format(num_drones))
 
             file.write("    </include>\n\n")
 

@@ -2,6 +2,7 @@
     <!-- size of map, change the size inflate x, y, z according to your application -->
     <arg name="drone_id" default="0"/>
     <arg name="max_vel" default="1.0"/>
+    <arg name="total_drones"/>
     <arg name="map_size_x"/>
     <arg name="map_size_y"/>
     <arg name="map_size_z"/>
@@ -62,6 +63,7 @@
         <arg name="sim_distributed_communication" value="$(arg sim_distributed_communication)"/>
         <arg name="drone_com_r" value="$(arg drone_com_r)"/>
         <arg name="base_com_r" value="$(arg base_com_r)"/>
+        <arg name="total_drones" value="$(arg total_drones)"/>
     </include>
     <!-- trajectory server -->
     <node pkg="primitive_planner" name="drone_$(arg drone_id)_traj_server" type="traj_server" output="screen">
