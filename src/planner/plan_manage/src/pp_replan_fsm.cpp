@@ -57,7 +57,6 @@ void PPReplanFSM::init(ros::NodeHandle &nh)
 
   int total_drones;
   nh.param("/total_drones", total_drones);
-  this->drone_counter_.init(nh, planner_manager_->getRobotPos(), static_cast<unsigned int>(total_drones));
 
   // Raise the default logger level
   // TODO: This can be removed after development.
@@ -80,6 +79,7 @@ void PPReplanFSM::init(ros::NodeHandle &nh)
   visualization_.reset(new PlanningVisualization(nh));
   planner_manager_.reset(new PPPlannerManager);
   planner_manager_->initPlanModules(nh, visualization_);
+  this->drone_counter_.init(nh, planner_manager_->getRobotPos(), static_cast<unsigned int>(total_drones));
 
   readPrimitivePos();
 
@@ -633,6 +633,14 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
   exec_timer_.stop(); // To avoid blockage
   std_msgs::Empty heartbeat_msg;
   heartbeat_pub_.publish(heartbeat_msg);
+
+  static int fsm_num = 0;
+  fsm_num++;
+  if (fsm_num == 500)
+  {
+    fsm_num = 0;
+    printFSMExecState();
+  }
 
   switch (exec_state_)
   {

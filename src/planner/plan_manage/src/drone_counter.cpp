@@ -20,6 +20,8 @@ void DroneCounter::init(ros::NodeHandle &nh, const Eigen::Vector3d &position, un
   count_sub_ = nh.subscribe<const primitive_planner::CountDrones &>("/distributed_count", 100, &DroneCounter::countMessageCallback, this);
   broadcast_timer_ = nh.createTimer(ros::Duration(0.5), &DroneCounter::heartbeatCallback, this);
   broadcast_timer_.stop();
+  wait_for_other_drones_timeout_ = nh.createTimer(ros::Duration(2), &DroneCounter::waitForOtherDronesTimeoutCallback, this, true);
+  wait_for_other_drones_timeout_.stop();
 
   this->drones_total = drones_total;
 
@@ -28,8 +30,13 @@ void DroneCounter::init(ros::NodeHandle &nh, const Eigen::Vector3d &position, un
 
 void DroneCounter::setReachedGoal()
 {
-  ROS_ASSERT(state == DroneCounter::NOT_AT_GOAL || state == DroneCounter::ARRIVED_AT_GOAL);
-  state = DroneCounter::ARRIVED_AT_GOAL;
+  if (state == DroneCounter::NOT_AT_GOAL)
+  {
+    state = DroneCounter::ARRIVED_AT_GOAL;
+    wait_for_other_drones_timeout_.setPeriod(ros::Duration(2)); // This is required (recommended?) after a oneshot timer has been run
+    wait_for_other_drones_timeout_.start();
+    ROS_DEBUG("Reached goal, starting timeout");
+  }
 }
 
 void DroneCounter::unsetReachedGoal()
@@ -38,13 +45,24 @@ void DroneCounter::unsetReachedGoal()
   state = DroneCounter::NOT_AT_GOAL;
 }
 
+void DroneCounter::waitForOtherDronesTimeoutCallback(const ros::TimerEvent &_timeout)
+{
+  if (state == DroneCounter::ARRIVED_AT_GOAL)
+  {
+    drones_at_goal = 1;
+    state = DroneCounter::BROADCASTING;
+    sendMessage();
+    broadcast_timer_.start();
+  }
+}
+
 void DroneCounter::heartbeatCallback(const ros::TimerEvent &heartbeat)
 {
   ROS_ASSERT(state == DroneCounter::BROADCASTING);
   sendMessage();
 }
 
-constexpr double MAX_RECV_RADIUS = 5;
+constexpr double MAX_RECV_RADIUS = 10;
 
 void DroneCounter::countMessageCallback(const primitive_planner::CountDrones &msg)
 {

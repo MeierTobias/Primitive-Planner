@@ -27,6 +27,10 @@ public:
   {
     waitForNDrones(drones_total);
   }
+  unsigned int nbDronesArrived() const
+  {
+    return drones_at_goal;
+  }
 
 private:
   const Eigen::Vector3d *position = nullptr;
@@ -46,10 +50,12 @@ private:
   ros::Subscriber debug_sub_;
   ros::Subscriber debug_sub_2_;
   ros::Timer broadcast_timer_;
+  ros::Timer wait_for_other_drones_timeout_;
 
   void countMessageCallback(const primitive_planner::CountDrones &msg);
   void debugMessageCallback(const std_msgs::Empty &msg);
   void heartbeatCallback(const ros::TimerEvent &heartbeat);
+  void waitForOtherDronesTimeoutCallback(const ros::TimerEvent &timeout);
 
   void sendMessage();
 
