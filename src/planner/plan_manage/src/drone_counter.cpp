@@ -82,10 +82,23 @@ void DroneCounter::countMessageCallback(const primitive_planner::CountDrones &ms
   }
   else if (state == DroneCounter::BROADCASTING)
   {
-    ROS_ASSERT(msg.drones_at_goal > static_cast<int>(drones_at_goal));
-    drones_at_goal = msg.drones_at_goal;
-    state = DroneCounter::NOT_BROADCASTING;
-    broadcast_timer_.stop();
+    // In case some other drones have started a count, merge the counts together
+    if (msg.drones_at_goal < drones_at_goal)
+    {
+      drones_at_goal += msg.drones_at_goal;
+    }
+    else if (msg.drones_at_goal > drones_at_goal)
+    {
+      drones_at_goal = msg.drones_at_goal;
+      state = DroneCounter::NOT_BROADCASTING;
+      broadcast_timer_.stop();
+    }
+    else
+    {
+      // We don't know how to handle this
+      // we could merge them together, but then both would continue broadcasting and next time they'll both hear each other again and double their estimate
+      ROS_ERROR("[COUNT] Two different counts with the same number!");
+    }
   }
   else if (state == DroneCounter::NOT_BROADCASTING)
   {
