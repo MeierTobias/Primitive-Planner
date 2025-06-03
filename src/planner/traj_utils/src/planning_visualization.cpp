@@ -1,7 +1,5 @@
 #include <traj_utils/planning_visualization.h>
 
-using std::cout;
-using std::endl;
 namespace primitive_planner
 {
 PlanningVisualization::PlanningVisualization(ros::NodeHandle &nh)
@@ -26,17 +24,16 @@ PlanningVisualization::PlanningVisualization(ros::NodeHandle &nh)
 }
 
 // // real ids used: {id, id+1000}
-void PlanningVisualization::displayMarkerList(ros::Publisher &pub, const vector<Eigen::Vector3d> &list, double scale,
+void PlanningVisualization::displayMarkerList(ros::Publisher &pub, const std::vector<Eigen::Vector3d> &list, double scale,
                                               Eigen::Vector4d color, int id, bool show_sphere /* = true */)
 {
   visualization_msgs::Marker sphere, line_strip;
-  sphere.header.frame_id = line_strip.header.frame_id = "world";
-  sphere.header.stamp = line_strip.header.stamp = ros::Time::now();
   sphere.type = visualization_msgs::Marker::SPHERE_LIST;
   line_strip.type = visualization_msgs::Marker::LINE_STRIP;
+
+  sphere.header.frame_id = line_strip.header.frame_id = "world";
+  sphere.header.stamp = line_strip.header.stamp = ros::Time::now();
   sphere.action = line_strip.action = visualization_msgs::Marker::ADD;
-  sphere.id = id;
-  line_strip.id = id + 1000;
 
   sphere.pose.orientation.w = line_strip.pose.orientation.w = 1.0;
   sphere.color.r = line_strip.color.r = color(0);
@@ -46,10 +43,14 @@ void PlanningVisualization::displayMarkerList(ros::Publisher &pub, const vector<
   sphere.scale.x = scale;
   sphere.scale.y = scale;
   sphere.scale.z = scale;
+
+  sphere.id = id;
+  line_strip.id = id + 1000;
   line_strip.scale.x = scale / 2;
-  geometry_msgs::Point pt;
+
   for (int i = 0; i < int(list.size()); i++)
   {
+    geometry_msgs::Point pt;
     pt.x = list[i](0);
     pt.y = list[i](1);
     pt.z = list[i](2);
@@ -64,7 +65,7 @@ void PlanningVisualization::displayMarkerList(ros::Publisher &pub, const vector<
 
 // real ids used: {id, id+1}
 void PlanningVisualization::generatePathDisplayArray(visualization_msgs::MarkerArray &array,
-                                                     const vector<Eigen::Vector3d> &list, double scale, Eigen::Vector4d color, int id)
+                                                     const std::vector<Eigen::Vector3d> &list, double scale, Eigen::Vector4d color, int id)
 {
   visualization_msgs::Marker sphere, line_strip;
   sphere.header.frame_id = line_strip.header.frame_id = "world";
@@ -99,7 +100,7 @@ void PlanningVisualization::generatePathDisplayArray(visualization_msgs::MarkerA
 
 // real ids used: {1000*id ~ (arrow nums)+1000*id}
 void PlanningVisualization::generateArrowDisplayArray(visualization_msgs::MarkerArray &array,
-                                                      const vector<Eigen::Vector3d> &list, double scale, Eigen::Vector4d color, int id)
+                                                      const std::vector<Eigen::Vector3d> &list, double scale, Eigen::Vector4d color, int id)
 {
   visualization_msgs::Marker arrow;
   arrow.header.frame_id = "world";
@@ -164,7 +165,7 @@ void PlanningVisualization::displayGoalPoint(Eigen::Vector3d goal_point, Eigen::
   goal_point_pub.publish(sphere);
 }
 
-void PlanningVisualization::displayGlobalPathList(vector<Eigen::Vector3d> init_pts, const double scale, int id)
+void PlanningVisualization::displayGlobalPathList(std::vector<Eigen::Vector3d> &init_pts, const double scale, int id)
 {
 
   if (global_list_pub.getNumSubscribers() == 0)
@@ -176,7 +177,7 @@ void PlanningVisualization::displayGlobalPathList(vector<Eigen::Vector3d> init_p
   displayMarkerList(global_list_pub, init_pts, scale, color, id, false);
 }
 
-void PlanningVisualization::displayMultiInitPathList(vector<vector<Eigen::Vector3d>> init_trajs, const double scale)
+void PlanningVisualization::displayMultiInitPathList(std::vector<std::vector<Eigen::Vector3d>> &init_trajs, const double scale)
 {
 
   if (init_list_pub.getNumSubscribers() == 0)
@@ -189,7 +190,7 @@ void PlanningVisualization::displayMultiInitPathList(vector<vector<Eigen::Vector
   for (int id = 0; id < last_nums; id++)
   {
     Eigen::Vector4d color(0, 0, 0, 0);
-    vector<Eigen::Vector3d> blank;
+    std::vector<Eigen::Vector3d> blank;
     displayMarkerList(init_list_pub, blank, scale, color, id, false);
     ros::Duration(0.001).sleep();
   }
@@ -204,19 +205,67 @@ void PlanningVisualization::displayMultiInitPathList(vector<vector<Eigen::Vector
   }
 }
 
-void PlanningVisualization::displayInitPathList(vector<Eigen::Vector3d> init_pts, const double scale, Eigen::Vector4d color, int id)
+void PlanningVisualization::displayInitPathList(const std::vector<Eigen::Vector3d> &init_pts, const double scale, Eigen::Vector4d color, int id)
 {
-
   if (init_list_pub.getNumSubscribers() == 0)
   {
     return;
   }
 
-  // Eigen::Vector4d color(1, 0, 0, 1);
   displayMarkerList(init_list_pub, init_pts, scale, color, id);
 }
 
-void PlanningVisualization::displayMultiOptimalPathList(vector<vector<Eigen::Vector3d>> optimal_trajs, const double scale) // zxzxzx
+void PlanningVisualization::displayPathSelection(const std::vector<int> &collisionPaths, const std::vector<int> &validPaths, const int selectedPath, const std::vector<std::vector<Eigen::Vector3d>> &trajs, const Eigen::Vector3d &startPt, const Eigen::Matrix3d &rotWV)
+{
+  if (init_list_pub.getNumSubscribers() == 0)
+  {
+    return;
+  }
+
+  visualization_msgs::Marker clearAll;
+  clearAll.action = visualization_msgs::Marker::DELETEALL;
+  init_list_pub.publish(clearAll);
+
+  for (int id : collisionPaths)
+  {
+    displayMarkerList(init_list_pub,
+                      transformToWorld(trajs, id, startPt, rotWV),
+                      0.05,
+                      Eigen::Vector4d(1, 0, 0, 1), // red
+                      id);
+  }
+
+  for (int id : validPaths)
+  {
+    displayMarkerList(init_list_pub,
+                      transformToWorld(trajs, id, startPt, rotWV),
+                      0.05,
+                      Eigen::Vector4d(0, 1, 0, 1), // green
+                      id);
+  }
+
+  if (selectedPath >= 0)
+  {
+    displayMarkerList(init_list_pub,
+                      transformToWorld(trajs, selectedPath, startPt, rotWV),
+                      0.05,
+                      Eigen::Vector4d(0, 0, 1, 1), // blue
+                      selectedPath);
+  }
+}
+
+std::vector<Eigen::Vector3d> PlanningVisualization::transformToWorld(const std::vector<std::vector<Eigen::Vector3d>> &trajs, const int id, const Eigen::Vector3d &startPt, const Eigen::Matrix3d &rotWV)
+{
+  std::vector<Eigen::Vector3d> pathWorld;
+  for (Eigen::Vector3d point : trajs[id])
+  {
+    Eigen::Vector3d pos_world = startPt + rotWV * point;
+    pathWorld.push_back(pos_world);
+  }
+  return pathWorld;
+}
+
+void PlanningVisualization::displayMultiOptimalPathList(std::vector<std::vector<Eigen::Vector3d>> &optimal_trajs, const double scale) // zxzxzx
 {
 
   if (optimal_list_pub.getNumSubscribers() == 0)
@@ -229,7 +278,7 @@ void PlanningVisualization::displayMultiOptimalPathList(vector<vector<Eigen::Vec
   for (int id = 0; id < last_nums; id++)
   {
     Eigen::Vector4d color(0, 0, 0, 0);
-    vector<Eigen::Vector3d> blank;
+    std::vector<Eigen::Vector3d> blank;
     blank.push_back(Eigen::Vector3d::Zero());
     blank.push_back(Eigen::Vector3d::Zero());
     displayMarkerList(optimal_list_pub, blank, scale, color, id + 10, false);
@@ -266,7 +315,7 @@ void PlanningVisualization::displayFailedList(Eigen::MatrixXd failed_pts, int id
     return;
   }
 
-  vector<Eigen::Vector3d> list;
+  std::vector<Eigen::Vector3d> list;
   for (int i = 0; i < failed_pts.cols(); i++)
   {
     Eigen::Vector3d pt = failed_pts.col(i).transpose();
@@ -276,7 +325,7 @@ void PlanningVisualization::displayFailedList(Eigen::MatrixXd failed_pts, int id
   displayMarkerList(failed_list_pub, list, 0.15, color, id);
 }
 
-void PlanningVisualization::displayAStarList(std::vector<std::vector<Eigen::Vector3d>> a_star_paths, int id /* = Eigen::Vector4d(0.5,0.5,0,1)*/)
+void PlanningVisualization::displayAStarList(std::vector<std::vector<Eigen::Vector3d>> &a_star_paths, int id /* = Eigen::Vector4d(0.5,0.5,0,1)*/)
 {
 
   if (a_star_list_pub.getNumSubscribers() == 0)
@@ -285,7 +334,7 @@ void PlanningVisualization::displayAStarList(std::vector<std::vector<Eigen::Vect
   }
 
   int i = 0;
-  vector<Eigen::Vector3d> list;
+  std::vector<Eigen::Vector3d> list;
 
   Eigen::Vector4d color = Eigen::Vector4d(0.5 + ((double)rand() / RAND_MAX / 2), 0.5 + ((double)rand() / RAND_MAX / 2), 0, 1); // make the A star pathes different every time.
   double scale = 0.05 + (double)rand() / RAND_MAX / 10;
@@ -303,7 +352,7 @@ void PlanningVisualization::displayAStarList(std::vector<std::vector<Eigen::Vect
   }
 }
 
-void PlanningVisualization::displayArrowList(ros::Publisher &pub, const vector<Eigen::Vector3d> &list, double scale, Eigen::Vector4d color, int id)
+void PlanningVisualization::displayArrowList(ros::Publisher &pub, const std::vector<Eigen::Vector3d> &list, double scale, Eigen::Vector4d color, int id)
 {
   visualization_msgs::MarkerArray array;
   // clear

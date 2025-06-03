@@ -10,7 +10,6 @@
 #include <visualization_msgs/MarkerArray.h>
 #include <stdlib.h>
 
-using std::vector;
 namespace primitive_planner
 {
 class PlanningVisualization
@@ -35,6 +34,8 @@ private:
   ros::Publisher intermediate_grad_feas_pub;
   ros::Publisher intermediate_grad_swarm_pub;
 
+  std::vector<Eigen::Vector3d> transformToWorld(const std::vector<std::vector<Eigen::Vector3d>> &trajs, const int id, const Eigen::Vector3d &startPt, const Eigen::Matrix3d &rotWV);
+
 public:
   PlanningVisualization(/* args */)
   {
@@ -46,21 +47,22 @@ public:
 
   typedef std::shared_ptr<PlanningVisualization> Ptr;
 
-  void displayMarkerList(ros::Publisher &pub, const vector<Eigen::Vector3d> &list, double scale,
+  void displayMarkerList(ros::Publisher &pub, const std::vector<Eigen::Vector3d> &list, double scale,
                          Eigen::Vector4d color, int id, bool show_sphere = true);
   void generatePathDisplayArray(visualization_msgs::MarkerArray &array,
-                                const vector<Eigen::Vector3d> &list, double scale, Eigen::Vector4d color, int id);
+                                const std::vector<Eigen::Vector3d> &list, double scale, Eigen::Vector4d color, int id);
   void generateArrowDisplayArray(visualization_msgs::MarkerArray &array,
-                                 const vector<Eigen::Vector3d> &list, double scale, Eigen::Vector4d color, int id);
+                                 const std::vector<Eigen::Vector3d> &list, double scale, Eigen::Vector4d color, int id);
   void displayGoalPoint(Eigen::Vector3d goal_point, Eigen::Vector4d color, const double scale, int id);
-  void displayGlobalPathList(vector<Eigen::Vector3d> global_pts, const double scale, int id);
-  void displayInitPathList(vector<Eigen::Vector3d> init_pts, const double scale, Eigen::Vector4d color, int id);
-  void displayMultiInitPathList(vector<vector<Eigen::Vector3d>> init_trajs, const double scale);
-  void displayMultiOptimalPathList(vector<vector<Eigen::Vector3d>> optimal_trajs, const double scale);
+  void displayGlobalPathList(std::vector<Eigen::Vector3d> &global_pts, const double scale, int id);
+  void displayInitPathList(const std::vector<Eigen::Vector3d> &init_pts, const double scale, Eigen::Vector4d color, int id);
+  void displayMultiInitPathList(std::vector<std::vector<Eigen::Vector3d>> &init_trajs, const double scale);
+  void displayPathSelection(const std::vector<int> &collisionPaths, const std::vector<int> &validPaths, const int selectedPath, const std::vector<std::vector<Eigen::Vector3d>> &trajs, const Eigen::Vector3d &startPt, const Eigen::Matrix3d &rotWV);
+  void displayMultiOptimalPathList(std::vector<std::vector<Eigen::Vector3d>> &optimal_trajs, const double scale);
   void displayOptimalList(std::vector<Eigen::Vector3d> &optimal_pts, int id);
   void displayFailedList(Eigen::MatrixXd failed_pts, int id);
-  void displayAStarList(std::vector<std::vector<Eigen::Vector3d>> a_star_paths, int id);
-  void displayArrowList(ros::Publisher &pub, const vector<Eigen::Vector3d> &list, double scale, Eigen::Vector4d color, int id);
+  void displayAStarList(std::vector<std::vector<Eigen::Vector3d>> &a_star_paths, int id);
+  void displayArrowList(ros::Publisher &pub, const std::vector<Eigen::Vector3d> &list, double scale, Eigen::Vector4d color, int id);
 
   void displayIntermediatePt(std::string type, Eigen::MatrixXd &pts, int id, Eigen::Vector4d color);
   void displayIntermediateGrad(std::string type, Eigen::MatrixXd &pts, Eigen::MatrixXd &grad, int id, Eigen::Vector4d color);
