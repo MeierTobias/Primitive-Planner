@@ -339,11 +339,21 @@ void PPReplanFSM::RecvBroadcastPrimitiveCallback(const traj_utils::swarmPrimitiv
     planner_manager_->swarm_traj[recv_id].drone_id = recv_id;
     planner_manager_->swarm_traj[recv_id].start_time = msg->start_time.toSec();
     planner_manager_->swarm_traj[recv_id].traj_duration = traj_duration;
-    planner_manager_->swarm_traj[recv_id].traj_pos = traj_pos;
 
-    // Check collision bewteen current traj and other new traj
+    // if the drone is hovering it sends its current position (goal position) as the end_pos hence we only have to check this point for collisions and not the whole trajectory.
+    planner_manager_->swarm_traj[recv_id].hovering_at_goal = msg->hovering_at_goal;
+    if (msg->hovering_at_goal)
+    {
+      planner_manager_->swarm_traj[recv_id].traj_pos = {end_pos};
+    }
+    else
+    {
+      planner_manager_->swarm_traj[recv_id].traj_pos = traj_pos;
+    }
+
+    // Check collision between current traj and other new traj
 #if not USE_SHARED_MEMORY
-    if (static_cast<int>(recv_id) < planner_manager_->drone_id && checkCollision(recv_id))
+    if (exec_state_ == EXEC_TRAJ && checkCollision(recv_id))
     {
       changeFSMExecState(REPLAN_TRAJ, "SWARM_CHECK");
     }
@@ -640,12 +650,19 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
   }
 
   case WAIT_TARGET: {
-    // publish the current trajectory so that other drones can avoid me even if I'm just hovering (waiting)
-    // broadcast_primitive_pub_.publish(traj_msg);
     // state transition condition
     if (have_target_ && have_trigger_)
     {
       changeFSMExecState(GEN_NEW_TRAJ, "FSM");
+    }
+    else
+    {
+      // publish the current trajectory so that other drones can avoid me even if I'm just hovering (waiting)
+      traj_msg.hovering_at_goal = true;
+      traj_msg.end_p[0] = odom_pos_[0];
+      traj_msg.end_p[1] = odom_pos_[1];
+      traj_msg.end_p[2] = odom_pos_[2];
+      broadcast_primitive_pub_.publish(traj_msg);
     }
     break;
   }
@@ -729,6 +746,14 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
   case APPROACH_GOAL: {
 
     pubPolyTraj(odom_pos_, odom_vel_, global_goal_, 1.0);
+
+    // // publish the current trajectory so that other drones can avoid me while I'm steering towords my goal
+    // traj_msg.hovering_at_goal = true;
+    // traj_msg.end_p[0] = global_goal_[0];
+    // traj_msg.end_p[1] = global_goal_[1];
+    // traj_msg.end_p[2] = global_goal_[2];
+    // path_id_pub_.publish(traj_msg);
+    // broadcast_primitive_pub_.publish(traj_msg);
 
     have_target_ = false;
     have_trigger_ = false;
@@ -947,6 +972,7 @@ bool PPReplanFSM::planPrimitive(bool first_plan, double xV_offset /*= 0.0*/)
     traj_msg.rot_mat[3] = xV(1), traj_msg.rot_mat[4] = yV(1), traj_msg.rot_mat[5] = zV(1);
     traj_msg.rot_mat[6] = xV(2), traj_msg.rot_mat[7] = yV(2), traj_msg.rot_mat[8] = zV(2);
     traj_msg.vel_id = vel_id;
+    traj_msg.hovering_at_goal = false;
 
     traj_msg.select_path_id = select_path_id[0];
 
