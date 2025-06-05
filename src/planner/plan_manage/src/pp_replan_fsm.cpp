@@ -747,13 +747,12 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
 
     pubPolyTraj(odom_pos_, odom_vel_, global_goal_, 1.0);
 
-    // // publish the current trajectory so that other drones can avoid me while I'm steering towords my goal
-    // traj_msg.hovering_at_goal = true;
-    // traj_msg.end_p[0] = global_goal_[0];
-    // traj_msg.end_p[1] = global_goal_[1];
-    // traj_msg.end_p[2] = global_goal_[2];
-    // path_id_pub_.publish(traj_msg);
-    // broadcast_primitive_pub_.publish(traj_msg);
+    // publish the current trajectory so that other drones can avoid me while I'm steering towords my goal
+    traj_msg.hovering_at_goal = true;
+    traj_msg.end_p[0] = global_goal_[0];
+    traj_msg.end_p[1] = global_goal_[1];
+    traj_msg.end_p[2] = global_goal_[2];
+    broadcast_primitive_pub_.publish(traj_msg);
 
     have_target_ = false;
     have_trigger_ = false;
