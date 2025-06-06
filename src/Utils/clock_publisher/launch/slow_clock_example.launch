@@ -1,0 +1,12 @@
+<launch>
+      <!-- Ensure that all nodes use simulation time -->
+      <param name="/use_sim_time" value="true" />
+
+      <!-- Start the clock_publisher node -->
+      <node pkg="clock_publisher"
+            type="clock_publisher_node"
+            name="clock_publisher_node"
+            output="screen">
+            <param name="time_multiplier" value="0.1" />
+      </node>
+</launch>
