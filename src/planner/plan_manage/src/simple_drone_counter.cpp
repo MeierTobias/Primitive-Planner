@@ -83,11 +83,11 @@ void SimpleDroneCounter::countMessageCallback(const primitive_planner::CountDron
   else if (state == SimpleDroneCounter::BROADCASTING)
   {
     // In case some other drones have started a count, merge the counts together
-    if (msg.drones_at_goal < drones_at_goal)
+    if (msg.drones_at_goal < static_cast<int>(drones_at_goal))
     {
       drones_at_goal += msg.drones_at_goal;
     }
-    else if (msg.drones_at_goal > drones_at_goal)
+    else if (msg.drones_at_goal > static_cast<int>(drones_at_goal))
     {
       drones_at_goal = msg.drones_at_goal;
       state = SimpleDroneCounter::NOT_BROADCASTING;
