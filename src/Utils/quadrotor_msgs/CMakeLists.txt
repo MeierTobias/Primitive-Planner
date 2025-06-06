@@ -75,7 +75,6 @@ add_message_files(
   PolynomialTrajectory.msg
   LQRTrajectory.msg
   GoalSet.msg
-  CountDrones.msg
 )
 
 generate_messages(

@@ -18,6 +18,7 @@ def generate_launch_file(
         )
         file.write('    <arg name="map_size_z" value="3.0"/>\n')
         file.write('    <arg name="odom_topic" value="visual_slam/odom" />\n')
+
         file.write("\n")
         file.write("    <!-- swarm topic transmitter bridge-->\n")
         file.write(
@@ -88,6 +89,7 @@ def generate_launch_file(
             file.write('        <arg name="map_size_y" value="$(arg map_size_y)"/>\n')
             file.write('        <arg name="map_size_z" value="$(arg map_size_z)"/>\n')
             file.write('        <arg name="odom_topic" value="$(arg odom_topic)"/>\n')
+            file.write('        <arg name="total_drones" value="{}"/>\n'.format(total_num))
             file.write("    </include>\n")
 
         file.write("</launch>")

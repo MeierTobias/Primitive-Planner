@@ -12,6 +12,7 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <optional>
 
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/point_cloud.h>
@@ -21,8 +22,6 @@
 
 #include <pcl/filters/random_sample.h>
 
-#include "plan_manage/drone_counter.h"
-
 namespace primitive_planner
 {
 // Primitive Planner Manager
@@ -31,8 +30,8 @@ namespace primitive_planner
 class PPPlannerManager
 {
 public:
-  PPPlannerManager(){};
-  ~PPPlannerManager(){};
+  PPPlannerManager() {};
+  ~PPPlannerManager() {};
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -41,15 +40,21 @@ public:
   void cloudCallback(const sensor_msgs::PointCloud2ConstPtr &img);
   bool labelObsCollisionPaths(const Eigen::Vector3d &start_pt, const Eigen::Matrix3d &rotVW);
   bool labelAgentCollisionPaths(const Eigen::Vector3d &start_pt, const Eigen::Vector3d &start_v, const double &start_time, const Eigen::Matrix3d &rotVW);
-  vector<int> scorePaths(const Eigen::Vector3d &start_pt, const Eigen::Vector3d &global_goal, const Eigen::Matrix3d &rotWV);
+  vector<int> scorePaths(const Eigen::Vector3d &start_pt, const Eigen::Vector3d &global_goal, const Eigen::Matrix3d &rotWV, const primitive_planner::LocalTrajData &current_traj);
   void visAllPaths(const Eigen::Vector3d &start_pt, const Eigen::Matrix3d &rotWV);
-  bool trajReplan(const Eigen::Vector3d &start_pt, const Eigen::Vector3d &start_v, const double &start_time, const Eigen::Matrix3d &RWV, const Eigen::Vector3d &global_goal, vector<int> &select_path_id);
+  bool trajReplan(const Eigen::Vector3d &start_pt, const Eigen::Vector3d &start_v, const double &start_time, const Eigen::Matrix3d &RWV, const Eigen::Vector3d &global_goal, vector<int> &select_path_id, const primitive_planner::LocalTrajData &current_traj);
 
   void readCorrespondences();
   void readAgentCorrespondences();
   // int readPlyHeader(FILE *filePtr);
   int readPathList();
   void readPathAll();
+  void determineEndDirection();
+
+  const Eigen::Vector3d &getRobotPos() const
+  {
+    return robot_pos_;
+  }
 
   int drone_id;
   double max_vel_;
@@ -57,7 +62,7 @@ public:
   double drone_com_r_;
   double base_com_r_;
   double arc_length_;
-  double swarm_clearence_;
+  double swarm_clearance_;
   std::string primitiveFolder_;
   SwarmTrajData swarm_traj;
 
@@ -71,7 +76,6 @@ public:
 
 private:
   PlanningVisualization::Ptr visualization_;
-  DroneCounter drone_counter_;
 
   ros::Subscriber dep_odom_sub_, dep_cloud_sub_;
 
@@ -83,19 +87,20 @@ private:
 
   double boxX_, boxY_, boxZ_;
   double voxelX_, voxelY_, voxelZ_;
-  int voxelNumX_, voxelNumY_, voxelNumZ_, voxelNumAll_;
+  int voxelNumX_, voxelNumY_, voxelNumZ_, voxelNumAll_, voxelNum_swarm_clearance_;
 
   int pathNum_, sampleSize_;
 
   std::vector<std::vector<int>> correspondences_;
   std::vector<std::vector<std::vector<int>>> allVelCorrespondences_;
   std::vector<int> clearPathList_;
-  std::vector<Eigen::Vector3d> pathEndList_; // body frame
+  std::vector<Eigen::Vector3d> pathEndList_;               // body frame
+  std::vector<std::optional<Eigen::Vector3d>> pathEndDir_; // body frame
   std::vector<std::vector<Eigen::Vector3d>> pathAll_, pathAllWorld_;
   std::vector<double> pathLengthList_;
   double pathLengthMax_;
 
-  double lamda_c_, lamda_l_, lamda_b_; // TODO:待定，实验效果测试
+  double lambda_c_, lambda_l_, lambda_b_, lambda_d_; // TODO:待定，实验效果测试
 
   double x_size_, y_size_, z_size_;
 

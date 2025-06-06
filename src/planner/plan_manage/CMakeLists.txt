@@ -20,6 +20,16 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_ros
 )
 
+add_message_files(
+  FILES
+  CountDrones.msg
+)
+
+generate_messages(
+    DEPENDENCIES
+    geometry_msgs
+)
+
 # catkin_package(CATKIN_DEPENDS message_runtime)
 catkin_package(
  INCLUDE_DIRS include

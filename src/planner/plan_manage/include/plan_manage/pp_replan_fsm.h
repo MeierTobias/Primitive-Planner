@@ -8,6 +8,7 @@
 #include <string>
 #include <ros/ros.h>
 #include <plan_manage/planner_manager.h>
+#include "plan_manage/simple_drone_counter.h"
 #include <traj_utils/planning_visualization.h>
 #include <nav_msgs/Odometry.h>
 #include <std_msgs/Empty.h>
@@ -68,10 +69,11 @@ private:
   int waypoint_num_;
   int goal_id_ = 0;
   int goal_tag_ = 0; // represents the identifier of the decentralized global goal
-  int target_type_;  // 1 manual select, 2 hard code, 3 decentralized global goal
+  int flight_type_;  // 1 manual select, 2 hard code, 3 decentralized global goal
   std::vector<Eigen::Vector3d> all_goal_;
   // global_goal_ is always set to all_goal_[goal_id_]
   Eigen::Vector3d global_goal_;
+  traj_utils::swarmPrimitiveTraj traj_msg = traj_utils::swarmPrimitiveTraj();
   Eigen::Vector3d starting_pos_;
   Eigen::Vector3d odom_pos_, odom_vel_, odom_x_dir_;
   Eigen::Quaterniond odom_q_;
@@ -114,6 +116,8 @@ private:
 
   LocalTrajData myself_traj_;
 
+  SimpleDroneCounter simple_drone_counter_;
+
   /* state machine functions */
   void execFSMCallback(const ros::TimerEvent &e);
   void changeFSMExecState(FSM_EXEC_STATE new_state, std::string pos_call);
@@ -135,6 +139,7 @@ private:
   bool readLocalTrajPos(Eigen::Vector3d &start_pos, int &vel_id, Eigen::Matrix<double, 3, 3> &Rwv, std::vector<int> &path_id, std::vector<Eigen::Vector3d> &traj_pos, double &traj_duration);
   bool checkCollision(int recv_id);
   bool readPrimitivePos();
+  void turnTowardsGoal(double yaw_des);
 };
 
 } // namespace primitive_planner
