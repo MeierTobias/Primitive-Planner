@@ -16,6 +16,7 @@ struct LocalTrajData
   double start_time;
   double traj_duration;
   std::vector<Eigen::Vector3d> traj_pos;
+  bool hovering_at_goal;
 };
 
 typedef std::vector<LocalTrajData> SwarmTrajData;

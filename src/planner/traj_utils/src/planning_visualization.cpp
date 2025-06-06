@@ -8,7 +8,7 @@ PlanningVisualization::PlanningVisualization(ros::NodeHandle &nh)
 
   goal_point_pub = nh.advertise<visualization_msgs::Marker>("goal_point", 2);
   global_list_pub = nh.advertise<visualization_msgs::Marker>("global_list", 2);
-  init_list_pub = nh.advertise<visualization_msgs::Marker>("init_list", 2);
+  init_list_pub = nh.advertise<visualization_msgs::Marker>("init_list", 10000);
   optimal_list_pub = nh.advertise<visualization_msgs::Marker>("optimal_list", 2);
   failed_list_pub = nh.advertise<visualization_msgs::Marker>("failed_list", 2);
   a_star_list_pub = nh.advertise<visualization_msgs::Marker>("a_star_list", 20);
@@ -225,6 +225,8 @@ void PlanningVisualization::displayPathSelection(const std::vector<int> &collisi
   visualization_msgs::Marker clearAll;
   clearAll.action = visualization_msgs::Marker::DELETEALL;
   init_list_pub.publish(clearAll);
+  ros::spinOnce();
+  ros::Duration(0.001).sleep();
 
   for (int id : collisionPaths)
   {
@@ -232,7 +234,8 @@ void PlanningVisualization::displayPathSelection(const std::vector<int> &collisi
                       transformToWorld(trajs, id, startPt, rotWV),
                       0.05,
                       Eigen::Vector4d(1, 0, 0, 1), // red
-                      id);
+                      id,
+                      false);
   }
 
   for (int id : validPaths)
@@ -241,7 +244,8 @@ void PlanningVisualization::displayPathSelection(const std::vector<int> &collisi
                       transformToWorld(trajs, id, startPt, rotWV),
                       0.05,
                       Eigen::Vector4d(0, 1, 0, 1), // green
-                      id);
+                      id,
+                      false);
   }
 
   if (selectedPath >= 0)
@@ -250,8 +254,12 @@ void PlanningVisualization::displayPathSelection(const std::vector<int> &collisi
                       transformToWorld(trajs, selectedPath, startPt, rotWV),
                       0.05,
                       Eigen::Vector4d(0, 0, 1, 1), // blue
-                      selectedPath);
+                      selectedPath,
+                      false);
   }
+
+  ros::spinOnce();
+  ros::Duration(0.001).sleep();
 }
 
 std::vector<Eigen::Vector3d> PlanningVisualization::transformToWorld(const std::vector<std::vector<Eigen::Vector3d>> &trajs, const int id, const Eigen::Vector3d &startPt, const Eigen::Matrix3d &rotWV)

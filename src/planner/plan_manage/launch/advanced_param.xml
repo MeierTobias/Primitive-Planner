@@ -52,7 +52,7 @@
         <param name="fsm/thresh_replan_time" value="0.2" type="double"/>
         <param name="fsm/realworld_experiment" value="true"/>
         <param name="fsm/fail_safe" value="true"/>
-        <param name="fsm/no_replan_thresh" value="0.5" type="double"/>
+        <param name="fsm/no_replan_thresh" value="0.3" type="double"/>
         <param name="fsm/flight_type" value="$(arg flight_type)" type="int"/>
         <param name="fsm/waypoint_num" value="$(arg point_num)" type="int"/>
         <param name="fsm/waypoint0_x" value="$(arg point0_x)" type="double"/>
@@ -78,13 +78,13 @@
         <param name="manager/sampleSize" value="10000" type="int"/>
         <param name="manager/lambda_l" value="20.0" type="double"/>
         <param name="manager/lambda_b" value="5.0" type="double"/>
-        <param name="manager/lambda_d" value="4.0" type="double"/>
+        <param name="manager/lambda_d" value="1.0" type="double"/>
         <param name="manager/drone_id" value="$(arg drone_id)"/>
         <param name="manager/map_size_x" value="$(arg map_size_x_)"/>
         <param name="manager/map_size_y" value="$(arg map_size_y_)"/>
         <param name="manager/map_size_z" value="$(arg map_size_z_)"/>
         <param name="manager/max_vel" value="$(arg max_vel)"/>
         <!-- Drone radius r = 0.12 -->
-        <param name="manager/swarm_clearance" value="0.24" type="double"/>
+        <param name="manager/swarm_clearance" value="0.4" type="double"/>
     </node>
 </launch>
