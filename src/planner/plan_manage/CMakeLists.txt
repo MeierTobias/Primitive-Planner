@@ -22,7 +22,9 @@ find_package(catkin REQUIRED COMPONENTS
 
 add_message_files(
   FILES
-  CountDrones.msg
+  BitmaskCountDrones.msg
+  TreeCountDrones.msg
+  SimpleCountDrones.msg
 )
 
 generate_messages(
@@ -52,6 +54,9 @@ add_executable(primitive_planner_node
   src/pp_replan_fsm.cpp
   src/planner_manager.cpp
   src/drone_counter.cpp
+  src/simple_drone_counter.cpp
+  src/tree_drone_counter.cpp
+  src/bitmask_drone_counter.cpp
   )
 target_link_libraries(primitive_planner_node 
   ${catkin_LIBRARIES} ${PCL_LIBRARIES}

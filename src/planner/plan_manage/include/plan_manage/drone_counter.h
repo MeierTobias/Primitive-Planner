@@ -1,77 +1,59 @@
 #ifndef _DRONE_COUNTER_H_
 #define _DRONE_COUNTER_H_
 
-#include <quadrotor_msgs/CountDrones.h>
 #include <std_msgs/Empty.h>
 #include <ros/subscriber.h>
 #include <ros/node_handle.h>
 #include <ros/ros.h>
 #include <Eigen/Core>
-#include <memory>
-#include <unordered_set>
-#include <cstdint>
 
 namespace primitive_planner
 {
 
-enum AlgoPhase : int8_t
-{
-  // We're doing a flood-fill from the root, i.e. the node with the lowest ID.
-  // We don't know who the root is, so everyone starts flooding and the flood from the root overwrites everything else.
-  FLOOD_FORWARD,
-  // Then we're flooding, starting at the root, requesting a count of drones.
-  // For this, we set the recipient to the parent (so they can listen and take this as an acknowledgement that they're our parent)
-  // and set the payload to the root (to make sure that it doesn't interfere if any other roots started a request)
-  COUNT_NODES_REQUEST,
-  // After the request, every node knows what its children are.
-  // Once all children have answered (i.e. immediately if we had no children), we propagate the answer back up the tree.
-  COUNT_NODES_ANSWER,
-  // When the root receives all answers, it knows the number of nodes. It then passes that number back down the tree.
-  COUNT_NODES_FLOOD,
-};
-
-constexpr int8_t EVERYONE = -1; // Default recipient.
-// It doesn't really matter, all message types have either a set recipient (COUNT_NODES_ANSWER, COUNT_NODES_REQUEST)
-// or no recipient and are implicitly addressed to all children (i.e. EVERYONE)
-
 class DroneCounter
 {
 public:
-  void init(ros::NodeHandle &nh, int id, const Eigen::Vector3d &position);
+  void init(ros::NodeHandle &nh, const Eigen::Vector3d &position, unsigned int drones_total, unsigned int drone_id);
 
-  int countDrones();
+  virtual void setReachedGoal() = 0;
+  virtual void unsetReachedGoal() = 0;
 
-  int uuid;
-
-  int parentUuid;
-  int rootUuid;
-  std::unordered_set<int> neighbours;
-  std::unordered_set<int> neighbours_acknowledged;
-  unsigned int nb_neighbours_answers_missing;
-
-  int drone_total;
-  bool is_counting_nodes;
-  bool is_finished = true;
-
-private:
-  bool isRoot() const
+  bool allDronesArrived() const
   {
-    return rootUuid == uuid;
+    return drones_at_goal >= drones_total;
   }
-  void startCounting();
-  void sendMessage(AlgoPhase type, int recipient = EVERYONE, int payload = 0);
+  virtual void waitForNDrones(unsigned int n) = 0;
+  // Waits until allDronesArrived is true
+  void waitForAllDrones()
+  {
+    waitForNDrones(drones_total);
+  }
+  unsigned int nbDronesArrived() const
+  {
+    return drones_at_goal;
+  }
 
+protected:
   const Eigen::Vector3d *position = nullptr;
+  unsigned int drones_total;
+  unsigned int drones_at_goal;
 
   ros::Publisher count_pub_;
   ros::Subscriber count_sub_;
   ros::Subscriber debug_sub_;
 
-  void countMessageCallback(const quadrotor_msgs::CountDrones &msg);
   void debugMessageCallback(const std_msgs::Empty &msg);
 
-public:
-  typedef std::unique_ptr<DroneCounter> Ptr;
+  template <class Message>
+  bool comesFromTooFar(const Message &msg, double max_radius = 10)
+  {
+    Eigen::Vector3d sender_position(msg.position.x, msg.position.y, msg.position.z);
+    if ((sender_position - *position).norm() > max_radius)
+      return true;
+    if ((sender_position - *position).norm() < 1e-6) // probably a message from myself
+      return true;
+    return false;
+  }
 };
 
 } // namespace primitive_planner

@@ -1,7 +1,8 @@
-#ifndef _DRONE_COUNTER_H_
-#define _DRONE_COUNTER_H_
+#ifndef _SIMPLE_DRONE_COUNTER_H_
+#define _SIMPLE_DRONE_COUNTER_H_
 
-#include <primitive_planner/CountDrones.h>
+#include <primitive_planner/SimpleCountDrones.h>
+#include "drone_counter.h"
 #include <std_msgs/Empty.h>
 #include <ros/subscriber.h>
 #include <ros/node_handle.h>
@@ -12,31 +13,17 @@
 namespace primitive_planner
 {
 
-class SimpleDroneCounter
+class SimpleDroneCounter : public DroneCounter
 {
 public:
-  void init(ros::NodeHandle &nh, const Eigen::Vector3d &position, unsigned int drones_total);
+  void init(ros::NodeHandle &nh, const Eigen::Vector3d &position, unsigned int drones_total, unsigned int drone_id);
 
-  void setReachedGoal();
-  void unsetReachedGoal();
+  void setReachedGoal() final override;
+  void unsetReachedGoal() final override;
 
-  bool allDronesArrived() const;
-  void waitForNDrones(unsigned int n);
-  // Waits until allDronesArrived is true
-  void waitForAllDrones()
-  {
-    waitForNDrones(drones_total);
-  }
-  unsigned int nbDronesArrived() const
-  {
-    return drones_at_goal;
-  }
+  void waitForNDrones(unsigned int n) override;
 
 private:
-  const Eigen::Vector3d *position = nullptr;
-  unsigned int drones_total;
-
-  unsigned int drones_at_goal;
   enum
   {
     NOT_AT_GOAL,
@@ -45,14 +32,10 @@ private:
     NOT_BROADCASTING,
   } state;
 
-  ros::Publisher count_pub_;
-  ros::Subscriber count_sub_;
-  ros::Subscriber debug_sub_;
-  ros::Subscriber debug_sub_2_;
   ros::Timer broadcast_timer_;
   ros::Timer wait_for_other_drones_timeout_;
 
-  void countMessageCallback(const primitive_planner::CountDrones &msg);
+  void countMessageCallback(const primitive_planner::SimpleCountDrones &msg);
   void debugMessageCallback(const std_msgs::Empty &msg);
   void heartbeatCallback(const ros::TimerEvent &heartbeat);
   void waitForOtherDronesTimeoutCallback(const ros::TimerEvent &timeout);

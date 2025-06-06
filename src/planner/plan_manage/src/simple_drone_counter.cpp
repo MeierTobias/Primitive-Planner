@@ -1,6 +1,6 @@
-#include "plan_manage/drone_counter.h"
+#include "plan_manage/simple_drone_counter.h"
 #include <std_msgs/Empty.h>
-#include <primitive_planner/CountDrones.h>
+#include <primitive_planner/SimpleCountDrones.h>
 #include <ros/callback_queue.h>
 #include <ros/assert.h>
 #include <ros/console.h>
@@ -12,18 +12,16 @@
 namespace primitive_planner
 {
 
-void SimpleDroneCounter::init(ros::NodeHandle &nh, const Eigen::Vector3d &position, unsigned int drones_total)
+void SimpleDroneCounter::init(ros::NodeHandle &nh, const Eigen::Vector3d &position, unsigned int drones_total, unsigned int drone_id)
 {
-  this->position = &position;
-  ROS_DEBUG("[COUNT] init");
-  count_pub_ = nh.advertise<primitive_planner::CountDrones>("/distributed_count", 100);
-  count_sub_ = nh.subscribe<const primitive_planner::CountDrones &>("/distributed_count", 100, &SimpleDroneCounter::countMessageCallback, this);
+  DroneCounter::init(nh, position, drones_total, drone_id);
+
+  count_pub_ = nh.advertise<primitive_planner::SimpleCountDrones>("/distributed_count", 100);
+  count_sub_ = nh.subscribe<const primitive_planner::SimpleCountDrones &>("/distributed_count", 100, &SimpleDroneCounter::countMessageCallback, this);
   broadcast_timer_ = nh.createTimer(ros::Duration(0.5), &SimpleDroneCounter::heartbeatCallback, this);
   broadcast_timer_.stop();
   wait_for_other_drones_timeout_ = nh.createTimer(ros::Duration(2), &SimpleDroneCounter::waitForOtherDronesTimeoutCallback, this, true);
   wait_for_other_drones_timeout_.stop();
-
-  this->drones_total = drones_total;
 
   state = NOT_AT_GOAL;
 }
@@ -62,15 +60,9 @@ void SimpleDroneCounter::heartbeatCallback(const ros::TimerEvent &heartbeat)
   sendMessage();
 }
 
-constexpr double MAX_RECV_RADIUS = 10;
-
-void SimpleDroneCounter::countMessageCallback(const primitive_planner::CountDrones &msg)
+void SimpleDroneCounter::countMessageCallback(const primitive_planner::SimpleCountDrones &msg)
 {
-  Eigen::Vector3d sender_position(msg.position.x, msg.position.y, msg.position.z);
-
-  if ((sender_position - *position).norm() > MAX_RECV_RADIUS)
-    return;
-  if ((sender_position - *position).norm() < 1e-6) // probably a message from myself
+  if (comesFromTooFar(msg))
     return;
 
   if (state == SimpleDroneCounter::ARRIVED_AT_GOAL)
@@ -119,14 +111,9 @@ void SimpleDroneCounter::waitForNDrones(unsigned int n)
   }
 }
 
-bool SimpleDroneCounter::allDronesArrived() const
-{
-  return drones_at_goal >= drones_total;
-}
-
 void SimpleDroneCounter::sendMessage()
 {
-  primitive_planner::CountDrones message;
+  primitive_planner::SimpleCountDrones message;
 
   message.position.x = (*position)(0);
   message.position.y = (*position)(1);
