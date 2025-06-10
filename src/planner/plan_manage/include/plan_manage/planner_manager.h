@@ -39,9 +39,9 @@ public:
   void cloudCallback(const sensor_msgs::PointCloud2ConstPtr &img);
   bool labelObsCollisionPaths(const Eigen::Vector3d &start_pt, const Eigen::Matrix3d &rotVW);
   bool labelAgentCollisionPaths(const Eigen::Vector3d &start_pt, const Eigen::Vector3d &start_v, const double &start_time, const Eigen::Matrix3d &rotVW);
-  vector<int> scorePaths(const Eigen::Vector3d &start_pt, const Eigen::Vector3d &global_goal, const Eigen::Matrix3d &rotWV, const primitive_planner::LocalTrajData &current_traj);
+  vector<int> scorePaths(const Eigen::Vector3d &start_pt, const Eigen::Vector3d &global_goal, const Eigen::Matrix3d &rotWV, const primitive_planner::LocalTrajData &current_traj, const Eigen::Vector3d &virtual_vel);
   void visAllPaths(const Eigen::Vector3d &start_pt, const Eigen::Matrix3d &rotWV);
-  bool trajReplan(const Eigen::Vector3d &start_pt, const Eigen::Vector3d &start_v, const double &start_time, const Eigen::Matrix3d &RWV, const Eigen::Vector3d &global_goal, vector<int> &select_path_id, const primitive_planner::LocalTrajData &current_traj);
+  bool trajReplan(const Eigen::Vector3d &start_pt, const Eigen::Vector3d &start_v, const double &start_time, const Eigen::Matrix3d &RWV, const Eigen::Vector3d &global_goal, vector<int> &select_path_id, const primitive_planner::LocalTrajData &current_traj, const Eigen::Vector3d &virtual_vel);
 
   void readCorrespondences();
   void readAgentCorrespondences();
@@ -49,9 +49,6 @@ public:
   int readPathList();
   void readPathAll();
   void determineEndDirection();
-
-  void cmdVelCallback(const geometry_msgs::Twist::ConstPtr &msg);
-  void sharedHeadingCallback(const geometry_msgs::Vector3::ConstPtr &msg);
 
   int flight_type_;
   int drone_id;
@@ -71,16 +68,14 @@ public:
   int depthCloudStackNum_, depthCloudCount_;
 
   bool has_odom_, has_cloud_;
-  Eigen::Vector3d shared_heading_;
+
+  // velocity vector of the virtual leader
+  Eigen::Vector3d virtual_vel_;
 
 private:
   PlanningVisualization::Ptr visualization_;
 
   ros::Subscriber dep_odom_sub_, dep_cloud_sub_;
-
-  ros::Publisher heading_pub_;
-  ros::Subscriber heading_sub_;
-  ros::Subscriber cmd_vel_sub_;
 
   Eigen::Vector3d robot_pos_;
   Eigen::Quaterniond robot_q_;

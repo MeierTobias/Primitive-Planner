@@ -63,16 +63,6 @@ void PPPlannerManager::initPlanModules(ros::NodeHandle &nh, PlanningVisualizatio
   // 订阅局部点云(world) 转换为局部robot系下 标记path
   dep_cloud_sub_ = nh.subscribe<sensor_msgs::PointCloud2>("plan_manage/cloud", 10, &PPPlannerManager::cloudCallback, this);
 
-  if (drone_id == 0)
-  {
-    cmd_vel_sub_ = nh.subscribe("/cmd_vel", 10, &PPPlannerManager::cmdVelCallback, this);
-    heading_pub_ = nh.advertise<geometry_msgs::Vector3>("/shared_heading", 1);
-  }
-  else
-  {
-    heading_sub_ = nh.subscribe("/shared_heading", 1, &PPPlannerManager::sharedHeadingCallback, this);
-  }
-
   // init depthCloudStack_
   depthCloudStack_.resize(depthCloudStackNum_);
 
@@ -83,28 +73,6 @@ void PPPlannerManager::initPlanModules(ros::NodeHandle &nh, PlanningVisualizatio
   has_cloud_ = false;
 
   visualization_ = vis;
-}
-
-void PPPlannerManager::sharedHeadingCallback(const geometry_msgs::Vector3::ConstPtr &msg)
-{
-  shared_heading_ = Eigen::Vector3d(msg->x, msg->y, msg->z).normalized();
-}
-
-void PPPlannerManager::cmdVelCallback(const geometry_msgs::Twist::ConstPtr &msg)
-{
-  Eigen::Vector3d linear_velocity(msg->linear.x, msg->linear.y, msg->linear.z);
-  if (linear_velocity.norm() > 1e-3)
-  {
-    shared_heading_ = linear_velocity.normalized();
-  }
-  if (heading_pub_)
-  {
-    geometry_msgs::Vector3 msg;
-    msg.x = shared_heading_.x();
-    msg.y = shared_heading_.y();
-    msg.z = shared_heading_.z();
-    heading_pub_.publish(msg);
-  }
 }
 
 void PPPlannerManager::odomCallback(const nav_msgs::OdometryConstPtr &odom)
@@ -218,7 +186,8 @@ bool PPPlannerManager::labelObsCollisionPaths(const Eigen::Vector3d &start_pt, c
 vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
                                          const Eigen::Vector3d &global_goal,
                                          const Eigen::Matrix3d &rotWV,
-                                         const primitive_planner::LocalTrajData &current_traj)
+                                         const primitive_planner::LocalTrajData &current_traj,
+                                         const Eigen::Vector3d &virtual_vel)
 {
   /* score: 1. collision;
                     2. close to global goal; or delta_pitch/yaw(between endpoint and goal in body frame)
@@ -295,7 +264,7 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
       Eigen::Vector3d traj_dir = pathEndList_[i].normalized();
 
       // Cost 1: Deviation from global shared heading
-      double heading_error = acos(std::clamp(traj_dir.dot(shared_heading_), -1.0, 1.0));
+      double heading_error = acos(std::clamp(traj_dir.dot(virtual_vel), -1.0, 1.0));
       double heading_cost = 1.0 * heading_error * heading_error;
 
       // Cost 2: Deviation from neighbors' headings
@@ -718,7 +687,8 @@ bool PPPlannerManager::trajReplan(const Eigen::Vector3d &start_pt,
                                   const Eigen::Matrix3d &RWV,
                                   const Eigen::Vector3d &global_goal,
                                   vector<int> &select_path_id,
-                                  const primitive_planner::LocalTrajData &current_traj)
+                                  const primitive_planner::LocalTrajData &current_traj,
+                                  const Eigen::Vector3d &virtual_vel)
 {
   Eigen::Matrix3d RVW = RWV.inverse();
 
@@ -737,7 +707,7 @@ bool PPPlannerManager::trajReplan(const Eigen::Vector3d &start_pt,
   // visulize all path
   // visAllPaths(start_pt, RWV);
 
-  select_path_id = scorePaths(start_pt, global_goal, RWV, current_traj);
+  select_path_id = scorePaths(start_pt, global_goal, RWV, current_traj, virtual_vel);
   t3 = ros::Time::now();
 
   if (select_path_id.empty())

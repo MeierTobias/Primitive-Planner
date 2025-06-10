@@ -60,17 +60,9 @@ private:
   bool flag_realworld_experiment_, have_trigger_, have_odom_, have_target_, have_log_files_;
 
   ros::Timer exec_timer_;
-  ros::Subscriber trigger_sub_, odom_sub_, mandatory_stop_sub_, select_path_end_sub_, cmd_sub_, broadcast_primitive_sub_, waypoint_sub_;
+  ros::Subscriber trigger_sub_, odom_sub_, mandatory_stop_sub_, select_path_end_sub_, cmd_sub_, broadcast_primitive_sub_, waypoint_sub_, virtual_vel_sub_;
 
   ros::Publisher path_id_pub_, stop_pub_, heartbeat_pub_, global_pub_, broadcast_primitive_pub_, poly_pub_, yaw_cmd_pub_;
-
-  ros::Subscriber cmd_vel_sub_;
-  ros::Time last_cmd_time_;
-  ros::Subscriber heading_sub_;
-  bool joystick_active_ = false;
-  double joystick_timeout_sec_ = 1.0;
-
-  void cmdVelCallback(const geometry_msgs::Twist::ConstPtr &msg);
 
   double waypoints_[10][3];
   int waypoint_num_;
@@ -78,8 +70,11 @@ private:
   int goal_tag_ = 0; // represents the identifier of the decentralized global goal
   int flight_type_;  // 1 manual select, 2 hard code, 3 decentralized global goal
   std::vector<Eigen::Vector3d> all_goal_;
-  // global_goal_ is always set to all_goal_[goal_id_]
-  Eigen::Vector3d global_goal_;
+  Eigen::Vector3d global_goal_; // global_goal_ is always set to all_goal_[goal_id_]
+
+  int virtual_vel_tag_ = 0; // represents the identifier of the decentralized virtual velocity vector
+  Eigen::Vector3d virtual_vel_;
+
   traj_utils::swarmPrimitiveTraj traj_msg = traj_utils::swarmPrimitiveTraj();
   Eigen::Vector3d starting_pos_;
   Eigen::Vector3d odom_pos_, odom_vel_, odom_x_dir_;
@@ -139,6 +134,7 @@ private:
   void pathEndCallback(const std_msgs::Float64MultiArrayPtr &msg);
   void cmdCallback(const quadrotor_msgs::PositionCommandPtr &cmd);
   void waypointCallback(const quadrotor_msgs::GoalSetPtr &msg);
+  void virtualVelCallback(const geometry_msgs::Twist::ConstPtr &msg);
 
   void newGoalReceived(const Eigen::Vector3d &goal);
   bool readLocalTrajPos(Eigen::Vector3d &start_pos, int &vel_id, Eigen::Matrix<double, 3, 3> &Rwv, std::vector<int> &path_id, std::vector<Eigen::Vector3d> &traj_pos, double &traj_duration);

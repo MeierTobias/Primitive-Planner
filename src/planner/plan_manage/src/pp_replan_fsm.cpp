@@ -125,56 +125,12 @@ void PPReplanFSM::init(ros::NodeHandle &nh)
   switch (flight_type_)
   {
   case 1:
-  case 4:
-    if (planner_manager_->drone_id == 0)
-    {
-      cmd_vel_sub_ = nh.subscribe("/cmd_vel", 10, &PPReplanFSM::cmdVelCallback, this);
-      ROS_INFO("[FSM] Drone 0 subscribing to /cmd_vel for joystick input.");
-    }
-    else
-    {
-      ROS_INFO("[FSM] Drone %d NOT subscribing to /cmd_vel.", planner_manager_->drone_id);
-    }
-    if (flight_type_ == 4 && planner_manager_->drone_id != 0)
-    {
-      heading_sub_ = nh.subscribe<geometry_msgs::Vector3>(
-          "/shared_heading", 10,
-          [&](const geometry_msgs::Vector3::ConstPtr &msg) {
-            Eigen::Vector3d heading(msg->x, msg->y, msg->z);
-            Eigen::Vector3d drone0_pos;
-
-            // ➤ Estimate drone 0's odom position from trajectory broadcast
-            if (planner_manager_->swarm_traj.size() > 0 && planner_manager_->swarm_traj[0].drone_id == 0)
-            {
-              drone0_pos = planner_manager_->swarm_traj[0].traj_pos.back();
-            }
-            else
-            {
-              ROS_WARN_THROTTLE(1.0, "[FSM] No known position for drone 0, skipping heading update.");
-              return;
-            }
-
-            double dist_to_drone0 = (odom_pos_ - drone0_pos).norm();
-            if (dist_to_drone0 > planner_manager_->drone_com_r_)
-            {
-              ROS_INFO_THROTTLE(1.0, "[FSM] Drone %d is too far from drone 0 (%.2f m), ignoring heading.",
-                                planner_manager_->drone_id, dist_to_drone0);
-              return;
-            }
-
-            if (heading.norm() > 1e-3)
-            {
-              planner_manager_->shared_heading_ = heading.normalized();
-              have_trigger_ = true;
-              ROS_INFO("[FSM] Drone %d: Received heading from drone 0 at distance %.2f m, activating planning.",
-                       planner_manager_->drone_id, dist_to_drone0);
-            }
-          });
-    }
-
-    last_cmd_time_ = ros::Time(0); // no command received yet
   case 3:
     waypoint_sub_ = nh.subscribe("/goal_with_id", 100, &PPReplanFSM::waypointCallback, this);
+    break;
+
+  case 4: {
+    virtual_vel_sub_ = nh.subscribe("/virtual_vel_with_id", 100, &PPReplanFSM::virtualVelCallback, this);
     break;
 
   case 2: {
@@ -208,26 +164,12 @@ void PPReplanFSM::init(ros::NodeHandle &nh)
     }
     break;
   }
+  }
   default:
     ROS_ERROR("Unknown flight type");
     break;
   }
   ROS_DEBUG("[FSM] Drone %d: Init finished", planner_manager_->drone_id);
-}
-
-void PPReplanFSM::cmdVelCallback(const geometry_msgs::Twist::ConstPtr &msg)
-{
-  ROS_INFO("[FSM] cmdVelCallback triggered.");
-  if (std::abs(msg->linear.x) > 1e-3 || std::abs(msg->linear.y) > 1e-3)
-  {
-    last_cmd_time_ = ros::Time::now();
-    joystick_active_ = true;
-    ROS_INFO("[FSM] Joystick input detected. Updated last_cmd_time_");
-  }
-  else
-  {
-    ROS_INFO("[FSM] cmd_vel received, but below motion threshold");
-  }
 }
 
 void PPReplanFSM::turnTowardsGoal(double yaw_des)
@@ -288,6 +230,21 @@ void PPReplanFSM::waypointCallback(const quadrotor_msgs::GoalSetPtr &msg)
   ++goal_tag_;
   ROS_INFO("[FSM] Drone %d: Received goal: %f, %f, %f", planner_manager_->drone_id, msg->goal[0], msg->goal[1], msg->goal[2]);
   newGoalReceived(Eigen::Vector3d(msg->goal[0], msg->goal[1], msg->goal[2]));
+}
+
+void PPReplanFSM::virtualVelCallback(const geometry_msgs::Twist::ConstPtr &msg)
+{
+  if (Eigen::Vector3d(msg->linear.x, msg->linear.y, msg->linear.z).norm() > 1e-3)
+  {
+    ++virtual_vel_tag_; // TODO: Here a possible overflow could appear. Handle it :P
+    virtual_vel_ = Eigen::Vector3d(msg->linear.x, msg->linear.y, msg->linear.z);
+
+    ROS_DEBUG("[FSM] Drone %d: Joystick input received. [v_x = %f, v_y = %f, v_z = %f, tag = %d]", planner_manager_->drone_id, virtual_vel_[0], virtual_vel_[1], virtual_vel_[2], virtual_vel_tag_);
+  }
+  else
+  {
+    ROS_DEBUG("[FSM] Drone %d: Joystick input received, but below motion threshold", planner_manager_->drone_id);
+  }
 }
 
 void PPReplanFSM::triggerCallback(const geometry_msgs::PoseStampedPtr &msg)
@@ -370,9 +327,21 @@ void PPReplanFSM::RecvBroadcastPrimitiveCallback(const traj_utils::swarmPrimitiv
     // check we received a new goal position from a neighbor
     if (msg->goal_tag > goal_tag_)
     {
-      ++goal_tag_;
-      ROS_INFO("[FSM] Drone %d: New decentralized goal position (%f,%f,%f) from neighbor (id=%ld) received.", planner_manager_->drone_id, global_goal_[0], global_goal_[1], global_goal_[2], recv_id);
+      goal_tag_ = msg->goal_tag;
+      ROS_INFO("[FSM] Drone %d: New decentralized goal position (%f,%f,%f) from neighbor (id=%ld) received.", planner_manager_->drone_id, msg->goal[0], msg->goal[1], msg->goal[2], recv_id);
       newGoalReceived(Eigen::Vector3d(msg->goal[0], msg->goal[1], msg->goal[2]));
+    }
+  }
+
+  if (flight_type_ == 4) // decentralized virtual leader
+  {
+    // check we received a new virtual velocity vector from a neighbor
+    if (msg->virtual_vel_tag > virtual_vel_tag_)
+    {
+      virtual_vel_tag_ = msg->virtual_vel_tag;
+      virtual_vel_ = Eigen::Vector3d(msg->virtual_vel[0], msg->virtual_vel[1], msg->virtual_vel[2]);
+      ROS_DEBUG("[FSM] Drone %d: New decentralized velocity vector (%f,%f,%f) from neighbor (id=%ld) received.", planner_manager_->drone_id, msg->virtual_vel[0], msg->virtual_vel[1], msg->virtual_vel[2], recv_id);
+      changeFSMExecState(REPLAN_TRAJ, "Virtual Leader update");
     }
   }
 
@@ -713,45 +682,19 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
   }
 
   case WAIT_TARGET: {
-    ROS_INFO_STREAM_THROTTLE(1.0, "[FSM] Joystick active: " << joystick_active_
-                                                            << " | time since last input: "
-                                                            << (ros::Time::now() - last_cmd_time_).toSec());
-
     // state transition condition
-    joystick_active_ = (ros::Time::now() - last_cmd_time_).toSec() < joystick_timeout_sec_;
-
-    if (planner_manager_->drone_id == 0 && joystick_active_)
+    if (have_target_ && have_trigger_)
     {
-      if (!have_target_)
-      {
-        global_goal_ = odom_pos_ + 2.0 * planner_manager_->shared_heading_;
-        have_target_ = true;
-      }
-      have_trigger_ = true;
-      changeFSMExecState(GEN_NEW_TRAJ, "FSM");
-    }
-    else if (planner_manager_->drone_id != 0 && have_trigger_)
-    {
-      if (!have_target_)
-      {
-        global_goal_ = odom_pos_ + 2.0 * planner_manager_->shared_heading_;
-        have_target_ = true;
-      }
-      have_trigger_ = true;
       changeFSMExecState(GEN_NEW_TRAJ, "FSM");
     }
     else
     {
+      // publish the current trajectory so that other drones can avoid me even if I'm just hovering (waiting)
       traj_msg.hovering_at_goal = true;
       traj_msg.end_p[0] = odom_pos_[0];
       traj_msg.end_p[1] = odom_pos_[1];
       traj_msg.end_p[2] = odom_pos_[2];
       broadcast_primitive_pub_.publish(traj_msg);
-
-      if (!joystick_active_)
-      {
-        ROS_INFO_THROTTLE(1.0, "[FSM] Waiting for joystick input...");
-      }
     }
     break;
   }
@@ -1026,7 +969,7 @@ bool PPReplanFSM::planPrimitive(bool first_plan, double xV_offset /*= 0.0*/)
   RWV.col(2) = zV;
 
   vector<int> select_path_id;
-  bool plan_success = planner_manager_->trajReplan(start_pt_, start_v_, start_time_.toSec(), RWV, global_goal_, select_path_id, myself_traj_);
+  bool plan_success = planner_manager_->trajReplan(start_pt_, start_v_, start_time_.toSec(), RWV, global_goal_, select_path_id, myself_traj_, virtual_vel_);
 
   std::vector<Eigen::Vector3d> traj_pos;
   double traj_duration;
@@ -1071,6 +1014,14 @@ bool PPReplanFSM::planPrimitive(bool first_plan, double xV_offset /*= 0.0*/)
       traj_msg.goal[0] = global_goal_[0];
       traj_msg.goal[1] = global_goal_[1];
       traj_msg.goal[2] = global_goal_[2];
+    }
+    // publish own virtual velocity vector for decentralized information propagation
+    if (flight_type_ == 4)
+    {
+      traj_msg.virtual_vel_tag = virtual_vel_tag_;
+      traj_msg.virtual_vel[0] = virtual_vel_[0];
+      traj_msg.virtual_vel[1] = virtual_vel_[1];
+      traj_msg.virtual_vel[2] = virtual_vel_[2];
     }
 
     path_id_pub_.publish(traj_msg);
