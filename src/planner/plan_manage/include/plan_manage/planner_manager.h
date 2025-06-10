@@ -50,6 +50,10 @@ public:
   void readPathAll();
   void determineEndDirection();
 
+  void cmdVelCallback(const geometry_msgs::Twist::ConstPtr& msg);
+  void sharedHeadingCallback(const geometry_msgs::Vector3::ConstPtr& msg);
+  
+  int flight_type_;
   int drone_id;
   double max_vel_;
   bool sim_dist_com_;
@@ -67,11 +71,16 @@ public:
   int depthCloudStackNum_, depthCloudCount_;
 
   bool has_odom_, has_cloud_;
+  Eigen::Vector3d shared_heading_;
 
 private:
   PlanningVisualization::Ptr visualization_;
 
   ros::Subscriber dep_odom_sub_, dep_cloud_sub_;
+  
+  ros::Publisher heading_pub_;
+  ros::Subscriber heading_sub_;
+  ros::Subscriber cmd_vel_sub_;
 
   Eigen::Vector3d robot_pos_;
   Eigen::Quaterniond robot_q_;

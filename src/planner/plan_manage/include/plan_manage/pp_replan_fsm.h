@@ -64,6 +64,14 @@ private:
 
   ros::Publisher path_id_pub_, stop_pub_, heartbeat_pub_, global_pub_, broadcast_primitive_pub_, poly_pub_, yaw_cmd_pub_;
 
+  ros::Subscriber cmd_vel_sub_;
+  ros::Time last_cmd_time_;
+  ros::Subscriber heading_sub_;
+  bool joystick_active_ = false;
+  double joystick_timeout_sec_ = 1.0;
+
+  void cmdVelCallback(const geometry_msgs::Twist::ConstPtr& msg);
+
   double waypoints_[10][3];
   int waypoint_num_;
   int goal_id_ = 0;

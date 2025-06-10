@@ -125,6 +125,46 @@ void PPReplanFSM::init(ros::NodeHandle &nh)
   switch (flight_type_)
   {
   case 1:
+  case 4: 
+    if (planner_manager_->drone_id == 0) {
+      cmd_vel_sub_ = nh.subscribe("/cmd_vel", 10, &PPReplanFSM::cmdVelCallback, this);
+      ROS_INFO("[FSM] Drone 0 subscribing to /cmd_vel for joystick input.");
+    } else {
+      ROS_INFO("[FSM] Drone %d NOT subscribing to /cmd_vel.", planner_manager_->drone_id);
+    }
+    if (flight_type_ == 4 && planner_manager_->drone_id != 0) {
+      heading_sub_ = nh.subscribe<geometry_msgs::Vector3>(
+          "/shared_heading", 10,
+          [&](const geometry_msgs::Vector3::ConstPtr& msg) {
+            Eigen::Vector3d heading(msg->x, msg->y, msg->z);
+            Eigen::Vector3d drone0_pos;
+    
+            // ➤ Estimate drone 0's odom position from trajectory broadcast
+            if (planner_manager_->swarm_traj.size() > 0 && planner_manager_->swarm_traj[0].drone_id == 0) {
+              drone0_pos = planner_manager_->swarm_traj[0].traj_pos.back();
+            } else {
+              ROS_WARN_THROTTLE(1.0, "[FSM] No known position for drone 0, skipping heading update.");
+              return;
+            }
+    
+            double dist_to_drone0 = (odom_pos_ - drone0_pos).norm();
+            if (dist_to_drone0 > planner_manager_->drone_com_r_) {
+              ROS_INFO_THROTTLE(1.0, "[FSM] Drone %d is too far from drone 0 (%.2f m), ignoring heading.",
+                                planner_manager_->drone_id, dist_to_drone0);
+              return;
+            }
+    
+            if (heading.norm() > 1e-3) {
+              planner_manager_->shared_heading_ = heading.normalized();
+              have_trigger_ = true;
+              ROS_INFO("[FSM] Drone %d: Received heading from drone 0 at distance %.2f m, activating planning.",
+                      planner_manager_->drone_id, dist_to_drone0);
+            }
+          });
+    }
+      
+    
+    last_cmd_time_ = ros::Time(0);  // no command received yet
   case 3:
     waypoint_sub_ = nh.subscribe("/goal_with_id", 100, &PPReplanFSM::waypointCallback, this);
     break;
@@ -165,6 +205,18 @@ void PPReplanFSM::init(ros::NodeHandle &nh)
     break;
   }
   ROS_DEBUG("[FSM] Drone %d: Init finished", planner_manager_->drone_id);
+}
+
+void PPReplanFSM::cmdVelCallback(const geometry_msgs::Twist::ConstPtr& msg) {
+  ROS_INFO("[FSM] cmdVelCallback triggered.");
+  if (std::abs(msg->linear.x) > 1e-3 || std::abs(msg->linear.y) > 1e-3) {
+      last_cmd_time_ = ros::Time::now();
+      joystick_active_ = true;
+      ROS_INFO("[FSM] Joystick input detected. Updated last_cmd_time_");
+  } else {
+      ROS_INFO("[FSM] cmd_vel received, but below motion threshold");
+  }
+
 }
 
 void PPReplanFSM::turnTowardsGoal(double yaw_des)
@@ -650,19 +702,39 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
   }
 
   case WAIT_TARGET: {
+    ROS_INFO_STREAM_THROTTLE(1.0, "[FSM] Joystick active: " << joystick_active_
+      << " | time since last input: "
+      << (ros::Time::now() - last_cmd_time_).toSec());
+
     // state transition condition
-    if (have_target_ && have_trigger_)
-    {
+    joystick_active_ = (ros::Time::now() - last_cmd_time_).toSec() < joystick_timeout_sec_;
+
+    if (planner_manager_->drone_id == 0 && joystick_active_) {
+      if (!have_target_) {
+          global_goal_ = odom_pos_ + 2.0 * planner_manager_->shared_heading_;
+          have_target_ = true;
+      }
+      have_trigger_ = true;
       changeFSMExecState(GEN_NEW_TRAJ, "FSM");
     }
-    else
-    {
-      // publish the current trajectory so that other drones can avoid me even if I'm just hovering (waiting)
-      traj_msg.hovering_at_goal = true;
-      traj_msg.end_p[0] = odom_pos_[0];
-      traj_msg.end_p[1] = odom_pos_[1];
-      traj_msg.end_p[2] = odom_pos_[2];
-      broadcast_primitive_pub_.publish(traj_msg);
+    else if (planner_manager_->drone_id != 0 && have_trigger_) {
+      if (!have_target_) {
+        global_goal_ = odom_pos_ + 2.0 * planner_manager_->shared_heading_;
+        have_target_ = true;
+      }
+      have_trigger_ = true;
+      changeFSMExecState(GEN_NEW_TRAJ, "FSM");
+    }  
+    else {
+        traj_msg.hovering_at_goal = true;
+        traj_msg.end_p[0] = odom_pos_[0];
+        traj_msg.end_p[1] = odom_pos_[1];
+        traj_msg.end_p[2] = odom_pos_[2];
+        broadcast_primitive_pub_.publish(traj_msg);
+
+        if (!joystick_active_) {
+            ROS_INFO_THROTTLE(1.0, "[FSM] Waiting for joystick input...");
+        }
     }
     break;
   }
