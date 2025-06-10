@@ -50,9 +50,9 @@ public:
   void readPathAll();
   void determineEndDirection();
 
-  void cmdVelCallback(const geometry_msgs::Twist::ConstPtr& msg);
-  void sharedHeadingCallback(const geometry_msgs::Vector3::ConstPtr& msg);
-  
+  void cmdVelCallback(const geometry_msgs::Twist::ConstPtr &msg);
+  void sharedHeadingCallback(const geometry_msgs::Vector3::ConstPtr &msg);
+
   int flight_type_;
   int drone_id;
   double max_vel_;
@@ -77,7 +77,7 @@ private:
   PlanningVisualization::Ptr visualization_;
 
   ros::Subscriber dep_odom_sub_, dep_cloud_sub_;
-  
+
   ros::Publisher heading_pub_;
   ros::Subscriber heading_sub_;
   ros::Subscriber cmd_vel_sub_;

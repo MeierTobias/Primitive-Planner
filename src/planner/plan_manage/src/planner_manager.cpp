@@ -3,7 +3,7 @@
 #include <limits>
 #include "visualization_msgs/Marker.h"
 #include <geometry_msgs/Twist.h>
-#include <algorithm> 
+#include <algorithm>
 
 using namespace std;
 
@@ -63,12 +63,15 @@ void PPPlannerManager::initPlanModules(ros::NodeHandle &nh, PlanningVisualizatio
   // 订阅局部点云(world) 转换为局部robot系下 标记path
   dep_cloud_sub_ = nh.subscribe<sensor_msgs::PointCloud2>("plan_manage/cloud", 10, &PPPlannerManager::cloudCallback, this);
 
-  if (drone_id == 0) {
+  if (drone_id == 0)
+  {
     cmd_vel_sub_ = nh.subscribe("/cmd_vel", 10, &PPPlannerManager::cmdVelCallback, this);
     heading_pub_ = nh.advertise<geometry_msgs::Vector3>("/shared_heading", 1);
-  } else {
+  }
+  else
+  {
     heading_sub_ = nh.subscribe("/shared_heading", 1, &PPPlannerManager::sharedHeadingCallback, this);
-  }  
+  }
 
   // init depthCloudStack_
   depthCloudStack_.resize(depthCloudStackNum_);
@@ -82,16 +85,20 @@ void PPPlannerManager::initPlanModules(ros::NodeHandle &nh, PlanningVisualizatio
   visualization_ = vis;
 }
 
-void PPPlannerManager::sharedHeadingCallback(const geometry_msgs::Vector3::ConstPtr& msg) {
+void PPPlannerManager::sharedHeadingCallback(const geometry_msgs::Vector3::ConstPtr &msg)
+{
   shared_heading_ = Eigen::Vector3d(msg->x, msg->y, msg->z).normalized();
 }
 
-void PPPlannerManager::cmdVelCallback(const geometry_msgs::Twist::ConstPtr& msg) {
+void PPPlannerManager::cmdVelCallback(const geometry_msgs::Twist::ConstPtr &msg)
+{
   Eigen::Vector3d linear_velocity(msg->linear.x, msg->linear.y, msg->linear.z);
-  if (linear_velocity.norm() > 1e-3) {
+  if (linear_velocity.norm() > 1e-3)
+  {
     shared_heading_ = linear_velocity.normalized();
   }
-  if (heading_pub_) {
+  if (heading_pub_)
+  {
     geometry_msgs::Vector3 msg;
     msg.x = shared_heading_.x();
     msg.y = shared_heading_.y();
@@ -251,11 +258,12 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
 
     double bound_cost = 0;
     double goal_cost = 1;
-    if (flight_type_ == 0) {
+    if (flight_type_ == 0)
+    {
       // calculate goal distance cost
       // rotWV * pathEndList_ + start_pt: body -> world;
       Eigen::Vector3d endPoint = rotWV * pathEndList_[i] + start_pt;
-      
+
       // check if the goal is out of reach for the planned trajectory
       if (((start_pt - global_goal).norm() > pathLengthMax_) || (rotWV.col(0).dot(global_goal - start_pt) <= 0))
       {
@@ -281,7 +289,9 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
       {
         bound_cost = 10;
       }
-    } else if (flight_type_ == 4) {
+    }
+    else if (flight_type_ == 4)
+    {
       Eigen::Vector3d traj_dir = pathEndList_[i].normalized();
 
       // Cost 1: Deviation from global shared heading
@@ -292,11 +302,14 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
       double neighbor_heading_cost = 0.0;
       int contributing_neighbors = 0;
 
-      for (const auto& neighbor : swarm_traj) {
-        if (neighbor.drone_id < 0 || neighbor.drone_id == drone_id) continue;
+      for (const auto &neighbor : swarm_traj)
+      {
+        if (neighbor.drone_id < 0 || neighbor.drone_id == drone_id)
+          continue;
 
         // Use their trajectory direction if available
-        if (!neighbor.traj_pos.empty()) {
+        if (!neighbor.traj_pos.empty())
+        {
           Eigen::Vector3d neighbor_dir = (neighbor.traj_pos.back() - neighbor.traj_pos.front()).normalized();
           double align_error = acos(std::clamp(traj_dir.dot(neighbor_dir), -1.0, 1.0));
           neighbor_heading_cost += align_error * align_error;
@@ -304,16 +317,15 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
         }
       }
 
-      if (contributing_neighbors > 0) {
-        neighbor_heading_cost /= contributing_neighbors;  // average
+      if (contributing_neighbors > 0)
+      {
+        neighbor_heading_cost /= contributing_neighbors; // average
       }
 
       // Final weight for heading consensus
       double consensus_weight = 0.5;
       goal_cost += heading_cost + consensus_weight * neighbor_heading_cost; // TODO: Map to [0,1]
-
     }
-  
 
     // calculate direction change cost
     double dir_cost = 0;

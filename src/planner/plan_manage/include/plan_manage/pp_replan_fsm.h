@@ -70,7 +70,7 @@ private:
   bool joystick_active_ = false;
   double joystick_timeout_sec_ = 1.0;
 
-  void cmdVelCallback(const geometry_msgs::Twist::ConstPtr& msg);
+  void cmdVelCallback(const geometry_msgs::Twist::ConstPtr &msg);
 
   double waypoints_[10][3];
   int waypoint_num_;
