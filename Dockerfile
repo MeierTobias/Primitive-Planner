@@ -5,6 +5,7 @@ RUN apt update && apt upgrade -y
 RUN apt install -y python3-pip python3-tk vim
 RUN pip3 install numpy --upgrade
 RUN pip3 install toppra catkin_pkg PyYAML empy matplotlib pyrfc3339 
+RUN apt-get update && apt install ros-noetic-teleop-twist-keyboard
 
 ARG USER_ID
 ARG GROUP_ID
