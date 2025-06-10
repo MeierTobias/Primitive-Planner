@@ -71,6 +71,7 @@ def generate_teleop_heading_launch_file(
 
         file.write("</launch>\n")
 
+
 if __name__ == "__main__":
     import sys
     import os
@@ -90,5 +91,5 @@ if __name__ == "__main__":
         drone_num,
         init_x,
         init_y_spacing,
-        os.path.join(launch_dir, "generate_teleop_heading.launch"),
+        os.path.join(launch_dir, "teleop_heading.launch"),
     )
