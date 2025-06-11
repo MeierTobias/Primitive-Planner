@@ -73,6 +73,7 @@ public:
   int depthCloudStackNum_, depthCloudCount_;
 
   bool has_odom_, has_cloud_;
+  double goal_radius;
 
 private:
   PlanningVisualization::Ptr visualization_;

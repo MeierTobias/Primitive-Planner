@@ -728,26 +728,31 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
 
   case EXEC_TRAJ: {
     double delta_t = (ros::Time::now() - start_time_).toSec();
-    if ((odom_pos_ - global_goal_).norm() < no_replan_thresh_)
+    double dist_to_goal = (odom_pos_ - global_goal_).norm();
+    if (dist_to_goal < planner_manager_->goal_radius)
     {
       if (goal_id_ == (waypoint_num_ - 1))
       {
         changeFSMExecState(APPROACH_GOAL, "FSM");
-        std::stringstream ss;
-        ss << "odom_pos_=" << odom_pos_.transpose() << " global_goal_=" << global_goal_.transpose() << " norm=" << (odom_pos_ - global_goal_).norm() << " thres=" << no_replan_thresh_;
-        ROS_DEBUG(ss.str().c_str());
+        // Final goal reached
+        global_goal_ = odom_pos_; // snap goal to current position
+        ROS_INFO("[FSM] Drone %d reached final goal within radius %.2f m. Dist: %.2f m. Snapping to current position: (%.2f, %.2f, %.2f)",
+                 planner_manager_->drone_id,
+                 planner_manager_->goal_radius,
+                 dist_to_goal,
+                 odom_pos_.x(), odom_pos_.y(), odom_pos_.z());
       }
       else
       {
+        // Proceed to next goal
         goal_id_++;
         global_goal_ = all_goal_[goal_id_];
+        ROS_INFO("[FSM] Advancing to next goal ID %d, New goal: (%.2f, %.2f, %.2f)",
+                 goal_id_,
+                 global_goal_.x(), global_goal_.y(), global_goal_.z());
 
-        // send global goal
         std_msgs::Float64MultiArray goal_msg;
-        for (int i = 0; i < 3; i++)
-        {
-          goal_msg.data.push_back(global_goal_(i));
-        }
+        goal_msg.data = {global_goal_.x(), global_goal_.y(), global_goal_.z()};
         global_pub_.publish(goal_msg);
       }
     }
