@@ -130,6 +130,7 @@ void PPReplanFSM::init(ros::NodeHandle &nh)
     break;
 
   case 4: {
+    have_target_ = true;
     virtual_vel_sub_ = nh.subscribe("/virtual_vel_with_id", 100, &PPReplanFSM::virtualVelCallback, this);
     break;
 
@@ -232,18 +233,23 @@ void PPReplanFSM::waypointCallback(const quadrotor_msgs::GoalSetPtr &msg)
   newGoalReceived(Eigen::Vector3d(msg->goal[0], msg->goal[1], msg->goal[2]));
 }
 
-void PPReplanFSM::virtualVelCallback(const geometry_msgs::Twist::ConstPtr &msg)
+void PPReplanFSM::virtualVelCallback(const quadrotor_msgs::GoalSetPtr &msg)
 {
-  if (Eigen::Vector3d(msg->linear.x, msg->linear.y, msg->linear.z).norm() > 1e-3)
+  if (msg->drone_id != planner_manager_->drone_id)
+    return;
+
+  Eigen::Vector3d new_virtual_vel = Eigen::Vector3d(msg->goal[0], msg->goal[1], msg->goal[2]);
+  if (new_virtual_vel.norm() > 1e-3)
   {
     ++virtual_vel_tag_; // TODO: Here a possible overflow could appear. Handle it :P
-    virtual_vel_ = Eigen::Vector3d(msg->linear.x, msg->linear.y, msg->linear.z);
+    virtual_vel_ = new_virtual_vel;
+    have_trigger_ = true;
 
     ROS_DEBUG("[FSM] Drone %d: Joystick input received. [v_x = %f, v_y = %f, v_z = %f, tag = %d]", planner_manager_->drone_id, virtual_vel_[0], virtual_vel_[1], virtual_vel_[2], virtual_vel_tag_);
   }
   else
   {
-    ROS_DEBUG("[FSM] Drone %d: Joystick input received, but below motion threshold", planner_manager_->drone_id);
+    ROS_DEBUG("[FSM] Drone %d: Joystick input received, but below motion threshold [vec_norm = %f]", planner_manager_->drone_id, new_virtual_vel.norm());
   }
 }
 
@@ -744,7 +750,7 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
 
   case EXEC_TRAJ: {
     double delta_t = (ros::Time::now() - start_time_).toSec();
-    if ((odom_pos_ - global_goal_).norm() < no_replan_thresh_)
+    if (flight_type_ != 4 && ((odom_pos_ - global_goal_).norm() < no_replan_thresh_))
     {
       if (goal_id_ == (waypoint_num_ - 1))
       {

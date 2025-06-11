@@ -134,7 +134,7 @@ private:
   void pathEndCallback(const std_msgs::Float64MultiArrayPtr &msg);
   void cmdCallback(const quadrotor_msgs::PositionCommandPtr &cmd);
   void waypointCallback(const quadrotor_msgs::GoalSetPtr &msg);
-  void virtualVelCallback(const geometry_msgs::Twist::ConstPtr &msg);
+  void virtualVelCallback(const quadrotor_msgs::GoalSetPtr &msg);
 
   void newGoalReceived(const Eigen::Vector3d &goal);
   bool readLocalTrajPos(Eigen::Vector3d &start_pos, int &vel_id, Eigen::Matrix<double, 3, 3> &Rwv, std::vector<int> &path_id, std::vector<Eigen::Vector3d> &traj_pos, double &traj_duration);
