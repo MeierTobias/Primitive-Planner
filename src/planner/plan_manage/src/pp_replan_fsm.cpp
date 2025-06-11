@@ -119,6 +119,12 @@ void PPReplanFSM::init(ros::NodeHandle &nh)
   }
   starting_pos_ = odom_pos_;
 
+  // We need odom for getRobotPos() to be a valid value
+  int total_drones;
+  nh.param("total_drones", total_drones, 0);
+  ROS_INFO("Total drones is %d", total_drones);
+  this->drone_counter_.init(nh, planner_manager_->getRobotPos(), static_cast<unsigned int>(total_drones), planner_manager_->drone_id);
+
   exec_timer_ = nh.createTimer(ros::Duration(0.01), &PPReplanFSM::execFSMCallback, this);
 
   // global goal
@@ -639,11 +645,20 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
   std_msgs::Empty heartbeat_msg;
   heartbeat_pub_.publish(heartbeat_msg);
 
+  static int fsm_num = 0;
+  fsm_num++;
+  if (fsm_num == 500)
+  {
+    fsm_num = 0;
+    printFSMExecState();
+  }
+
   switch (exec_state_)
   {
   case INIT: {
     if (have_odom_)
     {
+      this->drone_counter_.setReachedGoal();
       changeFSMExecState(WAIT_TARGET, "FSM");
     }
     break;
@@ -651,8 +666,9 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
 
   case WAIT_TARGET: {
     // state transition condition
-    if (have_target_ && have_trigger_)
+    if (have_target_ && have_trigger_ && drone_counter_.allDronesArrived())
     {
+      drone_counter_.unsetReachedGoal();
       changeFSMExecState(GEN_NEW_TRAJ, "FSM");
     }
     else
@@ -756,6 +772,7 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
 
     have_target_ = false;
     have_trigger_ = false;
+    drone_counter_.setReachedGoal();
     changeFSMExecState(WAIT_TARGET, "FSM");
 
     break;
@@ -876,8 +893,12 @@ void PPReplanFSM::printFSMExecState()
   {
     msg += "trigger,";
   }
+  if (!drone_counter_.allDronesArrived())
+  {
+    msg += "all drones,";
+  }
 
-  ROS_DEBUG(msg.c_str());
+  ROS_DEBUG("%s", msg.c_str());
 }
 
 bool PPReplanFSM::planPrimitive(bool first_plan, double xV_offset /*= 0.0*/)

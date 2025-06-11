@@ -12,6 +12,7 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <optional>
 
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/point_cloud.h>
@@ -29,8 +30,8 @@ namespace primitive_planner
 class PPPlannerManager
 {
 public:
-  PPPlannerManager(){};
-  ~PPPlannerManager(){};
+  PPPlannerManager() {};
+  ~PPPlannerManager() {};
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -49,6 +50,11 @@ public:
   int readPathList();
   void readPathAll();
   void determineEndDirection();
+
+  const Eigen::Vector3d &getRobotPos() const
+  {
+    return robot_pos_;
+  }
 
   int drone_id;
   double max_vel_;

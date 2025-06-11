@@ -59,6 +59,7 @@ def generate_launch_file(
             )
             file.write('        <arg name="drone_com_r" value="$(arg drone_com_r)"/>\n')
             file.write('        <arg name="base_com_r" value="$(arg base_com_r)"/>\n')
+            file.write('        <arg name="total_drones" value="{}"/>\n'.format(num_drones))
 
             file.write("    </include>\n\n")
 

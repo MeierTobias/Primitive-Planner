@@ -254,7 +254,7 @@ void trajCallback(traj_utils::swarmPrimitiveTrajPtr msg)
     val8 = fscanf(filePtr, "%lf", &acc_y);
     val9 = fscanf(filePtr, "%lf", &acc_z);
 
-    if (val1 != 1 || val2 != 1 || val3 != 1 || val4 != 1 || val5 != 1 || val6 != 1 || val7 != 1 || val8 != 1 || val9 != 1)
+    if (val_num != 1 || val_dur != 1 || val1 != 1 || val2 != 1 || val3 != 1 || val4 != 1 || val5 != 1 || val6 != 1 || val7 != 1 || val8 != 1 || val9 != 1)
     {
       printf("\nError reading input files, exit.\n\n");
       exit(1);
@@ -347,7 +347,6 @@ std::pair<double, double> calculate_yaw(double t_cur, Eigen::Vector3d &pos, doub
                        ? atan2(traj_vel_[idx](1), traj_vel_[idx](0))
                        : last_yaw_;
 
-  double yawdot = 0;
   double diff = yaw_diff(yaw_des, last_yaw_);
   int yaw_dir = diff > 0 ? 1 : -1;
   double yaw_temp = limit_yaw(last_yaw_ + yaw_dir * YAW_DOT_MAX_PER_SEC * loop_time_);
@@ -389,7 +388,7 @@ void cmdCallback(const ros::TimerEvent &e)
 
     double t_cur = (time_now - start_time_).toSec();
     // std::cout << "t_cur: " << t_cur << std::endl;
-    int idx_t = floor(t_cur * 100) + time_delay_idx_; // 1000/10 10ms-traj resolution
+    unsigned int idx_t = floor(t_cur * 100) + time_delay_idx_; // 1000/10 10ms-traj resolution
 
     // TODO:插值时间 6ms按照0处理 有偏移
     // std::cout << "idx_t: " << idx_t << std::endl;

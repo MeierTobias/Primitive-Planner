@@ -2,12 +2,11 @@
 #define _PP_REPLAN_FSM_H_
 
 #include <Eigen/Eigen>
-#include <algorithm>
-#include <iostream>
 #include <vector>
 #include <string>
 #include <ros/ros.h>
 #include <plan_manage/planner_manager.h>
+#include "plan_manage/bitmask_drone_counter.h"
 #include <traj_utils/planning_visualization.h>
 #include <nav_msgs/Odometry.h>
 #include <std_msgs/Empty.h>
@@ -114,6 +113,8 @@ private:
   std::string primitiveFolder_;
 
   LocalTrajData myself_traj_;
+
+  BitmaskDroneCounter drone_counter_;
 
   /* state machine functions */
   void execFSMCallback(const ros::TimerEvent &e);
