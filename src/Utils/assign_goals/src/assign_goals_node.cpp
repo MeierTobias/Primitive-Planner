@@ -23,7 +23,7 @@ struct Selected_t
   int drone_id;
   Eigen::Vector3d p;
 };
-vector<Selected_t> drones_;
+vector<Selected_t> drones_ = {Selected_t{0, Eigen::Vector3d(0, 0, 0)}};
 
 void displayArrowList(const vector<Eigen::Vector3d> &start, const vector<Eigen::Vector3d> &end, const double scale, const int id, const int32_t action)
 {
