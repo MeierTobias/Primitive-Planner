@@ -60,6 +60,14 @@ public:
   double swarm_clearance_;
   std::string primitiveFolder_;
   SwarmTrajData swarm_traj;
+  
+  struct SwarmConsensusCosts {
+    double heading_from_shared = 5.0;
+    double heading_to_neighbors = 1.0;
+    double speed_alignment = 0.1;
+    double velocity_mismatch = 0.1;
+    double start_heading_deviation = 1.0;
+  };  
 
   double voxelSize_;
 

@@ -34,7 +34,7 @@ void PPPlannerManager::initPlanModules(ros::NodeHandle &nh, PlanningVisualizatio
   nh.param("manager/max_vel", max_vel_, -1.0);
   nh.param("manager/drone_id", drone_id, -1);
   nh.param("manager/swarm_clearance", swarm_clearance_, -1.0);
-  nh.param("manager/flight_type", flight_type_, 0);
+  nh.param("manager/flight_type", flight_type_, 4);
 
   voxelNumX_ = int(boxX_ / voxelSize_);
   voxelNumY_ = int(boxY_ / voxelSize_);
@@ -227,12 +227,24 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
 
     double bound_cost = 0;
     double goal_cost = 1;
-    if (flight_type_ == 0)
+
+    // calculate direction change cost
+    double dir_cost = 0;
+    if (applyDirCost)
     {
+      // check if the path has a valid end direction
+      if (pathEndDir_[i])
+      {
+        // calculate the direction difference cost [0, 1] (0 = direction is the same as current direction, 1 = direction is opposite then the current direction)
+        dir_cost = 0.5 * (1.0 - currentTrajEndDir.dot(rotWV * (*pathEndDir_[i])));
+      }
+    }
+
+    if (flight_type_ == 0) {
       // calculate goal distance cost
       // rotWV * pathEndList_ + start_pt: body -> world;
       Eigen::Vector3d endPoint = rotWV * pathEndList_[i] + start_pt;
-
+      
       // check if the goal is out of reach for the planned trajectory
       if (((start_pt - global_goal).norm() > pathLengthMax_) || (rotWV.col(0).dot(global_goal - start_pt) <= 0))
       {
@@ -258,55 +270,139 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
       {
         bound_cost = 10;
       }
-    }
-    else if (flight_type_ == 4)
-    {
-      Eigen::Vector3d traj_dir = pathEndList_[i].normalized();
+    } else if (flight_type_ == 4) {
 
-      // Cost 1: Deviation from global shared heading
-      double heading_error = acos(std::clamp(traj_dir.dot(virtual_vel), -1.0, 1.0));
-      double heading_cost = 1.0 * heading_error * heading_error;
-
-      // Cost 2: Deviation from neighbors' headings
-      double neighbor_heading_cost = 0.0;
-      int contributing_neighbors = 0;
-
-      for (const auto &neighbor : swarm_traj)
-      {
-        if (neighbor.drone_id < 0 || neighbor.drone_id == drone_id)
-          continue;
-
-        // Use their trajectory direction if available
-        if (!neighbor.traj_pos.empty())
-        {
-          Eigen::Vector3d neighbor_dir = (neighbor.traj_pos.back() - neighbor.traj_pos.front()).normalized();
-          double align_error = acos(std::clamp(traj_dir.dot(neighbor_dir), -1.0, 1.0));
-          neighbor_heading_cost += align_error * align_error;
-          contributing_neighbors++;
-        }
-      }
-
-      if (contributing_neighbors > 0)
-      {
-        neighbor_heading_cost /= contributing_neighbors; // average
-      }
-
-      // Final weight for heading consensus
-      double consensus_weight = 0.5;
-      goal_cost += heading_cost + consensus_weight * neighbor_heading_cost; // TODO: Map to [0,1]
-    }
-
-    // calculate direction change cost
-    double dir_cost = 0;
-    if (applyDirCost)
-    {
-      // check if the path has a valid end direction
+      // Cost 1: Deviation from global shared heading , TODO: like dir_cost
+      double heading_cost = 0.0;
       if (pathEndDir_[i])
       {
         // calculate the direction difference cost [0, 1] (0 = direction is the same as current direction, 1 = direction is opposite then the current direction)
-        dir_cost = 0.5 * (1.0 - currentTrajEndDir.dot(rotWV * (*pathEndDir_[i])));
+        heading_cost = 0.5 * (1.0 - virtual_vel.dot(rotWV * (*pathEndDir_[i])));
       }
+
+      // ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+      // Cost 2: Deviation from neighbours speed
+      double my_speed = 0.0;
+      int valid_steps = 0;
+      if (pathAll_[i].size() >= 2) {
+        for (size_t j = 1; j < pathAll_[i].size(); ++j) {
+          double step_dist = (pathAll_[i][j] - pathAll_[i][j - 1]).norm();
+          my_speed += step_dist;
+          valid_steps++;
+        }
+      }
+      if (valid_steps > 0) {
+        my_speed /= (valid_steps * 0.1); // 0.1s intervall in steps 
+      } else {
+        my_speed = 0.0;
+      }
+      
+      double speed_deviation_cost = 0.0;
+      int contributing_neighbors = 0;
+
+      for (const auto& neighbor : swarm_traj) {
+        if (neighbor.drone_id < 0 || neighbor.drone_id == drone_id) continue;
+
+        if (neighbor.traj_pos.size() >= 2) {
+          double neighbor_speed = 0.0;
+          int neighbor_steps = 0;
+          for (size_t j = 1; j < neighbor.traj_pos.size(); ++j) {
+            double step_dist = (neighbor.traj_pos[j] - neighbor.traj_pos[j - 1]).norm();
+            neighbor_speed += step_dist;
+            neighbor_steps++;
+          }
+
+          if (neighbor_steps > 0) {
+            neighbor_speed /= (neighbor_steps * 0.1); // 0.1s intervall in steps 
+            double diff = my_speed - neighbor_speed;
+            speed_deviation_cost += diff * diff;
+            contributing_neighbors++;
+          }
+        }
+      }
+
+      if (contributing_neighbors > 0) {
+        speed_deviation_cost /= contributing_neighbors;
+      }
+
+      // ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+      // Cost 3: Deviation from neighbors' headings
+
+      double start_heading_cost = 0.0;
+      int contributing_neighbors_start = 0;
+
+      // Compute your own start heading from the first two points
+      Eigen::Vector3d my_start_heading(0, 0, 0);
+
+      if (pathAll_[i].size() >= 2) {
+        std::vector<Eigen::Vector3d>::const_iterator it_begin = pathAll_[i].begin();
+        my_start_heading = (*(std::next(it_begin)) - *it_begin).normalized();
+      }
+
+      for (const auto& neighbor : swarm_traj) {
+        if (neighbor.drone_id < 0 || neighbor.drone_id == drone_id) continue;
+
+        const auto& traj = neighbor.traj_pos;
+        if (traj.size() >= 2) {
+          std::vector<Eigen::Vector3d>::const_iterator it_begin = neighbor.traj_pos.begin();
+          Eigen::Vector3d neighbor_start_heading = (*(std::next(it_begin)) - *it_begin).normalized();
+          double heading_diff = 0.5*(1.0 - my_start_heading.dot(rotWV * neighbor_start_heading));
+          start_heading_cost += heading_diff * heading_diff;
+          contributing_neighbors_start++;
+        }
+      }
+
+      if (contributing_neighbors_start > 0) {
+        start_heading_cost /= contributing_neighbors_start;
+      }
+      
+      // Cost from final heading yours vs neighbors
+      double neighbor_heading_cost = 0.0;
+      int contributing_neighbors_heading = 0;
+
+      for (const auto& neighbor : swarm_traj) {
+        if (neighbor.drone_id < 0 || neighbor.drone_id == drone_id) continue;
+
+        // TODO: Use their trajectory direction if available like labelAgentCollisionPaths for the last heading
+        const auto& traj = neighbor.traj_pos;
+        if ((traj.size() >= 2) && (applyDirCost)) {
+          std::vector<Eigen::Vector3d>::const_iterator it_end = std::prev(traj.end());
+          Eigen::Vector3d neighbor_final_heading = (*it_end - *std::prev(it_end)).normalized();
+          double heading_diff = 0.5*(1.0 - (*pathEndDir_[i]).dot(rotWV * neighbor_final_heading));
+          neighbor_heading_cost += heading_diff * heading_diff;
+          contributing_neighbors_heading++;
+        }
+      }
+
+      if (contributing_neighbors_heading > 0) {
+        neighbor_heading_cost /= contributing_neighbors_heading;  // average
+      }
+
+      // ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+      // Sum all costs using struct with all weights
+
+      SwarmConsensusCosts consensus_costs;
+
+      // Cost from deviation from my speed and virtual_vel
+      goal_cost += consensus_costs.velocity_mismatch * std::pow(my_speed - virtual_vel.norm(), 2);
+
+      // Cost from deviation from my speed and speed of neighbors
+      goal_cost += consensus_costs.speed_alignment * speed_deviation_cost;
+
+      // Cost from deviation from my first heading and the first heading of the neighbors
+      goal_cost += consensus_costs.start_heading_deviation * start_heading_cost;
+
+      // Cost from deviation from my final heading and the desired shared_heading 
+      goal_cost += consensus_costs.heading_from_shared * heading_cost;
+
+      // Cost from deviation from my final heading and the final heading of my neighbors
+      goal_cost += consensus_costs.heading_to_neighbors * neighbor_heading_cost;
+      
     }
+  
     // calculate overall cost
     double cost = lambda_l_ * goal_cost + lambda_b_ * bound_cost + lambda_d_ * dir_cost;
 
