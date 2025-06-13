@@ -244,8 +244,6 @@ void PPReplanFSM::virtualVelCallback(const quadrotor_msgs::GoalSetPtr &msg)
     ++virtual_vel_tag_; // TODO: Here a possible overflow could appear. Handle it :P
     virtual_vel_ = new_virtual_vel;
     have_trigger_ = true;
-    last_cmd_time_ = ros::Time::now();
-    joystick_active_ = true;
 
     ROS_DEBUG("[FSM] Drone %d: Joystick input received. [v_x = %f, v_y = %f, v_z = %f, tag = %d]", planner_manager_->drone_id, virtual_vel_[0], virtual_vel_[1], virtual_vel_[2], virtual_vel_tag_);
   }
@@ -690,19 +688,10 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
   }
 
   case WAIT_TARGET: {
-    ROS_INFO_STREAM_THROTTLE(1.0, "[FSM] Joystick active: " << joystick_active_
-      << " | time since last input: "
-      << (ros::Time::now() - last_cmd_time_).toSec());
 
     // state transition condition
-    joystick_active_ = (ros::Time::now() - last_cmd_time_).toSec() < joystick_timeout_sec_;
 
-    if (planner_manager_->drone_id == 0 && joystick_active_) {
-      have_trigger_ = true;
-      changeFSMExecState(GEN_NEW_TRAJ, "FSM");
-    }
-    else if (planner_manager_->drone_id != 0 && have_trigger_) {
-      have_trigger_ = true;
+    if (have_trigger_ && have_trigger_) {
       changeFSMExecState(GEN_NEW_TRAJ, "FSM");
     }  
     else {
@@ -711,10 +700,6 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
         traj_msg.end_p[1] = odom_pos_[1];
         traj_msg.end_p[2] = odom_pos_[2];
         broadcast_primitive_pub_.publish(traj_msg);
-
-        if (!joystick_active_) {
-            ROS_INFO_THROTTLE(1.0, "[FSM] Waiting for joystick input...");
-        }
     }
     break;
   }
@@ -742,15 +727,6 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
 
   // TODO: This state could probably be merged with the one above
   case REPLAN_TRAJ: {
-    // state transition condition
-    joystick_active_ = (ros::Time::now() - last_cmd_time_).toSec() < joystick_timeout_sec_;
-    if (!joystick_active_ && planner_manager_->drone_id == 0) {
-      ROS_WARN_THROTTLE(1.0, "[FSM] Shared heading lost. Returning to WAIT_TARGET.");
-      have_target_ = false;
-      have_trigger_ = false;
-      changeFSMExecState(WAIT_TARGET, "FSM");
-      break;
-    }
     bool success = planPrimitive(false);
     if (success)
     {
@@ -772,22 +748,6 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
   }
 
   case EXEC_TRAJ: {
-    // state transition condition
-    joystick_active_ = (ros::Time::now() - last_cmd_time_).toSec() < joystick_timeout_sec_;
-    if (!joystick_active_ && planner_manager_->drone_id == 0) {
-      ROS_WARN_THROTTLE(1.0, "[FSM] Shared heading lost. Returning to WAIT_TARGET.");
-      have_target_ = false;
-      have_trigger_ = false;
-      changeFSMExecState(WAIT_TARGET, "FSM");
-      break;
-    }
-    if (planner_manager_->virtual_vel_.norm() < 1e-3){
-      ROS_WARN_THROTTLE(1.0, "[FSM] Shared heading lost. Returning to WAIT_TARGET.");
-      have_target_ = false;
-      have_trigger_ = false;
-      changeFSMExecState(WAIT_TARGET, "FSM");
-      break;
-    }
     double delta_t = (ros::Time::now() - start_time_).toSec();
     if (flight_type_ != 4 && ((odom_pos_ - global_goal_).norm() < no_replan_thresh_))
     {

@@ -293,7 +293,7 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
         }
       }
       if (valid_steps > 0) {
-        my_speed /= (valid_steps * 0.1); // 0.1s intervall in steps 
+        my_speed /= (valid_steps * 0.01); // 0.01s intervall in steps 
       } else {
         my_speed = 0.0;
       }
@@ -314,7 +314,7 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
           }
 
           if (neighbor_steps > 0) {
-            neighbor_speed /= (neighbor_steps * 0.1); // 0.1s intervall in steps 
+            neighbor_speed /= (neighbor_steps * 0.01); // 0.01s intervall in steps 
             double diff = my_speed - neighbor_speed;
             speed_deviation_cost += diff * diff;
             contributing_neighbors++;
