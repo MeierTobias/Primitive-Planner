@@ -26,6 +26,10 @@ void BitmaskDroneCounter::sendMessage()
   message.position.y = (*position)(1);
   message.position.z = (*position)(2);
 
+  message.goal_position.x = goal_position[0];
+  message.goal_position.y = goal_position[1];
+  message.goal_position.z = goal_position[2];
+
   // We're translating from bool to uint8_t (ROS doesn't have bools), so we can't just use operator=
   message.bitmask.resize(bitmask.size());
   std::copy(bitmask.begin(), bitmask.end(), message.bitmask.begin());
@@ -37,6 +41,9 @@ void BitmaskDroneCounter::sendMessage()
 void BitmaskDroneCounter::countMessageCallback(const primitive_planner::BitmaskCountDrones &msg)
 {
   if (comesFromTooFar(msg))
+    return;
+  Eigen::Vector3d msg_goal_position{msg.goal_position.x, msg.goal_position.y, msg.goal_position.z};
+  if ((msg_goal_position - this->goal_position).squaredNorm() > 1e-6)
     return;
 
   bool changed = false;
@@ -56,8 +63,9 @@ void BitmaskDroneCounter::countMessageCallback(const primitive_planner::BitmaskC
   }
 }
 
-void BitmaskDroneCounter::setReachedGoal()
+void BitmaskDroneCounter::setReachedGoal(const Eigen::Vector3d &goal_position)
 {
+  this->goal_position = goal_position;
   std::fill(bitmask.begin(), bitmask.end(), 0);
   bitmask[drone_id] = true;
   drones_at_goal = 1;

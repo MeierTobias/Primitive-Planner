@@ -658,7 +658,8 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
   case INIT: {
     if (have_odom_)
     {
-      this->drone_counter_.setReachedGoal();
+      // TODO: this "no goal set yet" value should not be able to conflict with real goal values
+      this->drone_counter_.setReachedGoal(Eigen::Vector3d{0, 0, 0});
       changeFSMExecState(WAIT_TARGET, "FSM");
     }
     break;
@@ -731,6 +732,7 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
     double dist_to_goal = (odom_pos_ - global_goal_).norm();
     if (dist_to_goal < planner_manager_->goal_radius)
     {
+      drone_counter_.setReachedGoal(global_goal_);
       if (goal_id_ == (waypoint_num_ - 1))
       {
         changeFSMExecState(APPROACH_GOAL, "FSM");
@@ -777,7 +779,6 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
 
     have_target_ = false;
     have_trigger_ = false;
-    drone_counter_.setReachedGoal();
     changeFSMExecState(WAIT_TARGET, "FSM");
 
     break;
