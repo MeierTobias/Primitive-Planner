@@ -220,7 +220,8 @@ void PPReplanFSM::newGoalReceived(const Eigen::Vector3d &goal)
   }
   have_target_ = true;
   have_trigger_ = true;
-  changeFSMExecState(GEN_NEW_TRAJ, "NEW_GOAL");
+  if (drone_counter_.allDronesArrived())
+    changeFSMExecState(GEN_NEW_TRAJ, "NEW_GOAL");
 }
 
 void PPReplanFSM::waypointCallback(const quadrotor_msgs::GoalSetPtr &msg)
