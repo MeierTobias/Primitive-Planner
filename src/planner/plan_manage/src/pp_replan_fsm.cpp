@@ -249,7 +249,11 @@ void PPReplanFSM::virtualVelCallback(const quadrotor_msgs::GoalSetPtr &msg)
   }
   else
   {
-    ROS_DEBUG("[FSM] Drone %d: Joystick input received, but below motion threshold [vec_norm = %f]", planner_manager_->drone_id, new_virtual_vel.norm());
+    Eigen::Vector3d zero_vel(0, 0, 0);
+    ++virtual_vel_tag_;
+    virtual_vel_ = zero_vel;
+    have_trigger_ = true;
+    ROS_DEBUG("[FSM] Drone %d: Zero velocity Joystick input received.", planner_manager_->drone_id);
   }
 }
 
@@ -691,7 +695,7 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
 
     // state transition condition
 
-    if (have_trigger_ && have_trigger_) {
+    if (have_trigger_ && have_trigger_ && (flight_type_ != 4 || virtual_vel_.norm() > 1e-3)) {
       changeFSMExecState(GEN_NEW_TRAJ, "FSM");
     }  
     else {
@@ -728,6 +732,12 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
   // TODO: This state could probably be merged with the one above
   case REPLAN_TRAJ: {
     bool success = planPrimitive(false);
+    if (flight_type_ == 4 && virtual_vel_.norm() < 1e-3) {
+      ROS_WARN_STREAM("[FSM] Drone " << planner_manager_->drone_id << " switching to APPROACH_GOAL due to no input command.");
+      global_goal_ = odom_pos_;
+      changeFSMExecState(APPROACH_GOAL, "FSM");
+      break;
+    }
     if (success)
     {
       changeFSMExecState(EXEC_TRAJ, "FSM");
