@@ -299,19 +299,17 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
       // ---------------------------------------------------------------------------------------------------------------------------------------------------------------
 
       // Cost 2: Deviation from neighbours speed
+      // TODO: Use the velocity information from the data structure or precompute it in the init phase
       double my_speed = 0.0;
-      int valid_steps = 0;
       if (pathAll_[i].size() >= 2)
       {
+        int valid_steps = 0;
         for (size_t j = 1; j < pathAll_[i].size(); ++j)
         {
           double step_dist = (pathAll_[i][j] - pathAll_[i][j - 1]).norm();
           my_speed += step_dist;
           valid_steps++;
         }
-      }
-      if (valid_steps > 0)
-      {
         my_speed /= (valid_steps * 0.01); // 0.01s intervall in steps
       }
       else
@@ -327,6 +325,7 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
         if (neighbor.drone_id < 0 || neighbor.drone_id == drone_id)
           continue;
 
+        // TODO: this could also be read from the primitive data structure or used from the precomputed velocity
         if (neighbor.traj_pos.size() >= 2)
         {
           double neighbor_speed = 0.0;
@@ -360,6 +359,7 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
       double start_heading_cost = 0.0;
       int contributing_neighbors_start = 0;
 
+      // TODO: The strat heading is already given from the rotation matrix (not need to recompute it)
       // Compute your own start heading from the first two points
       Eigen::Vector3d my_start_heading(0, 0, 0);
 
@@ -377,6 +377,7 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
         const auto &traj = neighbor.traj_pos;
         if (traj.size() >= 2)
         {
+          // TODO: This is also already given by the rotation matrix of the neighbor that it sent to us
           std::vector<Eigen::Vector3d>::const_iterator it_begin = neighbor.traj_pos.begin();
           Eigen::Vector3d neighbor_start_heading = (*(std::next(it_begin)) - *it_begin).normalized();
           double heading_diff = 0.5 * (1.0 - my_start_heading.dot(rotWV * neighbor_start_heading));
@@ -415,6 +416,8 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
       {
         neighbor_heading_cost /= contributing_neighbors_heading; // average
       }
+
+      // TODO: We loop a lot over the swarm_traj. We could simplify this by only looping once and storing/computing all the needed information. Then we could also avoid the contributing neighbor counting etc.
 
       // ---------------------------------------------------------------------------------------------------------------------------------------------------------------
 
