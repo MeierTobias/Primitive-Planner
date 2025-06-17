@@ -286,13 +286,14 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
     }
 
     case 4: {
+      // TODO: We probably have to check that the virtual_vel vector is not 0 (very small)
 
       // Cost 1: Deviation from global shared heading , TODO: like dir_cost
       double heading_cost = 0.0;
       if (pathEndDir_[i])
       {
         // calculate the direction difference cost [0, 1] (0 = direction is the same as current direction, 1 = direction is opposite then the current direction)
-        heading_cost = 0.5 * (1.0 - virtual_vel.dot(rotWV * (*pathEndDir_[i])));
+        heading_cost = 0.5 * (1.0 - virtual_vel.normalize().dot(rotWV * (*pathEndDir_[i])));
       }
 
       // ---------------------------------------------------------------------------------------------------------------------------------------------------------------
