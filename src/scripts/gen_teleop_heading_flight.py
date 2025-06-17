@@ -44,9 +44,7 @@ def generate_teleop_heading_launch_file(
         )
 
         # Drone spawns
-        drone_com_r = 15.0
-        init_y = [drone_com_r * 1.2 + init_y_spacing * i for i in range(num_drones - 1)]
-        init_y.insert(0, 0.0)
+        init_y = [init_y_spacing * i for i in range(num_drones)]
 
         for i in range(num_drones):
             file.write("    <!-- Drone {} -->\n".format(i))
