@@ -592,6 +592,24 @@ void PPReplanFSM::odometryCallback(const nav_msgs::OdometryConstPtr &msg)
 
   have_odom_ = true;
 
+  // Also broadcast the pose as a TF
+  //   (The original implementation made no use of the tf system (https://wiki.ros.org/tf2)
+  //    which would bring a lot of benefits regarding the visualization and transformation.
+  //    to have some basic functionalities in rviz we simply broadcast the tf here. A better
+  //    solution would be to refactor all the spatial transformation to use the tf system.)
+  geometry_msgs::TransformStamped tf;
+  tf.header.stamp = msg->header.stamp;
+  tf.header.frame_id = "world";
+  tf.child_frame_id = "drone_" + std::to_string(planner_manager_->drone_id) + "/base_link";
+  tf.transform.translation.x = msg->pose.pose.position.x;
+  tf.transform.translation.y = msg->pose.pose.position.y;
+  tf.transform.translation.z = msg->pose.pose.position.z;
+  tf.transform.rotation.x = msg->pose.pose.orientation.x;
+  tf.transform.rotation.y = msg->pose.pose.orientation.y;
+  tf.transform.rotation.z = msg->pose.pose.orientation.z;
+  tf.transform.rotation.w = msg->pose.pose.orientation.w;
+  tf_broadcaster_.sendTransform(tf);
+
   static Eigen::Vector3d last_pos(0, 0, 0);
   if ((odom_pos_ - last_pos).norm() > 0.03)
   {
@@ -695,15 +713,17 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
 
     // state transition condition
 
-    if (have_trigger_ && have_trigger_ && (flight_type_ != 4 || virtual_vel_.norm() > 1e-3)) {
+    if (have_trigger_ && have_trigger_ && (flight_type_ != 4 || virtual_vel_.norm() > 1e-3))
+    {
       changeFSMExecState(GEN_NEW_TRAJ, "FSM");
-    }  
-    else {
-        traj_msg.hovering_at_goal = true;
-        traj_msg.end_p[0] = odom_pos_[0];
-        traj_msg.end_p[1] = odom_pos_[1];
-        traj_msg.end_p[2] = odom_pos_[2];
-        broadcast_primitive_pub_.publish(traj_msg);
+    }
+    else
+    {
+      traj_msg.hovering_at_goal = true;
+      traj_msg.end_p[0] = odom_pos_[0];
+      traj_msg.end_p[1] = odom_pos_[1];
+      traj_msg.end_p[2] = odom_pos_[2];
+      broadcast_primitive_pub_.publish(traj_msg);
     }
     break;
   }
@@ -732,7 +752,8 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
   // TODO: This state could probably be merged with the one above
   case REPLAN_TRAJ: {
     bool success = planPrimitive(false);
-    if (flight_type_ == 4 && virtual_vel_.norm() < 1e-3) {
+    if (flight_type_ == 4 && virtual_vel_.norm() < 1e-3)
+    {
       ROS_WARN_STREAM("[FSM] Drone " << planner_manager_->drone_id << " switching to APPROACH_GOAL due to no input command.");
       global_goal_ = odom_pos_;
       changeFSMExecState(APPROACH_GOAL, "FSM");

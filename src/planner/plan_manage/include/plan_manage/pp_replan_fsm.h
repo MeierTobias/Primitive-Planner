@@ -21,6 +21,8 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <quadrotor_msgs/PositionCommand.h>
 #include <nav_msgs/Odometry.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <geometry_msgs/TransformStamped.h>
 
 #include <plan_manage/CSVLogger.h>
 
@@ -117,6 +119,9 @@ private:
   std::string primitiveFolder_;
 
   LocalTrajData myself_traj_;
+
+  // Spatial transformation broadcaster (tf2)
+  tf2_ros::TransformBroadcaster tf_broadcaster_;
 
   /* state machine functions */
   void execFSMCallback(const ros::TimerEvent &e);
