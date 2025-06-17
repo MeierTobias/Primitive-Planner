@@ -417,6 +417,35 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
         neighbor_heading_cost /= contributing_neighbors_heading; // average
       }
 
+      // ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+      // Cost 4: Deviation from swarm center to keep the drones together
+
+      int contributing_dones = 1;
+      Eigen::Vector3d swarm_center = endPoint;
+      double contraction_cost = 0.0;
+      for (const auto &neighbor : swarm_traj)
+      {
+        if (neighbor.drone_id < 0 || neighbor.drone_id == drone_id)
+          continue;
+
+        swarm_center += neighbor.traj_pos.back();
+        ++contributing_dones;
+      }
+      swarm_center /= contributing_dones;
+
+      if (contributing_dones > 1)
+      {
+        // calculate the direction to the swarm center
+        Eigen::Vector3d center_dir = (swarm_center - start_pt).normalized();
+        // calculate the direction to the trajectory end point
+        Eigen::Vector3d end_dir = (endPoint - start_pt).normalized();
+        // calculate the contraction cost [0, 1]
+        //   0 = trajectory end point direction points to the swarm center,
+        //   1 = trajectory end point direction is perpendicular to the direction of the swarm center
+        contraction_cost = 1.0 - std::abs(center_dir.dot(end_dir));
+      }
+
       // TODO: We loop a lot over the swarm_traj. We could simplify this by only looping once and storing/computing all the needed information. Then we could also avoid the contributing neighbor counting etc.
 
       // ---------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -439,6 +468,9 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
 
       // Cost from deviation from my final heading and the final heading of my neighbors
       flight_type_specific_cost += consensus_costs.heading_to_neighbors * neighbor_heading_cost;
+
+      // Cost from direction deviation to the swarm center
+      flight_type_specific_cost += lambda_contraction_ * contraction_cost;
     }
     break;
 
