@@ -4,10 +4,11 @@
 
 using namespace primitive_planner;
 
-void DroneCounter::init(ros::NodeHandle &nh, const Eigen::Vector3d &position, unsigned int total_drones, unsigned int drone_id)
+void DroneCounter::init(ros::NodeHandle &nh, const Eigen::Vector3d &position, double drone_com_r, unsigned int total_drones, unsigned int drone_id)
 {
   this->position = &position;
   this->drones_total = total_drones;
+  this->drone_com_r = drone_com_r;
   ROS_INFO("[COUNT] init, position is %f, %f, %f", position[0], position[1], position[2]);
   debug_sub_ = nh.subscribe<const std_msgs::Empty &>("/debug_count", 100, &DroneCounter::debugMessageCallback, this);
 }

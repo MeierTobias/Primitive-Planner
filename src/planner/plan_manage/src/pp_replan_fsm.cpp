@@ -123,7 +123,7 @@ void PPReplanFSM::init(ros::NodeHandle &nh)
   int total_drones;
   nh.param("total_drones", total_drones, 0);
   ROS_INFO("Total drones is %d", total_drones);
-  this->drone_counter_.init(nh, planner_manager_->getRobotPos(), static_cast<unsigned int>(total_drones), planner_manager_->drone_id);
+  this->drone_counter_.init(nh, planner_manager_->getRobotPos(), planner_manager_->drone_com_r_, static_cast<unsigned int>(total_drones), planner_manager_->drone_id);
 
   exec_timer_ = nh.createTimer(ros::Duration(0.01), &PPReplanFSM::execFSMCallback, this);
 

@@ -12,9 +12,9 @@
 namespace primitive_planner
 {
 
-void SimpleDroneCounter::init(ros::NodeHandle &nh, const Eigen::Vector3d &position, unsigned int drones_total, unsigned int drone_id)
+void SimpleDroneCounter::init(ros::NodeHandle &nh, const Eigen::Vector3d &position, double drone_com_r, unsigned int drones_total, unsigned int drone_id)
 {
-  DroneCounter::init(nh, position, drones_total, drone_id);
+  DroneCounter::init(nh, position, drone_com_r, drones_total, drone_id);
 
   count_pub_ = nh.advertise<primitive_planner::SimpleCountDrones>("/distributed_count", 100);
   count_sub_ = nh.subscribe<const primitive_planner::SimpleCountDrones &>("/distributed_count", 100, &SimpleDroneCounter::countMessageCallback, this);

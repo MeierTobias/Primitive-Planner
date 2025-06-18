@@ -17,7 +17,7 @@ namespace primitive_planner
 class BitmaskDroneCounter : public DroneCounter
 {
 public:
-  void init(ros::NodeHandle &nh, const Eigen::Vector3d &position, unsigned int drones_total, unsigned int drone_id);
+  void init(ros::NodeHandle &nh, const Eigen::Vector3d &position, double drone_com_r, unsigned int drones_total, unsigned int drone_id);
 
   void setReachedGoal(const Eigen::Vector3d &goal_position) final override;
   void unsetReachedGoal() final override;

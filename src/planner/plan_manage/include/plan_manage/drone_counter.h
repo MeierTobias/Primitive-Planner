@@ -13,7 +13,7 @@ namespace primitive_planner
 class DroneCounter
 {
 public:
-  void init(ros::NodeHandle &nh, const Eigen::Vector3d &position, unsigned int drones_total, unsigned int drone_id);
+  void init(ros::NodeHandle &nh, const Eigen::Vector3d &position, double drone_com_r, unsigned int drones_total, unsigned int drone_id);
 
   virtual void setReachedGoal(const Eigen::Vector3d &goal) = 0;
   virtual void unsetReachedGoal() = 0;
@@ -37,6 +37,7 @@ protected:
   const Eigen::Vector3d *position = nullptr;
   unsigned int drones_total;
   unsigned int drones_at_goal;
+  double drone_com_r;
 
   ros::Publisher count_pub_;
   ros::Subscriber count_sub_;
@@ -45,12 +46,12 @@ protected:
   void debugMessageCallback(const std_msgs::Empty &msg);
 
   template <class Message>
-  bool comesFromTooFar(const Message &msg, double max_radius = 10)
+  bool comesFromTooFar(const Message &msg)
   {
     Eigen::Vector3d sender_position(msg.position.x, msg.position.y, msg.position.z);
-    if ((sender_position - *position).norm() > max_radius)
+    if ((sender_position - *position).squaredNorm() > drone_com_r * drone_com_r)
       return true;
-    if ((sender_position - *position).norm() < 1e-6) // probably a message from myself
+    if ((sender_position - *position).squaredNorm() < 1e-12) // probably a message from myself
       return true;
     return false;
   }

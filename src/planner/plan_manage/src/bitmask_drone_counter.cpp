@@ -4,9 +4,9 @@
 
 using namespace primitive_planner;
 
-void BitmaskDroneCounter::init(ros::NodeHandle &nh, const Eigen::Vector3d &position, unsigned int drones_total, unsigned int drone_id)
+void BitmaskDroneCounter::init(ros::NodeHandle &nh, const Eigen::Vector3d &position, double drone_com_r, unsigned int drones_total, unsigned int drone_id)
 {
-  DroneCounter::init(nh, position, drones_total, drone_id);
+  DroneCounter::init(nh, position, drone_com_r, drones_total, drone_id);
 
   count_pub_ = nh.advertise<primitive_planner::BitmaskCountDrones>("/distributed_count", 100);
   count_sub_ = nh.subscribe<const primitive_planner::BitmaskCountDrones &>("/distributed_count", 100, &BitmaskDroneCounter::countMessageCallback, this);
