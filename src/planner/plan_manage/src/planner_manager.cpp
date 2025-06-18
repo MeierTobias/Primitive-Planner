@@ -28,6 +28,11 @@ void PPPlannerManager::initPlanModules(ros::NodeHandle &nh, PlanningVisualizatio
   nh.param("manager/lambda_l", lambda_l_, 1.0);
   nh.param("manager/lambda_b", lambda_b_, 1.0);
   nh.param("manager/lambda_d", lambda_d_, 1.0);
+  nh.param("manager/lambda_heading_virtual", lambda_heading_virtual_, 1.0);
+  nh.param("manager/lambda_heading_neighbors_end", lambda_heading_neighbors_end_, 1.0);
+  nh.param("manager/lambda_heading_neighbors_start", lambda_heading_neighbors_start_, 1.0);
+  nh.param("manager/lambda_speed_virtual", lambda_speed_virtual_, 1.0);
+  nh.param("manager/lambda_speed_neighbors", lambda_speed_neighbors_, 1.0);
   nh.param("manager/lambda_contraction", lambda_contraction_, 1.0);
   nh.param("manager/map_size_x", x_size_, -1.0);
   nh.param("manager/map_size_y", y_size_, -1.0);
@@ -450,24 +455,22 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
 
       // ---------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-      // Sum all costs using struct with all weights
-
-      SwarmConsensusCosts consensus_costs;
+      // Build the flight type specific weighted cost
 
       // Cost from deviation from my speed and virtual_vel
-      flight_type_specific_cost += consensus_costs.velocity_mismatch * std::pow(my_speed - virtual_vel.norm(), 2);
+      flight_type_specific_cost += lambda_speed_virtual_ * std::pow(my_speed - virtual_vel.norm(), 2);
 
       // Cost from deviation from my speed and speed of neighbors
-      flight_type_specific_cost += consensus_costs.speed_alignment * speed_deviation_cost;
-
-      // Cost from deviation from my first heading and the first heading of the neighbors
-      flight_type_specific_cost += consensus_costs.start_heading_deviation * start_heading_cost;
+      flight_type_specific_cost += lambda_speed_neighbors_ * speed_deviation_cost;
 
       // Cost from deviation from my final heading and the desired shared_heading
-      flight_type_specific_cost += consensus_costs.heading_from_shared * heading_cost;
+      flight_type_specific_cost += lambda_heading_virtual_ * heading_cost;
+
+      // Cost from deviation from my first heading and the first heading of the neighbors
+      flight_type_specific_cost += lambda_heading_neighbors_start_ * start_heading_cost;
 
       // Cost from deviation from my final heading and the final heading of my neighbors
-      flight_type_specific_cost += consensus_costs.heading_to_neighbors * neighbor_heading_cost;
+      flight_type_specific_cost += lambda_heading_neighbors_end_ * neighbor_heading_cost;
 
       // Cost from direction deviation to the swarm center
       flight_type_specific_cost += lambda_contraction_ * contraction_cost;

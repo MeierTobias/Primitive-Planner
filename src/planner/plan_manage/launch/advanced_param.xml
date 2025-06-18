@@ -77,6 +77,11 @@
         <param name="manager/lambda_l" value="20.0" type="double"/>
         <param name="manager/lambda_b" value="5.0" type="double"/>
         <param name="manager/lambda_d" value="1.0" type="double"/>
+        <param name="manager/lambda_heading_virtual" value="5.0" type="double"/>
+        <param name="manager/lambda_heading_neighbors_end" value="1.0" type="double"/>
+        <param name="manager/lambda_heading_neighbors_start" value="1.0" type="double"/>
+        <param name="manager/lambda_speed_virtual" value="0.0" type="double"/>
+        <param name="manager/lambda_speed_neighbors" value="0.0" type="double"/>
         <param name="manager/lambda_contraction" value="1.0" type="double"/>
         <param name="manager/drone_id" value="$(arg drone_id)"/>
         <param name="manager/map_size_x" value="$(arg map_size_x_)"/>

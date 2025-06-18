@@ -61,15 +61,6 @@ public:
   std::string primitiveFolder_;
   SwarmTrajData swarm_traj;
 
-  struct SwarmConsensusCosts
-  {
-    double heading_from_shared = 5.0;
-    double heading_to_neighbors = 1.0;
-    double speed_alignment = 0.0;
-    double velocity_mismatch = 0.0;
-    double start_heading_deviation = 1.0;
-  };
-
   double voxelSize_;
 
   std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> depthCloudStack_;
@@ -107,7 +98,7 @@ private:
   std::vector<double> pathLengthList_;
   double pathLengthMax_;
 
-  double lambda_c_, lambda_l_, lambda_b_, lambda_d_, lambda_contraction_;
+  double lambda_l_, lambda_b_, lambda_d_, lambda_heading_virtual_, lambda_heading_neighbors_end_, lambda_heading_neighbors_start_, lambda_speed_virtual_, lambda_speed_neighbors_, lambda_contraction_;
 
   double x_size_, y_size_, z_size_;
 
