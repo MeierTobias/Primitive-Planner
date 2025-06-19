@@ -4,6 +4,7 @@
     <arg name="map_size_y" value="20"/>
     <arg name="map_size_z" value="3.0"/>
     <arg name="odom_topic" value="visual_slam/odom" />
+    <arg name="goal_radius" value="5.0"/>
 
     <!-- swarm topic transmitter bridge-->
     <include file="$(find swarm_bridge)/launch/bridge_udp.launch">
@@ -38,6 +39,7 @@
         <arg name="map_size_y" value="$(arg map_size_y)"/>
         <arg name="map_size_z" value="$(arg map_size_z)"/>
         <arg name="odom_topic" value="$(arg odom_topic)"/>
+        <arg name="goal_radius" value="$(arg goal_radius)"/>
     </include>
     {%- endfor %}
 </launch>

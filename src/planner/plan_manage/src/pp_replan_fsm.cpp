@@ -119,6 +119,12 @@ void PPReplanFSM::init(ros::NodeHandle &nh)
   }
   starting_pos_ = odom_pos_;
 
+  // We need odom for getRobotPos() to be a valid value
+  int total_drones;
+  nh.param("total_drones", total_drones, 0);
+  ROS_INFO("Total drones is %d", total_drones);
+  this->drone_counter_.init(nh, planner_manager_->getRobotPos(), planner_manager_->drone_com_r_, static_cast<unsigned int>(total_drones), planner_manager_->drone_id);
+
   exec_timer_ = nh.createTimer(ros::Duration(0.01), &PPReplanFSM::execFSMCallback, this);
 
   // global goal
@@ -214,7 +220,8 @@ void PPReplanFSM::newGoalReceived(const Eigen::Vector3d &goal)
   }
   have_target_ = true;
   have_trigger_ = true;
-  changeFSMExecState(GEN_NEW_TRAJ, "NEW_GOAL");
+  if (drone_counter_.allDronesArrived())
+    changeFSMExecState(GEN_NEW_TRAJ, "NEW_GOAL");
 }
 
 void PPReplanFSM::waypointCallback(const quadrotor_msgs::GoalSetPtr &msg)
@@ -639,11 +646,21 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
   std_msgs::Empty heartbeat_msg;
   heartbeat_pub_.publish(heartbeat_msg);
 
+  static int fsm_num = 0;
+  fsm_num++;
+  if (fsm_num == 500)
+  {
+    fsm_num = 0;
+    printFSMExecState();
+  }
+
   switch (exec_state_)
   {
   case INIT: {
     if (have_odom_)
     {
+      // TODO: this "no goal set yet" value should not be able to conflict with real goal values
+      this->drone_counter_.setReachedGoal(Eigen::Vector3d{0, 0, 0});
       changeFSMExecState(WAIT_TARGET, "FSM");
     }
     break;
@@ -651,8 +668,9 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
 
   case WAIT_TARGET: {
     // state transition condition
-    if (have_target_ && have_trigger_)
+    if (have_target_ && have_trigger_ && drone_counter_.allDronesArrived())
     {
+      drone_counter_.unsetReachedGoal();
       changeFSMExecState(GEN_NEW_TRAJ, "FSM");
     }
     else
@@ -712,26 +730,32 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
 
   case EXEC_TRAJ: {
     double delta_t = (ros::Time::now() - start_time_).toSec();
-    if ((odom_pos_ - global_goal_).norm() < no_replan_thresh_)
+    double dist_to_goal = (odom_pos_ - global_goal_).norm();
+    if (dist_to_goal < planner_manager_->goal_radius)
     {
+      drone_counter_.setReachedGoal(global_goal_);
       if (goal_id_ == (waypoint_num_ - 1))
       {
         changeFSMExecState(APPROACH_GOAL, "FSM");
-        std::stringstream ss;
-        ss << "odom_pos_=" << odom_pos_.transpose() << " global_goal_=" << global_goal_.transpose() << " norm=" << (odom_pos_ - global_goal_).norm() << " thres=" << no_replan_thresh_;
-        ROS_DEBUG(ss.str().c_str());
+        // Final goal reached
+        global_goal_ = odom_pos_; // snap goal to current position
+        ROS_INFO("[FSM] Drone %d reached final goal within radius %.2f m. Dist: %.2f m. Snapping to current position: (%.2f, %.2f, %.2f)",
+                 planner_manager_->drone_id,
+                 planner_manager_->goal_radius,
+                 dist_to_goal,
+                 odom_pos_.x(), odom_pos_.y(), odom_pos_.z());
       }
       else
       {
+        // Proceed to next goal
         goal_id_++;
         global_goal_ = all_goal_[goal_id_];
+        ROS_INFO("[FSM] Advancing to next goal ID %d, New goal: (%.2f, %.2f, %.2f)",
+                 goal_id_,
+                 global_goal_.x(), global_goal_.y(), global_goal_.z());
 
-        // send global goal
         std_msgs::Float64MultiArray goal_msg;
-        for (int i = 0; i < 3; i++)
-        {
-          goal_msg.data.push_back(global_goal_(i));
-        }
+        goal_msg.data = {global_goal_.x(), global_goal_.y(), global_goal_.z()};
         global_pub_.publish(goal_msg);
       }
     }
@@ -876,8 +900,12 @@ void PPReplanFSM::printFSMExecState()
   {
     msg += "trigger,";
   }
+  if (!drone_counter_.allDronesArrived())
+  {
+    msg += "all drones,";
+  }
 
-  ROS_DEBUG(msg.c_str());
+  ROS_DEBUG("%s", msg.c_str());
 }
 
 bool PPReplanFSM::planPrimitive(bool first_plan, double xV_offset /*= 0.0*/)

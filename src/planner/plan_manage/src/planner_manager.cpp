@@ -32,6 +32,7 @@ void PPPlannerManager::initPlanModules(ros::NodeHandle &nh, PlanningVisualizatio
   nh.param("manager/max_vel", max_vel_, -1.0);
   nh.param("manager/drone_id", drone_id, -1);
   nh.param("manager/swarm_clearance", swarm_clearance_, -1.0);
+  nh.param("goal_radius", goal_radius, 1.0);
 
   voxelNumX_ = int(boxX_ / voxelSize_);
   voxelNumY_ = int(boxY_ / voxelSize_);
@@ -224,6 +225,16 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
     // calculate goal distance cost
     // rotWV * pathEndList_ + start_pt: body -> world;
     Eigen::Vector3d endPoint = rotWV * pathEndList_[i] + start_pt;
+
+    // Check if endpoint is within the goal radius
+    double dist_to_goal = (endPoint - global_goal).norm();
+    if (dist_to_goal <= goal_radius)
+    {
+      // Perfect goal match: set very low cost
+      mapCost.insert({-1e6, i});
+      continue;
+    }
+    // Otherwise proceed with scoring
     double goal_cost = 1;
     // check if the goal is out of reach for the planned trajectory
     if (((start_pt - global_goal).norm() > pathLengthMax_) || (rotWV.col(0).dot(global_goal - start_pt) <= 0))

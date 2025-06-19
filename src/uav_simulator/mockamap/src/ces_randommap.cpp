@@ -29,6 +29,7 @@
 
 #include "visualization_msgs/Marker.h"
 #include "visualization_msgs/MarkerArray.h"
+#include <queue>
 
 //! @todo historical above
 #include "maps.hpp"

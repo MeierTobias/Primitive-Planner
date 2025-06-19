@@ -1,5 +1,5 @@
 def generate_launch_file(
-    num_drones, init_x, init_y_spacing, output_file="decentralized_goal_flight.launch"
+    num_drones, init_x, init_y_spacing, goal_radius, output_file="decentralized_goal_flight.launch"
 ):
     with open(output_file, "w") as file:
         file.write("<launch>\n\n")
@@ -54,11 +54,13 @@ def generate_launch_file(
             file.write('        <arg name="map_size_y" value="$(arg map_size_y)"/>\n')
             file.write('        <arg name="map_size_z" value="$(arg map_size_z)"/>\n')
             file.write('        <arg name="odom_topic" value="$(arg odom_topic)"/>\n')
+            file.write('        <arg name="goal_radius" value="{}"/>\n'.format(goal_radius))
             file.write(
                 '        <arg name="sim_distributed_communication" value="$(arg sim_distributed_communication)"/>\n'
             )
             file.write('        <arg name="drone_com_r" value="$(arg drone_com_r)"/>\n')
             file.write('        <arg name="base_com_r" value="$(arg base_com_r)"/>\n')
+            file.write('        <arg name="total_drones" value="{}"/>\n'.format(num_drones))
 
             file.write("    </include>\n\n")
 
@@ -79,10 +81,12 @@ if __name__ == "__main__":
 
     init_x = -8.0
     init_y_spacing = 1.0
+    goal_radius = 20.0  # Set your desired goal radius here
 
     generate_launch_file(
         drone_num,
         init_x,
         init_y_spacing,
+        goal_radius,
         os.path.join(launch_dir, "decentralized_goal_flight.launch"),
     )

@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(primitive_planner)
 
-set(CMAKE_BUILD_TYPE "Release")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_FLAGS "-Wall")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g")
 
 find_package(Eigen3 REQUIRED)
@@ -18,6 +18,18 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   cv_bridge
   pcl_ros
+)
+
+add_message_files(
+  FILES
+  BitmaskCountDrones.msg
+  TreeCountDrones.msg
+  SimpleCountDrones.msg
+)
+
+generate_messages(
+    DEPENDENCIES
+    geometry_msgs
 )
 
 # catkin_package(CATKIN_DEPENDS message_runtime)
@@ -41,6 +53,10 @@ add_executable(primitive_planner_node
   src/primitive_planner_node.cpp 
   src/pp_replan_fsm.cpp
   src/planner_manager.cpp
+  src/drone_counter.cpp
+  src/simple_drone_counter.cpp
+  src/tree_drone_counter.cpp
+  src/bitmask_drone_counter.cpp
   )
 target_link_libraries(primitive_planner_node 
   ${catkin_LIBRARIES} ${PCL_LIBRARIES}
