@@ -45,17 +45,18 @@ def load_odom(bag, topic):
         "velocity": np.vstack((vxs[order], vys[order], vzs[order])),
     }
 
+
 def aggregate_odom(data, dt=0.1):
     """
     Aggregate odometry so you have one sample every `dt` seconds.
-    
+
     Input:
       data: dict with keys
         - "ts"       : 1D array of times, shape (N,)
         - "position" : 2D array, shape (3, N)
         - "velocity" : 2D array, shape (3, N)
       dt: bin width in seconds (default 0.1)
-    
+
     Returns a dict with the same keys, but:
       - "ts"       : 1D array of bin‐center times, shape (M,)
       - "position" : 2D array, shape (3, M) of mean positions per bin
@@ -74,12 +75,12 @@ def aggregate_odom(data, dt=0.1):
     bins = np.digitize(ts, edges) - 1
 
     M = len(edges) - 1
-    agg_ts  = edges[:-1] + dt/2          # bin centers
+    agg_ts = edges[:-1] + dt / 2  # bin centers
     agg_pos = np.zeros((3, M))
     agg_vel = np.zeros((3, M))
 
     for b in range(M):
-        mask = (bins == b)
+        mask = bins == b
         if not np.any(mask):
             # no samples in this bin → set to NaN (or you could carry-last-value)
             agg_pos[:, b] = np.nan
@@ -90,11 +91,12 @@ def aggregate_odom(data, dt=0.1):
 
     return {"ts": agg_ts, "position": agg_pos, "velocity": agg_vel}
 
+
 def radius_of_gyration(positions):
     """
     positions: np.ndarray of shape (d, T, N)
-      d = dimension, 
-      T = time steps, 
+      d = dimension,
+      T = time steps,
       N = number of drones
     Returns:
       Rg: np.ndarray of shape (T,), the RMS radius at each time t
@@ -108,6 +110,7 @@ def radius_of_gyration(positions):
     # mean over N and sqrt → shape (T,)
     Rg = np.sqrt(sqd.mean(axis=1))
     return Rg
+
 
 def pairwise_distance(positions):
     """
@@ -132,6 +135,7 @@ def pairwise_distance(positions):
         Dmax[t] = dists[i, j].max()
     return Davg, Dmax
 
+
 if __name__ == "__main__":
 
     output_bag_file = os.path.join(os.path.dirname(__file__), "output_u-turn.bag")
@@ -147,18 +151,13 @@ if __name__ == "__main__":
     topic_length = len(data.keys())
     position_tensor = np.zeros((3, series_length, topic_length))
 
-    print(position_tensor.shape)
     for i, topic in enumerate(data.values()):
         position_tensor[:, :, i] = topic["position"][:, 0:series_length]
-    
+
     R_g = radius_of_gyration(position_tensor)
 
     D_avg, D_max = pairwise_distance(position_tensor)
 
-    fig, axs = plt.subplots(nrows=3, ncols=1)
-    axs[0].plot(R_g)
-    axs[1].plot(D_avg)
-    axs[2].plot(D_max)
-    plt.show()
+    np.savez(os.path.join(os.path.dirname(__file__), "results_u-turn.npz"), R_g=R_g,D_avg=D_avg, D_max=D_max)
 
     bag.close()
