@@ -21,6 +21,8 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <quadrotor_msgs/PositionCommand.h>
 #include <nav_msgs/Odometry.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <geometry_msgs/TransformStamped.h>
 
 #include <plan_manage/CSVLogger.h>
 
@@ -60,7 +62,7 @@ private:
   bool flag_realworld_experiment_, have_trigger_, have_odom_, have_target_, have_log_files_;
 
   ros::Timer exec_timer_;
-  ros::Subscriber trigger_sub_, odom_sub_, mandatory_stop_sub_, select_path_end_sub_, cmd_sub_, broadcast_primitive_sub_, waypoint_sub_;
+  ros::Subscriber trigger_sub_, odom_sub_, mandatory_stop_sub_, select_path_end_sub_, cmd_sub_, broadcast_primitive_sub_, waypoint_sub_, virtual_vel_sub_;
 
   ros::Publisher path_id_pub_, stop_pub_, heartbeat_pub_, global_pub_, broadcast_primitive_pub_, poly_pub_, yaw_cmd_pub_;
 
@@ -70,8 +72,11 @@ private:
   int goal_tag_ = 0; // represents the identifier of the decentralized global goal
   int flight_type_;  // 1 manual select, 2 hard code, 3 decentralized global goal
   std::vector<Eigen::Vector3d> all_goal_;
-  // global_goal_ is always set to all_goal_[goal_id_]
-  Eigen::Vector3d global_goal_;
+  Eigen::Vector3d global_goal_; // global_goal_ is always set to all_goal_[goal_id_]
+
+  int virtual_vel_tag_ = 0; // represents the identifier of the decentralized virtual velocity vector
+  Eigen::Vector3d virtual_vel_;
+
   traj_utils::swarmPrimitiveTraj traj_msg = traj_utils::swarmPrimitiveTraj();
   Eigen::Vector3d starting_pos_;
   Eigen::Vector3d odom_pos_, odom_vel_, odom_x_dir_;
@@ -115,6 +120,9 @@ private:
 
   LocalTrajData myself_traj_;
 
+  // Spatial transformation broadcaster (tf2)
+  tf2_ros::TransformBroadcaster tf_broadcaster_;
+
   /* state machine functions */
   void execFSMCallback(const ros::TimerEvent &e);
   void changeFSMExecState(FSM_EXEC_STATE new_state, std::string pos_call);
@@ -131,6 +139,7 @@ private:
   void pathEndCallback(const std_msgs::Float64MultiArrayPtr &msg);
   void cmdCallback(const quadrotor_msgs::PositionCommandPtr &cmd);
   void waypointCallback(const quadrotor_msgs::GoalSetPtr &msg);
+  void virtualVelCallback(const quadrotor_msgs::GoalSetPtr &msg);
 
   void newGoalReceived(const Eigen::Vector3d &goal);
   bool readLocalTrajPos(Eigen::Vector3d &start_pos, int &vel_id, Eigen::Matrix<double, 3, 3> &Rwv, std::vector<int> &path_id, std::vector<Eigen::Vector3d> &traj_pos, double &traj_duration);

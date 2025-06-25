@@ -129,6 +129,11 @@ void PPReplanFSM::init(ros::NodeHandle &nh)
     waypoint_sub_ = nh.subscribe("/goal_with_id", 100, &PPReplanFSM::waypointCallback, this);
     break;
 
+  case 4: {
+    have_target_ = true;
+    virtual_vel_sub_ = nh.subscribe("/virtual_vel_with_id", 100, &PPReplanFSM::virtualVelCallback, this);
+    break;
+
   case 2: {
     for (int i = 0; i < waypoint_num_; i++)
     {
@@ -159,6 +164,7 @@ void PPReplanFSM::init(ros::NodeHandle &nh)
       have_target_ = true;
     }
     break;
+  }
   }
   default:
     ROS_ERROR("Unknown flight type");
@@ -225,6 +231,30 @@ void PPReplanFSM::waypointCallback(const quadrotor_msgs::GoalSetPtr &msg)
   ++goal_tag_;
   ROS_INFO("[FSM] Drone %d: Received goal: %f, %f, %f", planner_manager_->drone_id, msg->goal[0], msg->goal[1], msg->goal[2]);
   newGoalReceived(Eigen::Vector3d(msg->goal[0], msg->goal[1], msg->goal[2]));
+}
+
+void PPReplanFSM::virtualVelCallback(const quadrotor_msgs::GoalSetPtr &msg)
+{
+  if (msg->drone_id != planner_manager_->drone_id)
+    return;
+
+  Eigen::Vector3d new_virtual_vel = Eigen::Vector3d(msg->goal[0], msg->goal[1], msg->goal[2]);
+  if (new_virtual_vel.norm() > 1e-3)
+  {
+    ++virtual_vel_tag_; // TODO: Here a possible overflow could appear. Handle it :P
+    virtual_vel_ = new_virtual_vel;
+    have_trigger_ = true;
+
+    ROS_DEBUG("[FSM] Drone %d: Joystick input received. [v_x = %f, v_y = %f, v_z = %f, tag = %d]", planner_manager_->drone_id, virtual_vel_[0], virtual_vel_[1], virtual_vel_[2], virtual_vel_tag_);
+  }
+  else
+  {
+    Eigen::Vector3d zero_vel(0, 0, 0);
+    ++virtual_vel_tag_;
+    virtual_vel_ = zero_vel;
+    have_trigger_ = true;
+    ROS_DEBUG("[FSM] Drone %d: Zero velocity Joystick input received.", planner_manager_->drone_id);
+  }
 }
 
 void PPReplanFSM::triggerCallback(const geometry_msgs::PoseStampedPtr &msg)
@@ -307,9 +337,21 @@ void PPReplanFSM::RecvBroadcastPrimitiveCallback(const traj_utils::swarmPrimitiv
     // check we received a new goal position from a neighbor
     if (msg->goal_tag > goal_tag_)
     {
-      ++goal_tag_;
-      ROS_INFO("[FSM] Drone %d: New decentralized goal position (%f,%f,%f) from neighbor (id=%ld) received.", planner_manager_->drone_id, global_goal_[0], global_goal_[1], global_goal_[2], recv_id);
+      goal_tag_ = msg->goal_tag;
+      ROS_INFO("[FSM] Drone %d: New decentralized goal position (%f,%f,%f) from neighbor (id=%ld) received.", planner_manager_->drone_id, msg->goal[0], msg->goal[1], msg->goal[2], recv_id);
       newGoalReceived(Eigen::Vector3d(msg->goal[0], msg->goal[1], msg->goal[2]));
+    }
+  }
+
+  if (flight_type_ == 4) // decentralized virtual leader
+  {
+    // check we received a new virtual velocity vector from a neighbor
+    if (msg->virtual_vel_tag > virtual_vel_tag_)
+    {
+      virtual_vel_tag_ = msg->virtual_vel_tag;
+      virtual_vel_ = Eigen::Vector3d(msg->virtual_vel[0], msg->virtual_vel[1], msg->virtual_vel[2]);
+      ROS_DEBUG("[FSM] Drone %d: New decentralized velocity vector (%f,%f,%f) from neighbor (id=%ld) received.", planner_manager_->drone_id, msg->virtual_vel[0], msg->virtual_vel[1], msg->virtual_vel[2], recv_id);
+      changeFSMExecState(REPLAN_TRAJ, "Virtual Leader update");
     }
   }
 
@@ -550,6 +592,24 @@ void PPReplanFSM::odometryCallback(const nav_msgs::OdometryConstPtr &msg)
 
   have_odom_ = true;
 
+  // Also broadcast the pose as a TF
+  //   (The original implementation made no use of the tf system (https://wiki.ros.org/tf2)
+  //    which would bring a lot of benefits regarding the visualization and transformation.
+  //    to have some basic functionalities in rviz we simply broadcast the tf here. A better
+  //    solution would be to refactor all the spatial transformation to use the tf system.)
+  geometry_msgs::TransformStamped tf;
+  tf.header.stamp = msg->header.stamp;
+  tf.header.frame_id = "world";
+  tf.child_frame_id = "drone_" + std::to_string(planner_manager_->drone_id) + "/base_link";
+  tf.transform.translation.x = msg->pose.pose.position.x;
+  tf.transform.translation.y = msg->pose.pose.position.y;
+  tf.transform.translation.z = msg->pose.pose.position.z;
+  tf.transform.rotation.x = msg->pose.pose.orientation.x;
+  tf.transform.rotation.y = msg->pose.pose.orientation.y;
+  tf.transform.rotation.z = msg->pose.pose.orientation.z;
+  tf.transform.rotation.w = msg->pose.pose.orientation.w;
+  tf_broadcaster_.sendTransform(tf);
+
   static Eigen::Vector3d last_pos(0, 0, 0);
   if ((odom_pos_ - last_pos).norm() > 0.03)
   {
@@ -650,14 +710,15 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
   }
 
   case WAIT_TARGET: {
+
     // state transition condition
-    if (have_target_ && have_trigger_)
+
+    if (have_trigger_ && have_trigger_ && (flight_type_ != 4 || virtual_vel_.norm() > 1e-3))
     {
       changeFSMExecState(GEN_NEW_TRAJ, "FSM");
     }
     else
     {
-      // publish the current trajectory so that other drones can avoid me even if I'm just hovering (waiting)
       traj_msg.hovering_at_goal = true;
       traj_msg.end_p[0] = odom_pos_[0];
       traj_msg.end_p[1] = odom_pos_[1];
@@ -691,6 +752,13 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
   // TODO: This state could probably be merged with the one above
   case REPLAN_TRAJ: {
     bool success = planPrimitive(false);
+    if (flight_type_ == 4 && virtual_vel_.norm() < 1e-3)
+    {
+      ROS_WARN_STREAM("[FSM] Drone " << planner_manager_->drone_id << " switching to APPROACH_GOAL due to no input command.");
+      global_goal_ = odom_pos_;
+      changeFSMExecState(APPROACH_GOAL, "FSM");
+      break;
+    }
     if (success)
     {
       changeFSMExecState(EXEC_TRAJ, "FSM");
@@ -712,7 +780,7 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
 
   case EXEC_TRAJ: {
     double delta_t = (ros::Time::now() - start_time_).toSec();
-    if ((odom_pos_ - global_goal_).norm() < no_replan_thresh_)
+    if (flight_type_ != 4 && ((odom_pos_ - global_goal_).norm() < no_replan_thresh_))
     {
       if (goal_id_ == (waypoint_num_ - 1))
       {
@@ -937,7 +1005,7 @@ bool PPReplanFSM::planPrimitive(bool first_plan, double xV_offset /*= 0.0*/)
   RWV.col(2) = zV;
 
   vector<int> select_path_id;
-  bool plan_success = planner_manager_->trajReplan(start_pt_, start_v_, start_time_.toSec(), RWV, global_goal_, select_path_id, myself_traj_);
+  bool plan_success = planner_manager_->trajReplan(start_pt_, start_v_, start_time_.toSec(), RWV, global_goal_, select_path_id, myself_traj_, virtual_vel_);
 
   std::vector<Eigen::Vector3d> traj_pos;
   double traj_duration;
@@ -982,6 +1050,14 @@ bool PPReplanFSM::planPrimitive(bool first_plan, double xV_offset /*= 0.0*/)
       traj_msg.goal[0] = global_goal_[0];
       traj_msg.goal[1] = global_goal_[1];
       traj_msg.goal[2] = global_goal_[2];
+    }
+    // publish own virtual velocity vector for decentralized information propagation
+    if (flight_type_ == 4)
+    {
+      traj_msg.virtual_vel_tag = virtual_vel_tag_;
+      traj_msg.virtual_vel[0] = virtual_vel_[0];
+      traj_msg.virtual_vel[1] = virtual_vel_[1];
+      traj_msg.virtual_vel[2] = virtual_vel_[2];
     }
 
     path_id_pub_.publish(traj_msg);

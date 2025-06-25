@@ -14,7 +14,7 @@
 using namespace std;
 
 // ros::Subscriber trajs_sub_;
-ros::Publisher goals_pub_, new_goals_arrow_pub_;
+ros::Publisher goals_pub_, new_goals_arrow_pub_, virtual_vel_pub_;
 ros::Time last_publish_time_;
 bool need_clear_;
 
@@ -23,7 +23,7 @@ struct Selected_t
   int drone_id;
   Eigen::Vector3d p;
 };
-vector<Selected_t> drones_;
+vector<Selected_t> drones_ = {Selected_t{0, Eigen::Vector3d(0, 0, 0)}};
 
 void displayArrowList(const vector<Eigen::Vector3d> &start, const vector<Eigen::Vector3d> &end, const double scale, const int id, const int32_t action)
 {
@@ -85,8 +85,7 @@ void selected_drones_cb(const geometry_msgs::PoseStamped::ConstPtr &msg)
   drone.p << msg->pose.position.x, msg->pose.position.y, msg->pose.position.z;
   drones_.push_back(drone);
 
-  cout.precision(3);
-  cout << "received drone " << drone.drone_id << " at " << drone.p.transpose() << ", total:" << drones_.size() << endl;
+  ROS_INFO_STREAM("received drone " << drone.drone_id << " at " << drone.p.transpose() << ", total:" << drones_.size());
 
   last_select_time = t_now;
 }
@@ -108,8 +107,8 @@ void user_goal_cb(const geometry_msgs::PoseStamped::ConstPtr &msg)
   {
     each_one_starts[i] = drones_[i].p;
     each_one_goals[i] = drones_[i].p + movment;
-    cout.precision(3);
-    cout << "drone " << drones_[i].drone_id << ", start=" << drones_[i].p.transpose() << ", end=" << each_one_goals[i].transpose() << endl;
+
+    ROS_INFO_STREAM("drone " << drones_[i].drone_id << ", start=" << drones_[i].p.transpose() << ", end=" << each_one_goals[i].transpose());
   }
 
   displayArrowList(each_one_starts, each_one_goals, 0.05, 0, visualization_msgs::Marker::ADD);
@@ -128,6 +127,20 @@ void user_goal_cb(const geometry_msgs::PoseStamped::ConstPtr &msg)
   }
 }
 
+void virtual_vel_cb(const geometry_msgs::Twist::ConstPtr &msg)
+{
+  for (size_t i = 0; i < drones_.size(); ++i)
+  {
+    quadrotor_msgs::GoalSet vel_msg;
+    vel_msg.drone_id = drones_[i].drone_id;
+    vel_msg.goal[0] = msg->linear.x;
+    vel_msg.goal[1] = msg->linear.y;
+    vel_msg.goal[2] = msg->linear.z;
+    virtual_vel_pub_.publish(vel_msg);
+    ros::Duration(0.01).sleep();
+  }
+}
+
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "assign_goals");
@@ -137,9 +150,11 @@ int main(int argc, char **argv)
 
   ros::Subscriber selected_drones_sub = nh.subscribe<geometry_msgs::PoseStamped>("/rviz_selected_drones", 100, selected_drones_cb);
   ros::Subscriber user_goal_sub = nh.subscribe<geometry_msgs::PoseStamped>("/goal", 10, user_goal_cb);
+  ros::Subscriber virtual_vel_sub = nh.subscribe<geometry_msgs::Twist>("/cmd_vel", 100, virtual_vel_cb);
 
   goals_pub_ = nh.advertise<quadrotor_msgs::GoalSet>("/goal_user2brig", 10);
   new_goals_arrow_pub_ = nh.advertise<visualization_msgs::MarkerArray>("/new_goals_arrow", 10);
+  virtual_vel_pub_ = nh.advertise<quadrotor_msgs::GoalSet>("/virtual_vel_with_id", 10);
 
   ROS_INFO("[assign_goals_node]Start running.");
   while (ros::ok())
