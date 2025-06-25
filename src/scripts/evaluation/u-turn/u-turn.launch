@@ -1,0 +1,139 @@
+<launch>
+
+    <arg name="lambda_l"/>
+    <arg name="lambda_b"/>
+    <arg name="lambda_d"/>
+    <arg name="lambda_heading_virtual"/>
+    <arg name="lambda_heading_neighbors"/>
+    <arg name="lambda_contraction"/>
+
+    <arg name="map_size_x" value="500.0"/>
+    <arg name="map_size_y" value="500.0"/>
+    <arg name="map_size_z" value="3.0"/>
+    <arg name="odom_topic" value="visual_slam/odom"/>
+
+    <arg name="sim_distributed_communication" value="true"/>
+    <arg name="drone_com_r" value="15.0"/>
+    <arg name="base_com_r" value="30.0"/>
+
+    <!-- swarm topic transmitter bridge -->
+    <include file="$(find swarm_bridge)/launch/bridge_udp.launch">
+        <arg name="drone_id" value="999"/>
+        <arg name="broadcast_ip" value="127.0.0.255"/>
+    </include>
+
+    <!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(find primitive_planner)/launch/verbose.rviz" required="true"/> -->
+
+    <node pkg="assign_goals" name="assign_goals_node" type="assign_goals_node" output="screen"/>
+
+    <!-- Drone 0 -->
+    <include file="$(find primitive_planner)/launch/run_in_sim.xml">
+        <arg name="drone_id" value="0"/>
+        <arg name="init_x" value="-8.0"/>
+        <arg name="init_y" value="0.0"/>
+        <arg name="init_z" value="1.0"/>
+        <arg name="flight_type" value="4"/>
+        <arg name="map_size_x" value="$(arg map_size_x)"/>
+        <arg name="map_size_y" value="$(arg map_size_y)"/>
+        <arg name="map_size_z" value="$(arg map_size_z)"/>
+        <arg name="odom_topic" value="$(arg odom_topic)"/>
+        <arg name="sim_distributed_communication" value="$(arg sim_distributed_communication)"/>
+        <arg name="drone_com_r" value="$(arg drone_com_r)"/>
+        <arg name="base_com_r" value="$(arg base_com_r)"/>
+        <arg name="lambda_l" value="$(arg lambda_l)"/>
+        <arg name="lambda_b" value="$(arg lambda_b)"/>
+        <arg name="lambda_d" value="$(arg lambda_d)"/>
+        <arg name="lambda_heading_virtual" value="$(arg lambda_heading_virtual)"/>
+        <arg name="lambda_heading_neighbors" value="$(arg lambda_heading_neighbors)"/>
+        <arg name="lambda_contraction" value="$(arg lambda_contraction)"/>
+    </include>
+
+    <!-- Drone 1 -->
+    <include file="$(find primitive_planner)/launch/run_in_sim.xml">
+        <arg name="drone_id" value="1"/>
+        <arg name="init_x" value="-8.0"/>
+        <arg name="init_y" value="1.0"/>
+        <arg name="init_z" value="1.0"/>
+        <arg name="flight_type" value="4"/>
+        <arg name="map_size_x" value="$(arg map_size_x)"/>
+        <arg name="map_size_y" value="$(arg map_size_y)"/>
+        <arg name="map_size_z" value="$(arg map_size_z)"/>
+        <arg name="odom_topic" value="$(arg odom_topic)"/>
+        <arg name="sim_distributed_communication" value="$(arg sim_distributed_communication)"/>
+        <arg name="drone_com_r" value="$(arg drone_com_r)"/>
+        <arg name="base_com_r" value="$(arg base_com_r)"/>
+        <arg name="lambda_l" value="$(arg lambda_l)"/>
+        <arg name="lambda_b" value="$(arg lambda_b)"/>
+        <arg name="lambda_d" value="$(arg lambda_d)"/>
+        <arg name="lambda_heading_virtual" value="$(arg lambda_heading_virtual)"/>
+        <arg name="lambda_heading_neighbors" value="$(arg lambda_heading_neighbors)"/>
+        <arg name="lambda_contraction" value="$(arg lambda_contraction)"/>
+    </include>
+
+    <!-- Drone 2 -->
+    <include file="$(find primitive_planner)/launch/run_in_sim.xml">
+        <arg name="drone_id" value="2"/>
+        <arg name="init_x" value="-8.0"/>
+        <arg name="init_y" value="2.0"/>
+        <arg name="init_z" value="1.0"/>
+        <arg name="flight_type" value="4"/>
+        <arg name="map_size_x" value="$(arg map_size_x)"/>
+        <arg name="map_size_y" value="$(arg map_size_y)"/>
+        <arg name="map_size_z" value="$(arg map_size_z)"/>
+        <arg name="odom_topic" value="$(arg odom_topic)"/>
+        <arg name="sim_distributed_communication" value="$(arg sim_distributed_communication)"/>
+        <arg name="drone_com_r" value="$(arg drone_com_r)"/>
+        <arg name="base_com_r" value="$(arg base_com_r)"/>
+        <arg name="lambda_l" value="$(arg lambda_l)"/>
+        <arg name="lambda_b" value="$(arg lambda_b)"/>
+        <arg name="lambda_d" value="$(arg lambda_d)"/>
+        <arg name="lambda_heading_virtual" value="$(arg lambda_heading_virtual)"/>
+        <arg name="lambda_heading_neighbors" value="$(arg lambda_heading_neighbors)"/>
+        <arg name="lambda_contraction" value="$(arg lambda_contraction)"/>
+    </include>
+
+    <!-- Drone 3 -->
+    <include file="$(find primitive_planner)/launch/run_in_sim.xml">
+        <arg name="drone_id" value="3"/>
+        <arg name="init_x" value="-8.0"/>
+        <arg name="init_y" value="3.0"/>
+        <arg name="init_z" value="1.0"/>
+        <arg name="flight_type" value="4"/>
+        <arg name="map_size_x" value="$(arg map_size_x)"/>
+        <arg name="map_size_y" value="$(arg map_size_y)"/>
+        <arg name="map_size_z" value="$(arg map_size_z)"/>
+        <arg name="odom_topic" value="$(arg odom_topic)"/>
+        <arg name="sim_distributed_communication" value="$(arg sim_distributed_communication)"/>
+        <arg name="drone_com_r" value="$(arg drone_com_r)"/>
+        <arg name="base_com_r" value="$(arg base_com_r)"/>
+        <arg name="lambda_l" value="$(arg lambda_l)"/>
+        <arg name="lambda_b" value="$(arg lambda_b)"/>
+        <arg name="lambda_d" value="$(arg lambda_d)"/>
+        <arg name="lambda_heading_virtual" value="$(arg lambda_heading_virtual)"/>
+        <arg name="lambda_heading_neighbors" value="$(arg lambda_heading_neighbors)"/>
+        <arg name="lambda_contraction" value="$(arg lambda_contraction)"/>
+    </include>
+
+    <!-- Drone 4 -->
+    <include file="$(find primitive_planner)/launch/run_in_sim.xml">
+        <arg name="drone_id" value="4"/>
+        <arg name="init_x" value="-8.0"/>
+        <arg name="init_y" value="4.0"/>
+        <arg name="init_z" value="1.0"/>
+        <arg name="flight_type" value="4"/>
+        <arg name="map_size_x" value="$(arg map_size_x)"/>
+        <arg name="map_size_y" value="$(arg map_size_y)"/>
+        <arg name="map_size_z" value="$(arg map_size_z)"/>
+        <arg name="odom_topic" value="$(arg odom_topic)"/>
+        <arg name="sim_distributed_communication" value="$(arg sim_distributed_communication)"/>
+        <arg name="drone_com_r" value="$(arg drone_com_r)"/>
+        <arg name="base_com_r" value="$(arg base_com_r)"/>
+        <arg name="lambda_l" value="$(arg lambda_l)"/>
+        <arg name="lambda_b" value="$(arg lambda_b)"/>
+        <arg name="lambda_d" value="$(arg lambda_d)"/>
+        <arg name="lambda_heading_virtual" value="$(arg lambda_heading_virtual)"/>
+        <arg name="lambda_heading_neighbors" value="$(arg lambda_heading_neighbors)"/>
+        <arg name="lambda_contraction" value="$(arg lambda_contraction)"/>
+    </include>
+
+</launch>

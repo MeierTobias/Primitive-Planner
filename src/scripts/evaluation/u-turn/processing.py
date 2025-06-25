@@ -2,48 +2,94 @@
 import os
 import rosbag
 import numpy as np
-from geometry_msgs.msg import PoseWithCovariance, Pose, Point
+from geometry_msgs.msg import PoseWithCovariance, Pose, Point, Twist
 from nav_msgs.msg import Odometry
 import matplotlib.pyplot as plt
 
 
-def load_odom(bag, topic):
-    """
-    Read nav_msgs/Odometry messages from `topic` into numpy arrays:
-      t: shape (N,), x,y,z: (N,), vx,vy,vz: (N,)
-    """
-    ts, xs, ys, zs, vxs, vys, vzs = [], [], [], [], [], [], []
-    for _, msg, t in bag.read_messages(topics=[topic]):
-        ts.append(t.to_sec())
-        p = msg.pose.pose.position
-        xs.append(p.x)
-        ys.append(p.y)
-        zs.append(p.z)
-        v = msg.twist.twist.linear
-        vxs.append(v.x)
-        vys.append(v.y)
-        vzs.append(v.z)
+def preprocess_data(bag_file, out_file):
+    bag = rosbag.Bag(bag_file)
+    data_dict = load_data(bag)
 
-    if not ts:
-        return None
+    odom_data = {k: v for k, v in data_dict.items() if k != "/cmd_vel"}
+    cmd_data = {k: v for k, v in data_dict.items() if k == "/cmd_vel"}
 
-    # convert to numpy arrays
-    ts = np.array(ts)
+    for topic, data in odom_data.items():
+        odom_data[topic] = aggregate_odom(odom_data[topic], dt=0.1)
 
-    xs = np.array(xs)
-    ys = np.array(ys)
-    zs = np.array(zs)
-    vxs = np.array(vxs)
-    vys = np.array(vys)
-    vzs = np.array(vzs)
+    series_length = np.min([data["position"].shape[1] for topic, data in odom_data.items()])
+    topic_length = len(odom_data.keys())
+    position_tensor = np.zeros((3, series_length, topic_length))
 
-    # sort by time (just in case)
-    order = np.argsort(ts)
-    return {
-        "ts": ts[order],
-        "position": np.vstack((xs[order], ys[order], zs[order])),
-        "velocity": np.vstack((vxs[order], vys[order], vzs[order])),
-    }
+    for i, topic in enumerate(odom_data.values()):
+        position_tensor[:, :, i] = topic["position"][:, 0:series_length]
+
+    np.savez(
+        out_file,
+        position_tensor=position_tensor
+    )
+
+    bag.close()
+
+    return position_tensor
+
+
+def load_data(bag):
+    info = bag.get_type_and_topic_info().topics
+    data = {}
+    for topic_name, topic_info in info.items():
+        ts, xs, ys, zs, vxs, vys, vzs = [], [], [], [], [], [], []
+        for _, msg, t in bag.read_messages(topics=[topic_name]):
+            ts.append(t.to_sec())
+            if topic_info.msg_type == 'nav_msgs/Odometry':
+                p = msg.pose.pose.position
+                v = msg.twist.twist.linear
+            elif topic_info.msg_type == 'geometry_msgs/Twist':
+                p = msg.linear
+                v = msg.angular
+            else:
+                raise NotImplementedError
+
+            xs.append(p.x)
+            ys.append(p.y)
+            zs.append(p.z)
+
+            vxs.append(v.x)
+            vys.append(v.y)
+            vzs.append(v.z)
+
+        # convert to numpy arrays
+        ts = np.array(ts)
+        xs = np.array(xs)
+        ys = np.array(ys)
+        zs = np.array(zs)
+        vxs = np.array(vxs)
+        vys = np.array(vys)
+        vzs = np.array(vzs)
+
+        # sort by time (just in case)
+        order = np.argsort(ts)
+        ps = np.vstack((xs[order], ys[order], zs[order]))
+        vs = np.vstack((vxs[order], vys[order], vzs[order]))
+
+        if topic_info.msg_type == 'nav_msgs/Odometry':
+            data[topic_name] = {
+                "type": topic_info.msg_type,
+                "ts": ts[order],
+                "position": ps,
+                "velocity": vs,
+            }
+        elif topic_info.msg_type == 'geometry_msgs/Twist':
+            data[topic_name] = {
+                "type": topic_info.msg_type,
+                "ts": ts[order],
+                "linear": ps,
+                "angular": vs,
+            }
+        else:
+            raise NotImplementedError
+
+    return data
 
 
 def aggregate_odom(data, dt=0.1):
@@ -106,7 +152,7 @@ def radius_of_gyration(positions):
     # displacement from centroid: shape (d, T, N)
     disp = positions - centroid[:, :, None]
     # squared distances per drone: sum over d → shape (T, N)
-    sqd = np.sum(disp**2, axis=0)
+    sqd = np.sum(disp ** 2, axis=0)
     # mean over N and sqrt → shape (T,)
     Rg = np.sqrt(sqd.mean(axis=1))
     return Rg
@@ -134,30 +180,3 @@ def pairwise_distance(positions):
         Davg[t] = dists[i, j].mean()
         Dmax[t] = dists[i, j].max()
     return Davg, Dmax
-
-
-if __name__ == "__main__":
-
-    output_bag_file = os.path.join(os.path.dirname(__file__), "output_u-turn.bag")
-
-    bag = rosbag.Bag(output_bag_file)
-    info = bag.get_type_and_topic_info().topics
-
-    data = {}
-    for t, stat in info.items():
-        data[t] = aggregate_odom(load_odom(bag, t), dt=0.1)
-
-    series_length = np.min([topic["position"].shape[1] for topic in data.values()])
-    topic_length = len(data.keys())
-    position_tensor = np.zeros((3, series_length, topic_length))
-
-    for i, topic in enumerate(data.values()):
-        position_tensor[:, :, i] = topic["position"][:, 0:series_length]
-
-    R_g = radius_of_gyration(position_tensor)
-
-    D_avg, D_max = pairwise_distance(position_tensor)
-
-    np.savez(os.path.join(os.path.dirname(__file__), "results_u-turn.npz"), R_g=R_g,D_avg=D_avg, D_max=D_max)
-
-    bag.close()
