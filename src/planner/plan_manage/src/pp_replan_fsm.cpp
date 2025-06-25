@@ -55,15 +55,6 @@ void PPReplanFSM::init(ros::NodeHandle &nh)
   nh.param("fsm/no_replan_thresh", no_replan_thresh_, 4.0);
   nh.param("fsm/waypoint_num", waypoint_num_, -1);
 
-  // Raise the default logger level
-  // TODO: This can be removed after development.
-  if (ros::console::set_logger_level(
-          ROSCONSOLE_DEFAULT_NAME,
-          ros::console::levels::Debug))
-  {
-    ros::console::notifyLoggerLevelsChanged();
-  }
-
 #if USE_SHARED_MEMORY
   // shared memory
   const size_t size = TOTAL_DRONE_NUM_ * sizeof(SharedMemory);
