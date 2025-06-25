@@ -22,17 +22,13 @@ void PPPlannerManager::initPlanModules(ros::NodeHandle &nh, PlanningVisualizatio
   nh.param("manager/base_com_r", base_com_r_, 30.0);                       // base station communication radius
   nh.param("manager/arc_length", arc_length_, 5.0);
   nh.param("manager/voxelSize", voxelSize_, 0.1);
-  // nh.param("manager/pathNum", pathNum_, 61);
   nh.param("manager/sampleSize", sampleSize_, 2000);
-  // nh.param("manager/lambda_c", lambda_c_, 12.0);
   nh.param("manager/lambda_l", lambda_l_, 1.0);
   nh.param("manager/lambda_b", lambda_b_, 1.0);
   nh.param("manager/lambda_d", lambda_d_, 1.0);
   nh.param("manager/lambda_heading_virtual", lambda_heading_virtual_, 1.0);
   nh.param("manager/lambda_heading_neighbors_end", lambda_heading_neighbors_end_, 1.0);
   nh.param("manager/lambda_heading_neighbors_start", lambda_heading_neighbors_start_, 1.0);
-  nh.param("manager/lambda_speed_virtual", lambda_speed_virtual_, 1.0);
-  nh.param("manager/lambda_speed_neighbors", lambda_speed_neighbors_, 1.0);
   nh.param("manager/lambda_contraction", lambda_contraction_, 1.0);
   nh.param("manager/map_size_x", x_size_, -1.0);
   nh.param("manager/map_size_y", y_size_, -1.0);
@@ -195,14 +191,7 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
                                          const primitive_planner::LocalTrajData &current_traj,
                                          const Eigen::Vector3d &virtual_vel)
 {
-  /* score: 1. collision;
-                    2. close to global goal; or delta_pitch/yaw(between endpoint and goal in body frame)
-                    || p_0 - p_goal || - || p(t) - p_goal || (p_0 --- odom) 大小始终维持在一定范围内
-                    3. low delta_w (smoothness) ;
-  TODO: 暂定倾向于靠近中心线的primitive(后续根据实验效果调整)
-  */
-
-  // cost: lower -> better
+  // The cost is minimized and is always >= 0
   std::map<double, int> mapCost;
   std::vector<int> select_path_id;
   Eigen::Vector3d currentTrajEndDir;
@@ -291,80 +280,25 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
     }
 
     case 4: {
-      // TODO: We probably have to check that the virtual_vel vector is not 0 (very small)
+      // Check if the virtual velocity vector is non zero
+      bool virtual_vel_valid = virtual_vel.norm() > 1e-2; // directional speed > 0.02 m/s
 
-      // Cost 1: Deviation from global shared heading , TODO: like dir_cost
-      double heading_cost = 0.0;
-      if (pathEndDir_[i])
+      // Cost 1: Deviation from virtual heading
+      double virtual_heading_cost = 0.0;
+      if (virtual_vel_valid && pathEndDir_[i])
       {
         // calculate the direction difference cost [0, 1] (0 = direction is the same as current direction, 1 = direction is opposite then the current direction)
-        heading_cost = 0.5 * (1.0 - virtual_vel.normalized().dot(rotWV * (*pathEndDir_[i])));
+        virtual_heading_cost = 0.5 * (1.0 - virtual_vel.normalized().dot(rotWV * (*pathEndDir_[i])));
       }
 
       // ---------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-      // Cost 2: Deviation from neighbours speed
-      // TODO: Use the velocity information from the data structure or precompute it in the init phase
-      double my_speed = 0.0;
-      if (pathAll_[i].size() >= 2)
-      {
-        int valid_steps = 0;
-        for (size_t j = 1; j < pathAll_[i].size(); ++j)
-        {
-          double step_dist = (pathAll_[i][j] - pathAll_[i][j - 1]).norm();
-          my_speed += step_dist;
-          valid_steps++;
-        }
-        my_speed /= (valid_steps * 0.01); // 0.01s intervall in steps
-      }
-      else
-      {
-        my_speed = 0.0;
-      }
+      // Cost 2: Deviation from neighbors' headings
 
-      double speed_deviation_cost = 0.0;
-      int contributing_neighbors = 0;
-
-      for (const auto &neighbor : swarm_traj)
-      {
-        if (neighbor.drone_id < 0 || neighbor.drone_id == drone_id)
-          continue;
-
-        // TODO: this could also be read from the primitive data structure or used from the precomputed velocity
-        if (neighbor.traj_pos.size() >= 2)
-        {
-          double neighbor_speed = 0.0;
-          int neighbor_steps = 0;
-          for (size_t j = 1; j < neighbor.traj_pos.size(); ++j)
-          {
-            double step_dist = (neighbor.traj_pos[j] - neighbor.traj_pos[j - 1]).norm();
-            neighbor_speed += step_dist;
-            neighbor_steps++;
-          }
-
-          if (neighbor_steps > 0)
-          {
-            neighbor_speed /= (neighbor_steps * 0.01); // 0.01s intervall in steps
-            double diff = my_speed - neighbor_speed;
-            speed_deviation_cost += diff * diff;
-            contributing_neighbors++;
-          }
-        }
-      }
-
-      if (contributing_neighbors > 0)
-      {
-        speed_deviation_cost /= contributing_neighbors;
-      }
-
-      // ---------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-      // Cost 3: Deviation from neighbors' headings
-
-      double start_heading_cost = 0.0;
+      double neighbors_start_heading_cost = 0.0;
       int contributing_neighbors_start = 0;
 
-      // TODO: The strat heading is already given from the rotation matrix (not need to recompute it)
+      // TODO: The start heading is already given from the rotation matrix (not need to recompute it)
       // Compute your own start heading from the first two points
       Eigen::Vector3d my_start_heading(0, 0, 0);
 
@@ -386,18 +320,18 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
           std::vector<Eigen::Vector3d>::const_iterator it_begin = neighbor.traj_pos.begin();
           Eigen::Vector3d neighbor_start_heading = (*(std::next(it_begin)) - *it_begin).normalized();
           double heading_diff = 0.5 * (1.0 - my_start_heading.dot(rotWV * neighbor_start_heading));
-          start_heading_cost += heading_diff * heading_diff;
+          neighbors_start_heading_cost += heading_diff * heading_diff;
           contributing_neighbors_start++;
         }
       }
 
       if (contributing_neighbors_start > 0)
       {
-        start_heading_cost /= contributing_neighbors_start;
+        neighbors_start_heading_cost /= contributing_neighbors_start;
       }
 
       // Cost from final heading yours vs neighbors
-      double neighbor_heading_cost = 0.0;
+      double neighbors_end_heading_cost = 0.0;
       int contributing_neighbors_heading = 0;
 
       for (const auto &neighbor : swarm_traj)
@@ -412,14 +346,14 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
           std::vector<Eigen::Vector3d>::const_iterator it_end = std::prev(traj.end());
           Eigen::Vector3d neighbor_final_heading = (*it_end - *std::prev(it_end)).normalized();
           double heading_diff = 0.5 * (1.0 - (*pathEndDir_[i]).dot(rotWV * neighbor_final_heading));
-          neighbor_heading_cost += heading_diff * heading_diff;
+          neighbors_end_heading_cost += heading_diff * heading_diff;
           contributing_neighbors_heading++;
         }
       }
 
       if (contributing_neighbors_heading > 0)
       {
-        neighbor_heading_cost /= contributing_neighbors_heading; // average
+        neighbors_end_heading_cost /= contributing_neighbors_heading; // average
       }
 
       // ---------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -457,20 +391,14 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
 
       // Build the flight type specific weighted cost
 
-      // Cost from deviation from my speed and virtual_vel
-      flight_type_specific_cost += lambda_speed_virtual_ * std::pow(my_speed - virtual_vel.norm(), 2);
-
-      // Cost from deviation from my speed and speed of neighbors
-      flight_type_specific_cost += lambda_speed_neighbors_ * speed_deviation_cost;
-
       // Cost from deviation from my final heading and the desired shared_heading
-      flight_type_specific_cost += lambda_heading_virtual_ * heading_cost;
+      flight_type_specific_cost += lambda_heading_virtual_ * virtual_heading_cost;
 
       // Cost from deviation from my first heading and the first heading of the neighbors
-      flight_type_specific_cost += lambda_heading_neighbors_start_ * start_heading_cost;
+      flight_type_specific_cost += lambda_heading_neighbors_start_ * neighbors_start_heading_cost;
 
       // Cost from deviation from my final heading and the final heading of my neighbors
-      flight_type_specific_cost += lambda_heading_neighbors_end_ * neighbor_heading_cost;
+      flight_type_specific_cost += lambda_heading_neighbors_end_ * neighbors_end_heading_cost;
 
       // Cost from direction deviation to the swarm center
       flight_type_specific_cost += lambda_contraction_ * contraction_cost;
