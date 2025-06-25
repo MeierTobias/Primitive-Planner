@@ -27,7 +27,7 @@ void PPPlannerManager::initPlanModules(ros::NodeHandle &nh, PlanningVisualizatio
   nh.param("manager/lambda_b", lambda_b_, 1.0);
   nh.param("manager/lambda_d", lambda_d_, 1.0);
   nh.param("manager/lambda_heading_virtual", lambda_heading_virtual_, 1.0);
-  nh.param("manager/lambda_heading_neighbors_end", lambda_heading_neighbors_end_, 1.0);
+  nh.param("manager/lambda_heading_neighbors", lambda_heading_neighbors_, 1.0);
   nh.param("manager/lambda_contraction", lambda_contraction_, 1.0);
   nh.param("manager/map_size_x", x_size_, -1.0);
   nh.param("manager/map_size_y", y_size_, -1.0);
@@ -282,7 +282,7 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
       // Check if the virtual velocity vector is non zero
       bool virtual_vel_valid = virtual_vel.norm() > 1e-2; // directional speed > 0.02 m/s
 
-      // Cost 1: Deviation from virtual heading
+      // Deviation from virtual heading
       double virtual_heading_cost = 0.0;
       if (virtual_vel_valid && pathEndDir_[i])
       {
@@ -290,10 +290,8 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
         virtual_heading_cost = 0.5 * (1.0 - virtual_vel.normalized().dot(rotWV * (*pathEndDir_[i])));
       }
 
-      // ---------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-      // Cost from final heading yours vs neighbors
-      double neighbors_end_heading_cost = 0.0;
+      // Deviation of final heading with neighbors final heading
+      double neighbors_heading_cost = 1.0;
       int contributing_neighbors_heading = 0;
 
       for (const auto &neighbor : swarm_traj)
@@ -301,21 +299,20 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
         if (neighbor.drone_id < 0 || neighbor.drone_id == drone_id)
           continue;
 
-        // TODO: Use their trajectory direction if available like labelAgentCollisionPaths for the last heading
         const auto &traj = neighbor.traj_pos;
-        if ((traj.size() >= 2) && (applyDirCost))
+        if ((traj.size() >= 2) && (pathEndDir_[i]))
         {
           std::vector<Eigen::Vector3d>::const_iterator it_end = std::prev(traj.end());
           Eigen::Vector3d neighbor_final_heading = (*it_end - *std::prev(it_end)).normalized();
-          double heading_diff = 0.5 * (1.0 - (*pathEndDir_[i]).dot(rotWV * neighbor_final_heading));
-          neighbors_end_heading_cost += heading_diff * heading_diff;
+          double heading_diff = 0.5 * (1.0 - neighbor_final_heading.dot(rotWV * (*pathEndDir_[i])));
+          neighbors_heading_cost += heading_diff;
           contributing_neighbors_heading++;
         }
       }
 
       if (contributing_neighbors_heading > 0)
       {
-        neighbors_end_heading_cost /= contributing_neighbors_heading; // average
+        neighbors_heading_cost /= contributing_neighbors_heading; // average
       }
 
       // ---------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -357,7 +354,7 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
       flight_type_specific_cost += lambda_heading_virtual_ * virtual_heading_cost;
 
       // Cost from deviation from my final heading and the final heading of my neighbors
-      flight_type_specific_cost += lambda_heading_neighbors_end_ * neighbors_end_heading_cost;
+      flight_type_specific_cost += lambda_heading_neighbors_end_ * neighbors_heading_cost;
 
       // Cost from direction deviation to the swarm center
       flight_type_specific_cost += lambda_contraction_ * contraction_cost;

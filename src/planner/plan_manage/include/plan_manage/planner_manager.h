@@ -98,7 +98,7 @@ private:
   std::vector<double> pathLengthList_;
   double pathLengthMax_;
 
-  double lambda_l_, lambda_b_, lambda_d_, lambda_heading_virtual_, lambda_heading_neighbors_end_, lambda_contraction_;
+  double lambda_l_, lambda_b_, lambda_d_, lambda_heading_virtual_, lambda_heading_neighbors_, lambda_contraction_;
 
   double x_size_, y_size_, z_size_;
 
