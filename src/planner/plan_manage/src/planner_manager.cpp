@@ -354,7 +354,7 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
       flight_type_specific_cost += lambda_heading_virtual_ * virtual_heading_cost;
 
       // Cost from deviation from my final heading and the final heading of my neighbors
-      flight_type_specific_cost += lambda_heading_neighbors_end_ * neighbors_heading_cost;
+      flight_type_specific_cost += lambda_heading_neighbors_ * neighbors_heading_cost;
 
       // Cost from direction deviation to the swarm center
       flight_type_specific_cost += lambda_contraction_ * contraction_cost;
