@@ -291,49 +291,54 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
       }
 
       // Deviation of final heading with neighbors final heading
-      double neighbors_heading_cost = 1.0;
-      int contributing_neighbors_heading = 0;
+      double neighbors_heading_cost = 0.0;
 
+      // Deviation from swarm center to keep the drones together
+      double contraction_cost = 0.0;
+      Eigen::Vector3d swarm_center = endPoint;
+
+      // number of neighboring drones
+      int contributing_neighbors_heading = 0;
+      int contributing_neighbors_contraction = 1;
+
+      // loop over all known neighbor trajectories
       for (const auto &neighbor : swarm_traj)
       {
+        // Check if the trajectory is valid (in reach and no my own)
         if (neighbor.drone_id < 0 || neighbor.drone_id == drone_id)
+        {
           continue;
+        }
 
+        // add the final position to the swarm center point sum
+        swarm_center += neighbor.traj_pos.back();
+        ++contributing_neighbors_contraction;
+
+        // check if the neighbor trajectory and mine have enough points to calculate a heading
         const auto &traj = neighbor.traj_pos;
         if ((traj.size() >= 2) && (pathEndDir_[i]))
         {
+          // calculate the final heading of the neighbor drone
           std::vector<Eigen::Vector3d>::const_iterator it_end = std::prev(traj.end());
           Eigen::Vector3d neighbor_final_heading = (*it_end - *std::prev(it_end)).normalized();
+          // calculate the heading cost
           double heading_diff = 0.5 * (1.0 - neighbor_final_heading.dot(rotWV * (*pathEndDir_[i])));
           neighbors_heading_cost += heading_diff;
           contributing_neighbors_heading++;
         }
       }
 
+      // if there was more then one neighbor, average the contributions (otherwise the cost is 0 anyways)
       if (contributing_neighbors_heading > 0)
       {
-        neighbors_heading_cost /= contributing_neighbors_heading; // average
+        neighbors_heading_cost /= contributing_neighbors_heading;
       }
 
-      // ---------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-      // Cost 4: Deviation from swarm center to keep the drones together
-
-      int contributing_dones = 1;
-      Eigen::Vector3d swarm_center = endPoint;
-      double contraction_cost = 0.0;
-      for (const auto &neighbor : swarm_traj)
+      // if there was another drone next to me who contributed to the swarm center we calculate a directional cost
+      if (contributing_neighbors_contraction > 1)
       {
-        if (neighbor.drone_id < 0 || neighbor.drone_id == drone_id)
-          continue;
-
-        swarm_center += neighbor.traj_pos.back();
-        ++contributing_dones;
-      }
-      swarm_center /= contributing_dones;
-
-      if (contributing_dones > 1)
-      {
+        // normalize by the drone count to get the swarm center point
+        swarm_center /= contributing_neighbors_contraction;
         // calculate the direction to the swarm center
         Eigen::Vector3d center_dir = (swarm_center - start_pt).normalized();
         // calculate the direction to the trajectory end point
@@ -344,20 +349,8 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
         contraction_cost = 1.0 - std::abs(center_dir.dot(end_dir));
       }
 
-      // TODO: We loop a lot over the swarm_traj. We could simplify this by only looping once and storing/computing all the needed information. Then we could also avoid the contributing neighbor counting etc.
-
-      // ---------------------------------------------------------------------------------------------------------------------------------------------------------------
-
       // Build the flight type specific weighted cost
-
-      // Cost from deviation from my final heading and the desired shared_heading
-      flight_type_specific_cost += lambda_heading_virtual_ * virtual_heading_cost;
-
-      // Cost from deviation from my final heading and the final heading of my neighbors
-      flight_type_specific_cost += lambda_heading_neighbors_ * neighbors_heading_cost;
-
-      // Cost from direction deviation to the swarm center
-      flight_type_specific_cost += lambda_contraction_ * contraction_cost;
+      flight_type_specific_cost = lambda_heading_virtual_ * virtual_heading_cost + lambda_heading_neighbors_ * neighbors_heading_cost + lambda_contraction_ * contraction_cost;
     }
     break;
 
