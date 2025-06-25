@@ -28,7 +28,6 @@ void PPPlannerManager::initPlanModules(ros::NodeHandle &nh, PlanningVisualizatio
   nh.param("manager/lambda_d", lambda_d_, 1.0);
   nh.param("manager/lambda_heading_virtual", lambda_heading_virtual_, 1.0);
   nh.param("manager/lambda_heading_neighbors_end", lambda_heading_neighbors_end_, 1.0);
-  nh.param("manager/lambda_heading_neighbors_start", lambda_heading_neighbors_start_, 1.0);
   nh.param("manager/lambda_contraction", lambda_contraction_, 1.0);
   nh.param("manager/map_size_x", x_size_, -1.0);
   nh.param("manager/map_size_y", y_size_, -1.0);
@@ -293,43 +292,6 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
 
       // ---------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-      // Cost 2: Deviation from neighbors' headings
-
-      double neighbors_start_heading_cost = 0.0;
-      int contributing_neighbors_start = 0;
-
-      // TODO: The start heading is already given from the rotation matrix (not need to recompute it)
-      // Compute your own start heading from the first two points
-      Eigen::Vector3d my_start_heading(0, 0, 0);
-
-      if (pathAll_[i].size() >= 2)
-      {
-        std::vector<Eigen::Vector3d>::const_iterator it_begin = pathAll_[i].begin();
-        my_start_heading = (*(std::next(it_begin)) - *it_begin).normalized();
-      }
-
-      for (const auto &neighbor : swarm_traj)
-      {
-        if (neighbor.drone_id < 0 || neighbor.drone_id == drone_id)
-          continue;
-
-        const auto &traj = neighbor.traj_pos;
-        if (traj.size() >= 2)
-        {
-          // TODO: This is also already given by the rotation matrix of the neighbor that it sent to us
-          std::vector<Eigen::Vector3d>::const_iterator it_begin = neighbor.traj_pos.begin();
-          Eigen::Vector3d neighbor_start_heading = (*(std::next(it_begin)) - *it_begin).normalized();
-          double heading_diff = 0.5 * (1.0 - my_start_heading.dot(rotWV * neighbor_start_heading));
-          neighbors_start_heading_cost += heading_diff * heading_diff;
-          contributing_neighbors_start++;
-        }
-      }
-
-      if (contributing_neighbors_start > 0)
-      {
-        neighbors_start_heading_cost /= contributing_neighbors_start;
-      }
-
       // Cost from final heading yours vs neighbors
       double neighbors_end_heading_cost = 0.0;
       int contributing_neighbors_heading = 0;
@@ -393,9 +355,6 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
 
       // Cost from deviation from my final heading and the desired shared_heading
       flight_type_specific_cost += lambda_heading_virtual_ * virtual_heading_cost;
-
-      // Cost from deviation from my first heading and the first heading of the neighbors
-      flight_type_specific_cost += lambda_heading_neighbors_start_ * neighbors_start_heading_cost;
 
       // Cost from deviation from my final heading and the final heading of my neighbors
       flight_type_specific_cost += lambda_heading_neighbors_end_ * neighbors_end_heading_cost;
