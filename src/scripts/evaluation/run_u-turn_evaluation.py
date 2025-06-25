@@ -2,9 +2,7 @@
 import os
 import subprocess
 import time
-import sys
 import signal
-import argparse
 
 from gen_input import make_periodic_U_turn_bag
 
