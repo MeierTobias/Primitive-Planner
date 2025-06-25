@@ -340,7 +340,7 @@ bool GenerateMapFromObstacleFile(const std::string file_path)
   assert(vectors.size() > 0 && vectors.size() % 2 == 0);
 
   pcl::PointXYZ pt_random;
-  for (int i = 0; i < vectors.size() / 2; ++i)
+  for (size_t i = 0; i < vectors.size() / 2; ++i)
   {
     Eigen::Vector3d lb = vectors[i * 2], ub = vectors[i * 2 + 1];
     for (double x = lb(0); x <= ub(0); x += _resolution)

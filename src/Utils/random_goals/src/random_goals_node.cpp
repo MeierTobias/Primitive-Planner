@@ -141,7 +141,7 @@ int main(int argc, char **argv)
         while (goal_trials < goal_num)
         {
           int g_id = floor(((double)rand() / RAND_MAX) * goal_num);
-          double ang = acos(((goals[g_id].p - drones_[d_id].cur_p).normalized()).dot((Eigen::Vector3d(cos(drones_[d_id].cur_yaw), sin(drones_[d_id].cur_yaw), 0)).normalized()));
+          // double ang = acos(((goals[g_id].p - drones_[d_id].cur_p).normalized()).dot((Eigen::Vector3d(cos(drones_[d_id].cur_yaw), sin(drones_[d_id].cur_yaw), 0)).normalized()));
           double dist_to_goal = (goals[g_id].p - drones_[d_id].cur_p).norm();
           // cout << "g_id=" << g_id << " goals[g_id].occupied=" << goals[g_id].occupied << " ang=" << ang << endl;
           if (!goals[g_id].occupied && dist_to_goal > 5.0)
