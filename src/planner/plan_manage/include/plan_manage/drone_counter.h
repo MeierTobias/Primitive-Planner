@@ -15,7 +15,7 @@ class DroneCounter
 public:
   void init(ros::NodeHandle &nh, const Eigen::Vector3d &position, double drone_com_r, unsigned int drones_total, unsigned int drone_id);
 
-  virtual void setReachedGoal(const Eigen::Vector3d &goal) = 0;
+  virtual void setReachedGoal(int goal_tag) = 0;
   virtual void unsetReachedGoal() = 0;
 
   bool allDronesArrived() const

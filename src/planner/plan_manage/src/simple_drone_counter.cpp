@@ -26,7 +26,7 @@ void SimpleDroneCounter::init(ros::NodeHandle &nh, const Eigen::Vector3d &positi
   state = NOT_AT_GOAL;
 }
 
-void SimpleDroneCounter::setReachedGoal(const Eigen::Vector3d &goal)
+void SimpleDroneCounter::setReachedGoal(int goal_tag)
 {
   if (state == SimpleDroneCounter::NOT_AT_GOAL)
   {

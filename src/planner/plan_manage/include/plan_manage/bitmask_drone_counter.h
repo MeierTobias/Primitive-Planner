@@ -19,18 +19,27 @@ class BitmaskDroneCounter : public DroneCounter
 public:
   void init(ros::NodeHandle &nh, const Eigen::Vector3d &position, double drone_com_r, unsigned int drones_total, unsigned int drone_id);
 
-  void setReachedGoal(const Eigen::Vector3d &goal_position) final override;
+  void setReachedGoal(int goal_tag) final override;
   void unsetReachedGoal() final override;
 
   void waitForNDrones(unsigned int n) final override;
 
+  bool isAtGoal() const // for debugging
+  {
+    return isAtGoal_;
+  }
+
+  std::string getBitmask() const;
+
 private:
   unsigned int drone_id;
   std::vector<bool> bitmask;
-  Eigen::Vector3d goal_position;
+  int goal_tag;
   ros::Time lastBroadcastTime;
 
   ros::Timer broadcast_timer_;
+
+  bool isAtGoal_;
 
   void countMessageCallback(const primitive_planner::BitmaskCountDrones &msg);
   void broadcastTimeCallback(const ros::TimerEvent &heartbeat);

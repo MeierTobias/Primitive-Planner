@@ -6,6 +6,7 @@ using namespace primitive_planner;
 
 void BitmaskDroneCounter::init(ros::NodeHandle &nh, const Eigen::Vector3d &position, double drone_com_r, unsigned int drones_total, unsigned int drone_id)
 {
+  isAtGoal_ = false;
   DroneCounter::init(nh, position, drone_com_r, drones_total, drone_id);
 
   count_pub_ = nh.advertise<primitive_planner::BitmaskCountDrones>("/distributed_count", 100);
@@ -26,9 +27,7 @@ void BitmaskDroneCounter::sendMessage()
   message.position.y = (*position)(1);
   message.position.z = (*position)(2);
 
-  message.goal_position.x = goal_position[0];
-  message.goal_position.y = goal_position[1];
-  message.goal_position.z = goal_position[2];
+  message.goal_tag = goal_tag;
 
   // We're translating from bool to uint8_t (ROS doesn't have bools), so we can't just use operator=
   message.bitmask.resize(bitmask.size());
@@ -42,8 +41,7 @@ void BitmaskDroneCounter::countMessageCallback(const primitive_planner::BitmaskC
 {
   if (comesFromTooFar(msg))
     return;
-  Eigen::Vector3d msg_goal_position{msg.goal_position.x, msg.goal_position.y, msg.goal_position.z};
-  if ((msg_goal_position - this->goal_position).squaredNorm() > 1e-6)
+  if (msg.goal_tag != goal_tag)
     return;
 
   bool changed = false;
@@ -63,17 +61,22 @@ void BitmaskDroneCounter::countMessageCallback(const primitive_planner::BitmaskC
   }
 }
 
-void BitmaskDroneCounter::setReachedGoal(const Eigen::Vector3d &goal_position)
+void BitmaskDroneCounter::setReachedGoal(int goal_tag)
 {
-  this->goal_position = goal_position;
-  std::fill(bitmask.begin(), bitmask.end(), 0);
-  bitmask[drone_id] = true;
-  drones_at_goal = 1;
-  broadcast_timer_.start();
+  if (!isAtGoal_)
+  {
+    isAtGoal_ = true;
+    this->goal_tag = goal_tag;
+    std::fill(bitmask.begin(), bitmask.end(), 0);
+    bitmask[drone_id] = true;
+    drones_at_goal = 1;
+    broadcast_timer_.start();
+  }
 }
 
 void BitmaskDroneCounter::unsetReachedGoal()
 {
+  isAtGoal_ = false;
   broadcast_timer_.stop();
 }
 

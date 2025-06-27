@@ -18,7 +18,7 @@ class SimpleDroneCounter : public DroneCounter
 public:
   void init(ros::NodeHandle &nh, const Eigen::Vector3d &position, double drone_com_r, unsigned int drones_total, unsigned int drone_id);
 
-  void setReachedGoal(const Eigen::Vector3d &goal) final override;
+  void setReachedGoal(int goal_tag) final override;
   void unsetReachedGoal() final override;
 
   void waitForNDrones(unsigned int n) override;

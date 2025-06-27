@@ -56,21 +56,26 @@ private:
 
   FSM_EXEC_STATE exec_state_;
 
-  bool flag_realworld_experiment_, have_trigger_, have_odom_, have_target_, have_log_files_;
+  bool flag_realworld_experiment_, have_trigger_, have_odom_, have_log_files_;
 
   ros::Timer exec_timer_;
   ros::Subscriber trigger_sub_, odom_sub_, mandatory_stop_sub_, select_path_end_sub_, cmd_sub_, broadcast_primitive_sub_, waypoint_sub_;
 
   ros::Publisher path_id_pub_, stop_pub_, heartbeat_pub_, global_pub_, broadcast_primitive_pub_, poly_pub_, yaw_cmd_pub_;
 
-  double waypoints_[10][3];
-  int waypoint_num_;
-  int goal_id_ = 0;
-  int goal_tag_ = 0; // represents the identifier of the decentralized global goal
   int flight_type_;  // 1 manual select, 2 hard code, 3 decentralized global goal
+
   std::vector<Eigen::Vector3d> all_goal_;
-  // global_goal_ is always set to all_goal_[goal_id_]
+  std::vector<int> all_goal_tags_;
+  int goal_id_ = 0; // The offset into all_goal_ of the current goal.
+  // If we don't have a goal, goal_id_ == all_goal_.size()
+
+  // The current goal and its tag are cached into separate variables.
+  // If the flight mode is 1, then there is only one goal and we only use global_goal_ and goal_tag_, not all_goal_, all_goal_tags_, or goal_id_
   Eigen::Vector3d global_goal_;
+  int goal_tag_;
+  bool have_target_; // Whether global_goal contains a valid goal. This is equivalent to goal_id_ < all_goal_.size() in modes 2 and 3
+
   traj_utils::swarmPrimitiveTraj traj_msg = traj_utils::swarmPrimitiveTraj();
   Eigen::Vector3d starting_pos_;
   Eigen::Vector3d odom_pos_, odom_vel_, odom_x_dir_;
@@ -133,11 +138,12 @@ private:
   void cmdCallback(const quadrotor_msgs::PositionCommandPtr &cmd);
   void waypointCallback(const quadrotor_msgs::GoalSetPtr &msg);
 
-  void newGoalReceived(const Eigen::Vector3d &goal);
+  void newGoalReceived(const Eigen::Vector3d &goal, int goal_tag);
   bool readLocalTrajPos(Eigen::Vector3d &start_pos, int &vel_id, Eigen::Matrix<double, 3, 3> &Rwv, std::vector<int> &path_id, std::vector<Eigen::Vector3d> &traj_pos, double &traj_duration);
   bool checkCollision(int recv_id);
   bool readPrimitivePos();
-  void turnTowardsGoal(double yaw_des);
+  void turnTowardsGoal();
+  void publishGlobalGoal();
 };
 
 } // namespace primitive_planner

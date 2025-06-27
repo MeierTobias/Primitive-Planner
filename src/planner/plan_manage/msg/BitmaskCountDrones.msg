@@ -1,4 +1,4 @@
 geometry_msgs/Vector3 position
-geometry_msgs/Vector3 goal_position
+int32 goal_tag
 
 bool[] bitmask

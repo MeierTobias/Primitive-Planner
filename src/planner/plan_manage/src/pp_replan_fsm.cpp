@@ -1,6 +1,8 @@
+#include <cstdio>
 #include <plan_manage/pp_replan_fsm.h>
 #include <plan_manage/shared_memory.h>
 #include <cmath>
+#include <ros/assert.h>
 #include <vector>
 
 #define USE_SHARED_MEMORY false
@@ -30,6 +32,9 @@ double limit_yaw(double yaw)
   return yaw;
 }
 
+constexpr int TAG_NO_GOAL_YET = 0;
+// The first drone to receive a goal will increment it and start counting valid tags from 1.
+
 PPReplanFSM::~PPReplanFSM()
 {
   detach_shared_memory(shared_memory_);
@@ -53,7 +58,6 @@ void PPReplanFSM::init(ros::NodeHandle &nh)
   nh.param("fsm/realworld_experiment", flag_realworld_experiment_, false);
   nh.param("fsm/fail_safe", enable_fail_safe_, true);
   nh.param("fsm/no_replan_thresh", no_replan_thresh_, 4.0);
-  nh.param("fsm/waypoint_num", waypoint_num_, -1);
 
   // Raise the default logger level
   // TODO: This can be removed after development.
@@ -88,6 +92,9 @@ void PPReplanFSM::init(ros::NodeHandle &nh)
   mandatory_stop_sub_ = nh.subscribe("mandatory_stop", 100, &PPReplanFSM::mandatoryStopCallback, this);
   select_path_end_sub_ = nh.subscribe("planning/select_path_end", 100, &PPReplanFSM::pathEndCallback, this);
   cmd_sub_ = nh.subscribe("/position_cmd", 100, &PPReplanFSM::cmdCallback, this);
+
+  // This has to be initialized before we start communicating with the swarm
+  goal_tag_ = TAG_NO_GOAL_YET;
 
   // swarm communication
   broadcast_primitive_pub_ = nh.advertise<traj_utils::swarmPrimitiveTraj>("planning/broadcast_primitive_send", 100);
@@ -127,54 +134,43 @@ void PPReplanFSM::init(ros::NodeHandle &nh)
 
   exec_timer_ = nh.createTimer(ros::Duration(0.01), &PPReplanFSM::execFSMCallback, this);
 
-  // global goal
-  switch (flight_type_)
+  if (flight_type_ == 1 || flight_type_ == 3)
   {
-  case 1:
-  case 3:
+    // Get global goals from topic
     waypoint_sub_ = nh.subscribe("/goal_with_id", 100, &PPReplanFSM::waypointCallback, this);
-    break;
-
-  case 2: {
+  }
+  else
+  {
+    // Get global goals at startup from parameters
+    int waypoint_num_;
+    nh.param("fsm/waypoint_num", waypoint_num_, -1);
     for (int i = 0; i < waypoint_num_; i++)
     {
-      nh.param("fsm/waypoint" + std::to_string(i) + "_x", waypoints_[i][0], -1.0);
-      nh.param("fsm/waypoint" + std::to_string(i) + "_y", waypoints_[i][1], -1.0);
-      nh.param("fsm/waypoint" + std::to_string(i) + "_z", waypoints_[i][2], -1.0);
-      all_goal_.push_back(Eigen::Vector3d(waypoints_[i][0], waypoints_[i][1], waypoints_[i][2]));
+      double waypoint[3];
+      nh.param("fsm/waypoint" + std::to_string(i) + "_x", waypoint[0], -1.0);
+      nh.param("fsm/waypoint" + std::to_string(i) + "_y", waypoint[1], -1.0);
+      nh.param("fsm/waypoint" + std::to_string(i) + "_z", waypoint[2], -1.0);
+      all_goal_.push_back(Eigen::Vector3d(waypoint[0], waypoint[1], waypoint[2]));
     }
-
-    if (all_goal_.size() > 0)
-    {
-      goal_id_ = 0;
-      global_goal_ = all_goal_[goal_id_];
-      // send global goal
-      std_msgs::Float64MultiArray goal_msg;
-      for (int i = 0; i < 3; i++)
-      {
-        goal_msg.data.push_back(global_goal_(i));
-      }
-      global_pub_.publish(goal_msg);
-
-      visualization_->displayGoalPoint(global_goal_, Eigen::Vector4d(0, 0.5, 0.5, 1), 0.3, 0);
-
-      Eigen::Vector3d dir_to_goal = global_goal_ - odom_pos_;
-      double yaw_des = limit_yaw(atan2(dir_to_goal(1), dir_to_goal(0)));
-      turnTowardsGoal(yaw_des);
-
-      have_target_ = true;
-    }
-    break;
   }
-  default:
-    ROS_ERROR("Unknown flight type");
-    break;
+
+  goal_id_ = 0;
+  if (flight_type_ == 2 && all_goal_.size() > 0)
+  {
+    global_goal_ = all_goal_[0];
+    have_target_ = true;
+    publishGlobalGoal();
+    turnTowardsGoal();
   }
+
   ROS_DEBUG("[FSM] Drone %d: Init finished", planner_manager_->drone_id);
 }
 
-void PPReplanFSM::turnTowardsGoal(double yaw_des)
+void PPReplanFSM::turnTowardsGoal()
 {
+  Eigen::Vector3d dir_to_goal = global_goal_ - odom_pos_;
+  double yaw_des = limit_yaw(atan2(dir_to_goal(1), dir_to_goal(0)));
+
   std_msgs::Float64 yaw_cmd;
   yaw_cmd.data = yaw_des;
   int count = 0;
@@ -197,14 +193,35 @@ void PPReplanFSM::turnTowardsGoal(double yaw_des)
   }
 }
 
-void PPReplanFSM::newGoalReceived(const Eigen::Vector3d &goal)
+void PPReplanFSM::newGoalReceived(const Eigen::Vector3d &goal, int goal_tag)
 {
-  waypoint_num_ = 1;
-  goal_id_ = 0;
-  all_goal_.clear();
-  all_goal_.push_back(goal);
-  global_goal_ = all_goal_[0];
+  ROS_ASSERT(goal_tag != TAG_NO_GOAL_YET);
+  ROS_ASSERT(flight_type_ != 2);
 
+  bool is_next_goal = true;
+  if (flight_type_ == 3)
+  {
+    if (all_goal_tags_.size() > 0 && goal_tag != all_goal_tags_.back() + 1)
+      return; // We can only insert the next goal into our all_goal_ list
+    all_goal_.push_back(goal);
+    all_goal_tags_.push_back(goal_tag);
+    is_next_goal = (goal_id_ == all_goal_.size() - 1);
+  }
+
+  if (exec_state_ == WAIT_TARGET && is_next_goal)
+  {
+    global_goal_ = goal;
+    goal_tag_ = goal_tag;
+    have_target_ = true;
+    have_trigger_ = true;
+
+    publishGlobalGoal();
+    turnTowardsGoal();
+  }
+}
+
+void PPReplanFSM::publishGlobalGoal()
+{
   std_msgs::Float64MultiArray goal_msg;
   for (int i = 0; i < 3; i++)
   {
@@ -212,16 +229,6 @@ void PPReplanFSM::newGoalReceived(const Eigen::Vector3d &goal)
   }
   global_pub_.publish(goal_msg);
   visualization_->displayGoalPoint(global_goal_, Eigen::Vector4d(0, 0.5, 0.5, 1), 0.15, 0);
-  if (exec_state_ == WAIT_TARGET)
-  {
-    Eigen::Vector3d dir_to_goal = global_goal_ - odom_pos_;
-    double yaw_des = atan2(dir_to_goal(1), dir_to_goal(0));
-    turnTowardsGoal(yaw_des);
-  }
-  have_target_ = true;
-  have_trigger_ = true;
-  if (drone_counter_.allDronesArrived())
-    changeFSMExecState(GEN_NEW_TRAJ, "NEW_GOAL");
 }
 
 void PPReplanFSM::waypointCallback(const quadrotor_msgs::GoalSetPtr &msg)
@@ -229,9 +236,9 @@ void PPReplanFSM::waypointCallback(const quadrotor_msgs::GoalSetPtr &msg)
   if (msg->drone_id != planner_manager_->drone_id)
     return;
 
-  ++goal_tag_;
   ROS_INFO("[FSM] Drone %d: Received goal: %f, %f, %f", planner_manager_->drone_id, msg->goal[0], msg->goal[1], msg->goal[2]);
-  newGoalReceived(Eigen::Vector3d(msg->goal[0], msg->goal[1], msg->goal[2]));
+  int next_tag = all_goal_tags_.empty() ? 1 : all_goal_tags_.back() + 1;
+  newGoalReceived(Eigen::Vector3d(msg->goal[0], msg->goal[1], msg->goal[2]), next_tag);
 }
 
 void PPReplanFSM::triggerCallback(const geometry_msgs::PoseStampedPtr &msg)
@@ -314,9 +321,7 @@ void PPReplanFSM::RecvBroadcastPrimitiveCallback(const traj_utils::swarmPrimitiv
     // check we received a new goal position from a neighbor
     if (msg->goal_tag > goal_tag_)
     {
-      ++goal_tag_;
-      ROS_INFO("[FSM] Drone %d: New decentralized goal position (%f,%f,%f) from neighbor (id=%ld) received.", planner_manager_->drone_id, global_goal_[0], global_goal_[1], global_goal_[2], recv_id);
-      newGoalReceived(Eigen::Vector3d(msg->goal[0], msg->goal[1], msg->goal[2]));
+      newGoalReceived(Eigen::Vector3d(msg->goal[0], msg->goal[1], msg->goal[2]), msg->goal_tag);
     }
   }
 
@@ -659,13 +664,15 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
   case INIT: {
     if (have_odom_)
     {
-      // TODO: this "no goal set yet" value should not be able to conflict with real goal values
-      this->drone_counter_.setReachedGoal(Eigen::Vector3d{0, 0, 0});
+      this->drone_counter_.setReachedGoal(goal_tag_);
       changeFSMExecState(WAIT_TARGET, "FSM");
     }
     break;
   }
 
+  /* Note: the drone_counter_ should have setReachedGoal if and only if the state is WAIT_TARGET.
+  It is set / unset it accordingly whenever the state changes to / from WAIT_TARGET
+  */
   case WAIT_TARGET: {
     // state transition condition
     if (have_target_ && have_trigger_ && drone_counter_.allDronesArrived())
@@ -733,30 +740,32 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
     double dist_to_goal = (odom_pos_ - global_goal_).norm();
     if (dist_to_goal < planner_manager_->goal_radius)
     {
-      drone_counter_.setReachedGoal(global_goal_);
-      if (goal_id_ == (waypoint_num_ - 1))
+      if (true) // In the current state with diffuse goals, there's no reason to go to APPROACH_GOAL
       {
-        changeFSMExecState(APPROACH_GOAL, "FSM");
-        // Final goal reached
-        global_goal_ = odom_pos_; // snap goal to current position
-        ROS_INFO("[FSM] Drone %d reached final goal within radius %.2f m. Dist: %.2f m. Snapping to current position: (%.2f, %.2f, %.2f)",
-                 planner_manager_->drone_id,
-                 planner_manager_->goal_radius,
-                 dist_to_goal,
-                 odom_pos_.x(), odom_pos_.y(), odom_pos_.z());
+        drone_counter_.setReachedGoal(goal_tag_);
+        if (flight_type_ == 1)
+        {
+          have_target_ = false;
+          have_trigger_ = false;
+        }
+        else
+        {
+          goal_id_++;
+          if (goal_id_ < all_goal_.size())
+          {
+            global_goal_ = all_goal_[goal_id_];
+            goal_tag_ = all_goal_tags_[goal_id_];
+          }
+          else
+          {
+            have_target_ = false;
+          }
+        }
+        changeFSMExecState(WAIT_TARGET, "FSM");
       }
       else
       {
-        // Proceed to next goal
-        goal_id_++;
-        global_goal_ = all_goal_[goal_id_];
-        ROS_INFO("[FSM] Advancing to next goal ID %d, New goal: (%.2f, %.2f, %.2f)",
-                 goal_id_,
-                 global_goal_.x(), global_goal_.y(), global_goal_.z());
-
-        std_msgs::Float64MultiArray goal_msg;
-        goal_msg.data = {global_goal_.x(), global_goal_.y(), global_goal_.z()};
-        global_pub_.publish(goal_msg);
+        changeFSMExecState(APPROACH_GOAL, "FSM");
       }
     }
     else if (delta_t > replan_thresh_)
@@ -778,8 +787,18 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
     traj_msg.end_p[2] = global_goal_[2];
     broadcast_primitive_pub_.publish(traj_msg);
 
-    have_target_ = false;
-    have_trigger_ = false;
+    drone_counter_.setReachedGoal(goal_tag_);
+    if (flight_type_ == 1)
+    {
+      have_trigger_ = false;
+      have_target_ = false;
+    }
+    else
+    {
+      goal_id_++;
+      if (goal_id_ == all_goal_.size())
+        have_target_ = false;
+    }
     changeFSMExecState(WAIT_TARGET, "FSM");
 
     break;
@@ -884,7 +903,7 @@ void PPReplanFSM::printFSMExecState()
   std::string msg = "[FSM] Drone " + std::to_string(planner_manager_->drone_id) + " State: " + state_str[int(exec_state_)];
 
   // some warnings
-  if (!have_odom_ || !have_target_ || !have_trigger_)
+  if (!have_odom_ || !have_target_ || !have_trigger_ || !drone_counter_.allDronesArrived())
   {
     msg += ". Waiting for ";
   }
@@ -902,10 +921,16 @@ void PPReplanFSM::printFSMExecState()
   }
   if (!drone_counter_.allDronesArrived())
   {
-    msg += "all drones,";
+    char buffer[25];
+    if (have_trigger_ && have_target_ && have_odom_)
+    {
+      ROS_ASSERT(drone_counter_.isAtGoal());
+    }
+    sprintf(buffer, "drones (only %u here),", drone_counter_.nbDronesArrived());
+    msg += buffer;
   }
 
-  ROS_DEBUG("%s", msg.c_str());
+  ROS_DEBUG("%s; Goal: [%f, %f, %f], %d/%zu goals", msg.c_str(), global_goal_[0], global_goal_[1], global_goal_[2], goal_id_, all_goal_.size());
 }
 
 bool PPReplanFSM::planPrimitive(bool first_plan, double xV_offset /*= 0.0*/)
