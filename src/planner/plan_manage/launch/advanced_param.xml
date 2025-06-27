@@ -80,6 +80,9 @@
         <param name="manager/lambda_l" value="20.0" type="double"/>
         <param name="manager/lambda_b" value="5.0" type="double"/>
         <param name="manager/lambda_d" value="1.0" type="double"/>
+        <param name="manager/lambda_heading_virtual" value="5.0" type="double"/>
+        <param name="manager/lambda_heading_neighbors" value="1.0" type="double"/>
+        <param name="manager/lambda_contraction" value="1.0" type="double"/>
         <param name="manager/drone_id" value="$(arg drone_id)"/>
         <param name="manager/map_size_x" value="$(arg map_size_x_)"/>
         <param name="manager/map_size_y" value="$(arg map_size_y_)"/>

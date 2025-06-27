@@ -9,3 +9,5 @@ int32 select_path_id
 bool hovering_at_goal
 int32 goal_tag
 float32[3] goal
+int32 virtual_vel_tag
+float32[3] virtual_vel

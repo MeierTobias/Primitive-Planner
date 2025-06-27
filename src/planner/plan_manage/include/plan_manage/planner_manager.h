@@ -40,9 +40,9 @@ public:
   void cloudCallback(const sensor_msgs::PointCloud2ConstPtr &img);
   bool labelObsCollisionPaths(const Eigen::Vector3d &start_pt, const Eigen::Matrix3d &rotVW);
   bool labelAgentCollisionPaths(const Eigen::Vector3d &start_pt, const Eigen::Vector3d &start_v, const double &start_time, const Eigen::Matrix3d &rotVW);
-  vector<int> scorePaths(const Eigen::Vector3d &start_pt, const Eigen::Vector3d &global_goal, const Eigen::Matrix3d &rotWV, const primitive_planner::LocalTrajData &current_traj);
+  vector<int> scorePaths(const Eigen::Vector3d &start_pt, const Eigen::Vector3d &global_goal, const Eigen::Matrix3d &rotWV, const primitive_planner::LocalTrajData &current_traj, const Eigen::Vector3d &virtual_vel);
   void visAllPaths(const Eigen::Vector3d &start_pt, const Eigen::Matrix3d &rotWV);
-  bool trajReplan(const Eigen::Vector3d &start_pt, const Eigen::Vector3d &start_v, const double &start_time, const Eigen::Matrix3d &RWV, const Eigen::Vector3d &global_goal, vector<int> &select_path_id, const primitive_planner::LocalTrajData &current_traj);
+  bool trajReplan(const Eigen::Vector3d &start_pt, const Eigen::Vector3d &start_v, const double &start_time, const Eigen::Matrix3d &RWV, const Eigen::Vector3d &global_goal, vector<int> &select_path_id, const primitive_planner::LocalTrajData &current_traj, const Eigen::Vector3d &virtual_vel);
 
   void readCorrespondences();
   void readAgentCorrespondences();
@@ -56,6 +56,7 @@ public:
     return robot_pos_;
   }
 
+  int flight_type_;
   int drone_id;
   double max_vel_;
   bool sim_dist_com_;
@@ -74,6 +75,9 @@ public:
 
   bool has_odom_, has_cloud_;
   double goal_radius;
+
+  // velocity vector of the virtual leader
+  Eigen::Vector3d virtual_vel_;
 
 private:
   PlanningVisualization::Ptr visualization_;
@@ -101,7 +105,7 @@ private:
   std::vector<double> pathLengthList_;
   double pathLengthMax_;
 
-  double lambda_c_, lambda_l_, lambda_b_, lambda_d_; // TODO:待定，实验效果测试
+  double lambda_l_, lambda_b_, lambda_d_, lambda_heading_virtual_, lambda_heading_neighbors_, lambda_contraction_;
 
   double x_size_, y_size_, z_size_;
 

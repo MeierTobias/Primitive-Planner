@@ -2,6 +2,8 @@
 #include <thread>
 #include <limits>
 #include "visualization_msgs/Marker.h"
+#include <geometry_msgs/Twist.h>
+#include <algorithm>
 
 using namespace std;
 
@@ -20,12 +22,13 @@ void PPPlannerManager::initPlanModules(ros::NodeHandle &nh, PlanningVisualizatio
   nh.param("manager/base_com_r", base_com_r_, 30.0);                       // base station communication radius
   nh.param("manager/arc_length", arc_length_, 5.0);
   nh.param("manager/voxelSize", voxelSize_, 0.1);
-  // nh.param("manager/pathNum", pathNum_, 61);
   nh.param("manager/sampleSize", sampleSize_, 2000);
-  // nh.param("manager/lambda_c", lambda_c_, 12.0);
-  nh.param("manager/lambda_l", lambda_l_, 12.0);
-  nh.param("manager/lambda_b", lambda_b_, 12.0);
-  nh.param("manager/lambda_d", lambda_d_, 12.0);
+  nh.param("manager/lambda_l", lambda_l_, 1.0);
+  nh.param("manager/lambda_b", lambda_b_, 1.0);
+  nh.param("manager/lambda_d", lambda_d_, 1.0);
+  nh.param("manager/lambda_heading_virtual", lambda_heading_virtual_, 1.0);
+  nh.param("manager/lambda_heading_neighbors", lambda_heading_neighbors_, 1.0);
+  nh.param("manager/lambda_contraction", lambda_contraction_, 1.0);
   nh.param("manager/map_size_x", x_size_, -1.0);
   nh.param("manager/map_size_y", y_size_, -1.0);
   nh.param("manager/map_size_z", z_size_, -1.0);
@@ -33,6 +36,7 @@ void PPPlannerManager::initPlanModules(ros::NodeHandle &nh, PlanningVisualizatio
   nh.param("manager/drone_id", drone_id, -1);
   nh.param("manager/swarm_clearance", swarm_clearance_, -1.0);
   nh.param("goal_radius", goal_radius, 1.0);
+  nh.param("manager/flight_type", flight_type_, 4);
 
   voxelNumX_ = int(boxX_ / voxelSize_);
   voxelNumY_ = int(boxY_ / voxelSize_);
@@ -184,23 +188,17 @@ bool PPPlannerManager::labelObsCollisionPaths(const Eigen::Vector3d &start_pt, c
 vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
                                          const Eigen::Vector3d &global_goal,
                                          const Eigen::Matrix3d &rotWV,
-                                         const primitive_planner::LocalTrajData &current_traj)
+                                         const primitive_planner::LocalTrajData &current_traj,
+                                         const Eigen::Vector3d &virtual_vel)
 {
-  /* score: 1. collision;
-                    2. close to global goal; or delta_pitch/yaw(between endpoint and goal in body frame)
-                    || p_0 - p_goal || - || p(t) - p_goal || (p_0 --- odom) 大小始终维持在一定范围内
-                    3. low delta_w (smoothness) ;
-  TODO: 暂定倾向于靠近中心线的primitive(后续根据实验效果调整)
-  */
-
-  // cost: lower -> better
+  // The cost is minimized and is always >= 0
   std::map<double, int> mapCost;
   std::vector<int> select_path_id;
   Eigen::Vector3d currentTrajEndDir;
   bool applyDirCost = true;
   std::vector<int> collisionPaths, validPaths;
 
-  // determine the end heading of the currently executed trajectory
+  // determine the end heading of the currently executed trajectory (in world frame)
   if (current_traj.traj_pos.size() > 1)
   {
     std::vector<Eigen::Vector3d>::const_iterator it_end = std::prev(current_traj.traj_pos.end());
@@ -212,6 +210,7 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
     applyDirCost = false;
   }
 
+  // loop over all primitives and score them
   for (int i = 0; i < pathNum_; i++)
   {
 
@@ -222,7 +221,7 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
       continue;
     }
 
-    // calculate goal distance cost
+    // calculate the trajectory end point (in world frame)
     // rotWV * pathEndList_ + start_pt: body -> world;
     Eigen::Vector3d endPoint = rotWV * pathEndList_[i] + start_pt;
 
@@ -257,13 +256,6 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
       // TODO: add a heading discount factor since the goal point is no longer at the end of the trajectory or calculate the actual heading of each point (not ony the end point) in advance and then select the corresponding one.
     }
 
-    // calculate bound violation cost
-    double bound_cost = 0;
-    if (endPoint(0) < -x_size_ / 2 || endPoint(0) > x_size_ / 2 || endPoint(1) < -y_size_ / 2 || endPoint(1) > y_size_ / 2 || endPoint(2) < 0 || endPoint(2) > z_size_)
-    {
-      bound_cost = 10;
-    }
-
     // calculate direction change cost
     double dir_cost = 0;
     if (applyDirCost)
@@ -275,8 +267,132 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
         dir_cost = 0.5 * (1.0 - currentTrajEndDir.dot(rotWV * (*pathEndDir_[i])));
       }
     }
+
+    // calculate bound violation cost
+    double bound_cost = 0;
+    if (endPoint(0) < -x_size_ / 2 || endPoint(0) > x_size_ / 2 || endPoint(1) < -y_size_ / 2 || endPoint(1) > y_size_ / 2 || endPoint(2) < 0 || endPoint(2) > z_size_)
+    {
+      bound_cost = 10;
+    }
+
+    // calculate the flight type specific cost parts
+    double flight_type_specific_cost = 0;
+    switch (flight_type_)
+    {
+    case 1:
+    case 2:
+    case 3: {
+      // calculate goal distance cost
+      double goal_cost = 0;
+
+      // check if the goal is out of reach for the planned trajectory
+      if (((start_pt - global_goal).norm() > pathLengthMax_) || (rotWV.col(0).dot(global_goal - start_pt) <= 0))
+      {
+        Eigen::Vector3d start_goal_vec = global_goal - start_pt;
+        goal_cost = (start_pt + pathLengthMax_ * start_goal_vec / start_goal_vec.norm() - endPoint).norm() / (2 * pathLengthMax_);
+      }
+      else
+      {
+        double goal_dist = std::numeric_limits<double>::max();
+        for (size_t j = 0; j < pathAll_[i].size(); ++j)
+        {
+          Eigen::Vector3d traj_pt = rotWV * pathAll_[i][j] + start_pt;
+          double dist = (traj_pt - global_goal).norm();
+          goal_dist = dist < goal_dist ? dist : goal_dist;
+        }
+        goal_cost = goal_dist / (2 * pathLengthMax_);
+        // TODO: This normalization may scale to harshly since this statement only applies if we are close enough to the goal and hence the proportion compared to the other score metrics gets very small.
+
+        // TODO: add a heading discount factor since the goal point is no longer at the end of the trajectory or calculate the actual heading of each point (not ony the end point) in advance and then select the corresponding one.
+      }
+
+      flight_type_specific_cost = lambda_l_ * goal_cost;
+      break;
+    }
+
+    case 4: {
+      // Check if the virtual velocity vector is non zero
+      bool virtual_vel_valid = virtual_vel.norm() > 1e-2; // directional speed > 0.02 m/s
+
+      // Deviation from virtual heading
+      double virtual_heading_cost = 0.0;
+      if (virtual_vel_valid && pathEndDir_[i])
+      {
+        // calculate the direction difference cost [0, 1] (0 = direction is the same as current direction, 1 = direction is opposite then the current direction)
+        virtual_heading_cost = 0.5 * (1.0 - virtual_vel.normalized().dot(rotWV * (*pathEndDir_[i])));
+      }
+
+      // Deviation of final heading with neighbors final heading
+      double neighbors_heading_cost = 0.0;
+
+      // Deviation from swarm center to keep the drones together
+      double contraction_cost = 0.0;
+      Eigen::Vector3d swarm_center = endPoint;
+
+      // number of neighboring drones
+      int contributing_neighbors_heading = 0;
+      int contributing_neighbors_contraction = 1;
+
+      // loop over all known neighbor trajectories
+      for (const auto &neighbor : swarm_traj)
+      {
+        // Check if the trajectory is valid (in reach and no my own)
+        if (neighbor.drone_id < 0 || neighbor.drone_id == drone_id)
+        {
+          continue;
+        }
+
+        // add the final position to the swarm center point sum
+        swarm_center += neighbor.traj_pos.back();
+        ++contributing_neighbors_contraction;
+
+        // check if the neighbor trajectory and mine have enough points to calculate a heading
+        const auto &traj = neighbor.traj_pos;
+        if ((traj.size() >= 2) && (pathEndDir_[i]))
+        {
+          // calculate the final heading of the neighbor drone
+          std::vector<Eigen::Vector3d>::const_iterator it_end = std::prev(traj.end());
+          Eigen::Vector3d neighbor_final_heading = (*it_end - *std::prev(it_end)).normalized();
+          // calculate the heading cost
+          double heading_diff = 0.5 * (1.0 - neighbor_final_heading.dot(rotWV * (*pathEndDir_[i])));
+          neighbors_heading_cost += heading_diff;
+          contributing_neighbors_heading++;
+        }
+      }
+
+      // if there was more then one neighbor, average the contributions (otherwise the cost is 0 anyways)
+      if (contributing_neighbors_heading > 0)
+      {
+        neighbors_heading_cost /= contributing_neighbors_heading;
+      }
+
+      // if there was another drone next to me who contributed to the swarm center we calculate a directional cost
+      if (contributing_neighbors_contraction > 1)
+      {
+        // normalize by the drone count to get the swarm center point
+        swarm_center /= contributing_neighbors_contraction;
+        // calculate the direction to the swarm center
+        Eigen::Vector3d center_dir = (swarm_center - start_pt).normalized();
+        // calculate the direction to the trajectory end point
+        Eigen::Vector3d end_dir = (endPoint - start_pt).normalized();
+        // calculate the contraction cost [0, 1]
+        //   0 = trajectory end point direction points to the swarm center,
+        //   1 = trajectory end point direction is perpendicular to the direction of the swarm center
+        contraction_cost = 1.0 - std::abs(center_dir.dot(end_dir));
+      }
+
+      // Build the flight type specific weighted cost
+      flight_type_specific_cost = lambda_heading_virtual_ * virtual_heading_cost + lambda_heading_neighbors_ * neighbors_heading_cost + lambda_contraction_ * contraction_cost;
+    }
+    break;
+
+    default:
+      ROS_ERROR("Unknown flight type selected (flight_type_=%d)", flight_type_);
+      break;
+    }
+
     // calculate overall cost
-    double cost = lambda_l_ * goal_cost + lambda_b_ * bound_cost + lambda_d_ * dir_cost;
+    double cost = flight_type_specific_cost + lambda_b_ * bound_cost + lambda_d_ * dir_cost;
 
     mapCost.insert({cost, i});
 
@@ -655,7 +771,8 @@ bool PPPlannerManager::trajReplan(const Eigen::Vector3d &start_pt,
                                   const Eigen::Matrix3d &RWV,
                                   const Eigen::Vector3d &global_goal,
                                   vector<int> &select_path_id,
-                                  const primitive_planner::LocalTrajData &current_traj)
+                                  const primitive_planner::LocalTrajData &current_traj,
+                                  const Eigen::Vector3d &virtual_vel)
 {
   Eigen::Matrix3d RVW = RWV.inverse();
 
@@ -674,7 +791,7 @@ bool PPPlannerManager::trajReplan(const Eigen::Vector3d &start_pt,
   // visulize all path
   // visAllPaths(start_pt, RWV);
 
-  select_path_id = scorePaths(start_pt, global_goal, RWV, current_traj);
+  select_path_id = scorePaths(start_pt, global_goal, RWV, current_traj, virtual_vel);
   t3 = ros::Time::now();
 
   if (select_path_id.empty())
