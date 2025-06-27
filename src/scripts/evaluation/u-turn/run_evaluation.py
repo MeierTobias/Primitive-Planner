@@ -15,19 +15,19 @@ from gen_input import make_periodic_U_turn_bag
 from processing import preprocess_data, radius_of_gyration, pairwise_distance
 
 
-def grid_convex_weights(step=0.125, w_min=0.125):
+def grid_convex_weights(step=0.125, w_min=0.125, n=4):
     """
-    Return an array of shape (M,4) containing every (w1,w2,w3,w4)
+    Return an array of shape (M,n) containing every (w1, w2, ..., wn)
     such that each wi in [w_min, 1] in increments of `step`
     and sum(w) == 1.
     """
     # max any single wi can be, given the other 3 are at least w_min
-    w_max = 1 - 3 * w_min
+    w_max = 1 - (n - 1) * w_min
     # 1-D array of possible wi values
     vals = np.arange(w_min, w_max + 1e-9, step)
 
     # Cartesian product of 4 picks, then filter by sum==1
-    weights = [w for w in itertools.product(vals, repeat=4) if abs(sum(w) - 1.0) < 1e-6]
+    weights = [w for w in itertools.product(vals, repeat=n) if abs(sum(w) - 1.0) < 1e-6]
 
     return np.array(weights)
 
@@ -53,7 +53,7 @@ if __name__ == "__main__":
     # TODO: generate launch file
 
     # generate convex weight set
-    weights = grid_convex_weights(step=0.1, w_min=0.1)
+    weights = grid_convex_weights(step=0.1, w_min=0.1, n=4)
 
     # loop over weights
     for (
