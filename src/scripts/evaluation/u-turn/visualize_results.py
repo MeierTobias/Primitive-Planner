@@ -114,7 +114,7 @@ if __name__ == "__main__":
         axs_d[1, 1].set_ylabel(r'$\text{max}(D_\text{avg}$)')
         axs_d[2, 1].set_ylabel(r'$\text{max}(D_\text{max}$)')
         for ax in axs_d.flatten():
-            ax.set_xlabel('lambda_d')
+            ax.set_xlabel(r'$\lambda_d$')
         fig_d.suptitle(r'U-Turn Experiment: $\lambda_d$ Evaluation')
         fig_d.tight_layout()
         fig_d.show()
