@@ -4,7 +4,7 @@ import sys
 
 
 def generate_launch_file(
-    start_num, end_num, total_num, radius, obs_density, output_file
+    start_num, end_num, total_num, radius, obs_density, goal_center, goal_radius, output_file
 ):
 
     obs_map_width = (radius - 1.0) / 1.414 * 2
@@ -18,6 +18,7 @@ def generate_launch_file(
         )
         file.write('    <arg name="map_size_z" value="3.0"/>\n')
         file.write('    <arg name="odom_topic" value="visual_slam/odom" />\n')
+
         file.write("\n")
         file.write("    <!-- swarm topic transmitter bridge-->\n")
         file.write(
@@ -81,13 +82,15 @@ def generate_launch_file(
             file.write('        <arg name="init_x"     value="{}"/>\n'.format(init_x))
             file.write('        <arg name="init_y"     value="{}"/>\n'.format(init_y))
             file.write('        <arg name="init_z"     value="0.5"/>\n')
-            file.write('        <arg name="target0_x"   value="{}"/>\n'.format(-init_x))
-            file.write('        <arg name="target0_y"   value="{}"/>\n'.format(-init_y))
-            file.write('        <arg name="target0_z"   value="0.5"/>\n')
+            file.write('        <arg name="target0_x"   value="{}"/>\n'.format(goal_center[0]))
+            file.write('        <arg name="target0_y"   value="{}"/>\n'.format(goal_center[1]))
+            file.write('        <arg name="target0_z"   value="{}"/>\n'.format(goal_center[2]))
+            file.write('        <arg name="goal_radius" value="{}"/>\n'.format(goal_radius))
             file.write('        <arg name="map_size_x" value="$(arg map_size_x)"/>\n')
             file.write('        <arg name="map_size_y" value="$(arg map_size_y)"/>\n')
             file.write('        <arg name="map_size_z" value="$(arg map_size_z)"/>\n')
             file.write('        <arg name="odom_topic" value="$(arg odom_topic)"/>\n')
+            file.write('        <arg name="total_drones" value="{}"/>\n'.format(total_num))
             file.write("    </include>\n")
 
         file.write("</launch>")
@@ -100,9 +103,11 @@ if __name__ == "__main__":
     else:
         drone_num = 20
     radius = drone_num / 2.0 / np.pi * 2.0
+    goal_center = [0.0, 0.0, 0.5]
+    goal_radius = 1.0  # Set your desired goal radius here
     launch_dir = (
         os.path.dirname(os.path.abspath(__file__)) + "/../planner/plan_manage/launch/"
     )
     generate_launch_file(
-        0, drone_num - 1, drone_num, radius, 1.0, launch_dir + "swarm.launch"
+        0, drone_num - 1, drone_num, radius, 1.0, goal_center, goal_radius, launch_dir + "swarm.launch"
     )
