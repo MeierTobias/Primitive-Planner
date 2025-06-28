@@ -205,7 +205,7 @@ void PPReplanFSM::newGoalReceived(const Eigen::Vector3d &goal, int goal_tag)
       return; // We can only insert the next goal into our all_goal_ list
     all_goal_.push_back(goal);
     all_goal_tags_.push_back(goal_tag);
-    is_next_goal = (goal_id_ == all_goal_.size() - 1);
+    is_next_goal = (goal_id_ == static_cast<int>(all_goal_.size() - 1));
   }
 
   if (exec_state_ == WAIT_TARGET && is_next_goal)
@@ -811,7 +811,7 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
         else
         {
           goal_id_++;
-          if (goal_id_ < all_goal_.size())
+          if (goal_id_ < static_cast<int>(all_goal_.size()))
           {
             global_goal_ = all_goal_[goal_id_];
             goal_tag_ = all_goal_tags_[goal_id_];
@@ -856,7 +856,7 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
     else
     {
       goal_id_++;
-      if (goal_id_ == all_goal_.size())
+      if (goal_id_ == static_cast<int>(all_goal_.size()))
         have_target_ = false;
     }
     changeFSMExecState(WAIT_TARGET, "FSM");
