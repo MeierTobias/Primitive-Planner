@@ -10,12 +10,6 @@
     <arg name="init_y"/>
     <arg name="init_z"/>
 
-    <!-- Goal region parameters -->
-    <arg name="goal_center_x" default="0.0"/>
-    <arg name="goal_center_y" default="0.0"/>
-    <arg name="goal_center_z" default="0.5"/>
-    <arg name="goal_radius" default="1.0"/>
-
     <!-- Flight path configuration -->
     <arg name="flight_type"/>
     <arg name="point_num" default="1"/>
@@ -31,6 +25,7 @@
     <arg name="sim_distributed_communication" default="false"/>
     <arg name="drone_com_r" default="15.0"/>
     <arg name="base_com_r" default="30.0"/>
+    <arg name="goal_radius" default="1.0"/>
     <arg name="launch_prefix" default=""/>
     <arg name="lambda_l" default="20.0"/>
     <arg name="lambda_b" default="5.0"/>
@@ -107,9 +102,6 @@
         <param name="init_z" value="$(arg init_z)"/>
 
         <!-- Goal region parameters -->
-        <param name="goal_center_x" value="$(arg goal_center_x)"/>
-        <param name="goal_center_y" value="$(arg goal_center_y)"/>
-        <param name="goal_center_z" value="$(arg goal_center_z)"/>
         <param name="goal_radius" value="$(arg goal_radius)"/>
     </node>
 
