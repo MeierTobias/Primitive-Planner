@@ -17,7 +17,7 @@
     <arg name="goal_radius" default="1.0"/>
 
     <!-- Flight path configuration -->
-    <arg name="flight_type" default="2"/>
+    <arg name="flight_type"/>
     <arg name="point_num" default="1"/>
     <arg name="target0_x" default="0.0"/>
     <arg name="target0_y" default="0.0"/>

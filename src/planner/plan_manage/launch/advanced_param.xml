@@ -91,6 +91,7 @@
         <param name="manager/lambda_heading_neighbors" value="$(arg lambda_heading_neighbors)" type="double"/>
         <param name="manager/lambda_contraction" value="$(arg lambda_contraction)" type="double"/>
         <param name="manager/drone_id" value="$(arg drone_id)"/>
+        <param name="manager/flight_type" value="$(arg flight_type)" type="int"/>
         <param name="manager/map_size_x" value="$(arg map_size_x_)"/>
         <param name="manager/map_size_y" value="$(arg map_size_y_)"/>
         <param name="manager/map_size_z" value="$(arg map_size_z_)"/>
