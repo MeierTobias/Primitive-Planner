@@ -260,7 +260,7 @@ void trajCallback(traj_utils::swarmPrimitiveTrajPtr msg)
     val8 = fscanf(filePtr, "%lf", &acc_y);
     val9 = fscanf(filePtr, "%lf", &acc_z);
 
-    if (val1 != 1 || val2 != 1 || val3 != 1 || val4 != 1 || val5 != 1 || val6 != 1 || val7 != 1 || val8 != 1 || val9 != 1)
+    if (val_num != 1 || val_dur != 1 || val1 != 1 || val2 != 1 || val3 != 1 || val4 != 1 || val5 != 1 || val6 != 1 || val7 != 1 || val8 != 1 || val9 != 1)
     {
       printf("\nError reading input files, exit.\n\n");
       exit(1);
