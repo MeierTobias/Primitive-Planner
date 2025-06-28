@@ -225,37 +225,6 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
     // rotWV * pathEndList_ + start_pt: body -> world;
     Eigen::Vector3d endPoint = rotWV * pathEndList_[i] + start_pt;
 
-    // Check if endpoint is within the goal radius
-    double dist_to_goal = (endPoint - global_goal).norm();
-    if (dist_to_goal <= goal_radius)
-    {
-      // Perfect goal match: set very low cost
-      mapCost.insert({-1e6, i});
-      continue;
-    }
-    // Otherwise proceed with scoring
-    double goal_cost = 1;
-    // check if the goal is out of reach for the planned trajectory
-    if (((start_pt - global_goal).norm() > pathLengthMax_) || (rotWV.col(0).dot(global_goal - start_pt) <= 0))
-    {
-      Eigen::Vector3d start_goal_vec = global_goal - start_pt;
-      goal_cost = (start_pt + pathLengthMax_ * start_goal_vec / start_goal_vec.norm() - endPoint).norm() / (2 * pathLengthMax_);
-    }
-    else
-    {
-      double goal_dist = std::numeric_limits<double>::max();
-      for (size_t j = 0; j < pathAll_[i].size(); ++j)
-      {
-        Eigen::Vector3d traj_pt = rotWV * pathAll_[i][j] + start_pt;
-        double dist = (traj_pt - global_goal).norm();
-        goal_dist = dist < goal_dist ? dist : goal_dist;
-      }
-      goal_cost = goal_dist / (2 * pathLengthMax_);
-      // TODO: This normalization may scale to harshly since this statement only applies if we are close enough to the goal and hence the proportion compared to the other score metrics gets very small.
-
-      // TODO: add a heading discount factor since the goal point is no longer at the end of the trajectory or calculate the actual heading of each point (not ony the end point) in advance and then select the corresponding one.
-    }
-
     // calculate direction change cost
     double dir_cost = 0;
     if (applyDirCost)
@@ -285,25 +254,35 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
       // calculate goal distance cost
       double goal_cost = 0;
 
-      // check if the goal is out of reach for the planned trajectory
-      if (((start_pt - global_goal).norm() > pathLengthMax_) || (rotWV.col(0).dot(global_goal - start_pt) <= 0))
+      // Check if endpoint is within the goal radius
+      double dist_to_goal = (endPoint - global_goal).norm();
+      if (dist_to_goal <= goal_radius)
       {
-        Eigen::Vector3d start_goal_vec = global_goal - start_pt;
-        goal_cost = (start_pt + pathLengthMax_ * start_goal_vec / start_goal_vec.norm() - endPoint).norm() / (2 * pathLengthMax_);
+        // Perfect goal match: set very low cost
+        goal_cost = 1e-6;
       }
       else
       {
-        double goal_dist = std::numeric_limits<double>::max();
-        for (size_t j = 0; j < pathAll_[i].size(); ++j)
+        // check if the goal is out of reach for the planned trajectory
+        if (((start_pt - global_goal).norm() > pathLengthMax_) || (rotWV.col(0).dot(global_goal - start_pt) <= 0))
         {
-          Eigen::Vector3d traj_pt = rotWV * pathAll_[i][j] + start_pt;
-          double dist = (traj_pt - global_goal).norm();
-          goal_dist = dist < goal_dist ? dist : goal_dist;
+          Eigen::Vector3d start_goal_vec = global_goal - start_pt;
+          goal_cost = (start_pt + pathLengthMax_ * start_goal_vec / start_goal_vec.norm() - endPoint).norm() / (2 * pathLengthMax_);
         }
-        goal_cost = goal_dist / (2 * pathLengthMax_);
-        // TODO: This normalization may scale to harshly since this statement only applies if we are close enough to the goal and hence the proportion compared to the other score metrics gets very small.
+        else
+        {
+          double goal_dist = std::numeric_limits<double>::max();
+          for (size_t j = 0; j < pathAll_[i].size(); ++j)
+          {
+            Eigen::Vector3d traj_pt = rotWV * pathAll_[i][j] + start_pt;
+            double dist = (traj_pt - global_goal).norm();
+            goal_dist = dist < goal_dist ? dist : goal_dist;
+          }
+          goal_cost = goal_dist / (2 * pathLengthMax_);
+          // TODO: This normalization may scale to harshly since this statement only applies if we are close enough to the goal and hence the proportion compared to the other score metrics gets very small.
 
-        // TODO: add a heading discount factor since the goal point is no longer at the end of the trajectory or calculate the actual heading of each point (not ony the end point) in advance and then select the corresponding one.
+          // TODO: add a heading discount factor since the goal point is no longer at the end of the trajectory or calculate the actual heading of each point (not ony the end point) in advance and then select the corresponding one.
+        }
       }
 
       flight_type_specific_cost = lambda_l_ * goal_cost;
