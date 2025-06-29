@@ -724,8 +724,8 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
     break;
   }
 
-  /* Note: the drone_counter_ should have setReachedGoal if and only if the state is WAIT_TARGET.
-  It is set / unset it accordingly whenever the state changes to / from WAIT_TARGET
+  /* Note: the drone_counter_ should have setReachedGoal if and only if the state is WAIT_TARGET or APPROACH_GOAL.
+  It is set / unset it accordingly whenever the state changes to APPROACH_GOAL or from WAIT_TARGET
   */
   case WAIT_TARGET: {
 
@@ -798,35 +798,22 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
 
   case EXEC_TRAJ: {
     double delta_t = (ros::Time::now() - start_time_).toSec();
-    if (flight_type_ != 4 && ((odom_pos_ - global_goal_).norm() < planner_manager_->goal_radius))
+    double dist_to_goal = (odom_pos_ - global_goal_).norm();
+    if (flight_type_ == 3 && dist_to_goal < planner_manager_->goal_radius)
     {
-      if (true) // In the current state with diffuse goals, there's no reason to go to APPROACH_GOAL
-      {
-        drone_counter_.setReachedGoal(goal_tag_);
-        if (flight_type_ == 1)
-        {
-          have_target_ = false;
-          have_trigger_ = false;
-        }
-        else
-        {
-          goal_id_++;
-          if (goal_id_ < static_cast<int>(all_goal_.size()))
-          {
-            global_goal_ = all_goal_[goal_id_];
-            goal_tag_ = all_goal_tags_[goal_id_];
-          }
-          else
-          {
-            have_target_ = false;
-          }
-        }
-        changeFSMExecState(WAIT_TARGET, "FSM");
-      }
-      else
-      {
-        changeFSMExecState(APPROACH_GOAL, "FSM");
-      }
+      global_goal_ = odom_pos_; // snap goal to current position
+      dist_to_goal = 0.0;
+      ROS_INFO("[FSM] Drone %d reached final goal within radius %.2f m. Dist: %.2f m. Snapping to current position: (%.2f, %.2f, %.2f)",
+               planner_manager_->drone_id,
+               planner_manager_->goal_radius,
+               dist_to_goal,
+               odom_pos_.x(), odom_pos_.y(), odom_pos_.z());
+    }
+
+    if (flight_type_ != 4 && dist_to_goal < no_replan_thresh_)
+    {
+      drone_counter_.setReachedGoal(goal_tag_);
+      changeFSMExecState(APPROACH_GOAL, "FSM");
     }
     else if (delta_t > replan_thresh_)
     {
@@ -847,17 +834,31 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
     traj_msg.end_p[2] = global_goal_[2];
     broadcast_primitive_pub_.publish(traj_msg);
 
-    drone_counter_.setReachedGoal(goal_tag_);
-    if (flight_type_ == 1)
+    if ((flight_type_ == 2 || flight_type_ == 3))
     {
-      have_trigger_ = false;
-      have_target_ = false;
+      // Proceed to next goal
+      goal_id_++;
+      if (goal_id_ < static_cast<int>(all_goal_.size()))
+      {
+        global_goal_ = all_goal_[goal_id_];
+        goal_tag_ = all_goal_tags_[goal_id_];
+        ROS_INFO("[FSM] Advancing to next goal ID %d, New goal: (%.2f, %.2f, %.2f)",
+                 goal_id_,
+                 global_goal_.x(), global_goal_.y(), global_goal_.z());
+
+        publishGlobalGoal();
+      }
+      else
+      {
+        have_target_ = false;
+        if (flight_type_ == 2)
+          have_trigger_ = false;
+      }
     }
     else
-    {
-      goal_id_++;
-      if (goal_id_ == static_cast<int>(all_goal_.size()))
-        have_target_ = false;
+    { // ROS_ASSERT(flight_type_ == 1);
+      have_target_ = false;
+      have_trigger_ = false;
     }
     changeFSMExecState(WAIT_TARGET, "FSM");
 
