@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
+import pandas as pd
 from matplotlib.tri import Triangulation
 
 if __name__ == "__main__":
@@ -47,11 +48,31 @@ if __name__ == "__main__":
              if f.startswith('u-turn_out_')
              and f.endswith('_post.npz')
              and os.path.isfile(os.path.join(data_folder, f))]
+    print(f"Found {len(files)} experiments.")
 
     fig_all, axs_all = plt.subplots(nrows=3, ncols=1, figsize=(8, 10), dpi=200)
-    fig_d, axs_d = plt.subplots(nrows=3, ncols=2, figsize=(8, 10), dpi=200)
+
+    records = []
     for file in files:
         data = np.load(os.path.join(data_folder, file))
+
+        # get parameters
+        params = dict(zip(['lambda_d', 'lambda_heading_virtual', 'lambda_heading_neighbors', 'lambda_contraction'],
+                          [float(ps) for ps in file[11:-9].split('_')]))
+        l_d, l_hv, l_hn, l_c = [float(ps) for ps in file[11:-9].split('_')]
+
+        records.append({
+            'lambda_d': l_d,
+            'lambda_heading_virtual': l_hv,
+            'lambda_heading_neighbors': l_hn,
+            'lambda_contraction': l_c,
+            'R_g_avg': float(data['R_g_avg']),
+            'D_avg_avg': float(data['D_avg_avg']),
+            'D_max_avg': float(data['D_max_avg']),
+            'R_g_max': float(data['R_g_max']),
+            'D_avg_max': float(data['D_avg_max']),
+            'D_max_max': float(data['D_max_max'])
+        })
 
         # plot overview
         if plot_overview:
@@ -59,19 +80,6 @@ if __name__ == "__main__":
             axs_all[0].plot(t, data['R_g'])
             axs_all[1].plot(t, data['D_avg'])
             axs_all[2].plot(t, data['D_max'])
-
-        # get parameters
-        params = dict(zip(['lambda_d', 'lambda_heading_virtual', 'lambda_heading_neighbors', 'lambda_contraction'],
-                          [float(ps) for ps in file[11:-9].split('_')]))
-
-        # lambda_d scatter plot
-        if plot_lambda_d:
-            axs_d[0, 0].scatter(params['lambda_d'], data['R_g_avg'])
-            axs_d[1, 0].scatter(params['lambda_d'], data['D_avg_avg'])
-            axs_d[2, 0].scatter(params['lambda_d'], data['D_max_avg'])
-            axs_d[0, 1].scatter(params['lambda_d'], data['R_g_max'])
-            axs_d[1, 1].scatter(params['lambda_d'], data['D_avg_max'])
-            axs_d[2, 1].scatter(params['lambda_d'], data['D_max_max'])
 
         # 3d scatter
         if plot_lambda_v:
@@ -94,6 +102,18 @@ if __name__ == "__main__":
 
         data.close()
 
+    df = pd.DataFrame.from_records(records)
+    df_indexed = df.set_index([
+        'lambda_d',
+        'lambda_heading_virtual',
+        'lambda_heading_neighbors',
+        'lambda_contraction'
+    ])
+
+    key_list = ['R_g_avg', 'D_avg_avg', 'D_max_avg', 'R_g_max', 'D_avg_max', 'D_max_max', ]
+    metric_label_list = [r'$\text{avg}(R_{g}$)', r'$\text{avg}(D_\text{avg}$)', r'$\text{avg}(D_\text{max}$)',
+                         r'$\text{max}(R_{g}$)', r'$\text{max}(D_\text{avg}$)', r'$\text{max}(D_\text{max}$)']
+
     # overall plot cosmetics
     if plot_overview:
         y_label = ['$R_g$', '$D_{avg}$', '$D_{max}$']
@@ -107,29 +127,24 @@ if __name__ == "__main__":
 
     # lambda_d plot cosmetics
     if plot_lambda_d:
-        axs_d[0, 0].set_ylabel(r'$\text{avg}(R_{g}$)')
-        axs_d[1, 0].set_ylabel(r'$\text{avg}(D_\text{avg}$)')
-        axs_d[2, 0].set_ylabel(r'$\text{avg}(D_\text{max}$)')
-        axs_d[0, 1].set_ylabel(r'$\text{max}(R_{g}$)')
-        axs_d[1, 1].set_ylabel(r'$\text{max}(D_\text{avg}$)')
-        axs_d[2, 1].set_ylabel(r'$\text{max}(D_\text{max}$)')
-        for ax in axs_d.flatten():
+        fig_d, axs_d = plt.subplots(nrows=3, ncols=2, figsize=(8, 10), dpi=200)
+        c = np.arange(len(df))
+        for ax, key, metric_label in zip(axs_d.T.flatten(), key_list, metric_label_list):
+            ax.scatter(df['lambda_d'], df[key], c=c, cmap='flare')
             ax.set_xlabel(r'$\lambda_d$')
+            ax.set_ylabel(metric_label)
         fig_d.suptitle(r'U-Turn Experiment: $\lambda_d$ Evaluation')
         fig_d.tight_layout()
         fig_d.show()
 
     # lambda plot
     if plot_lambda_v:
-        key_list = ['R_g_avg', 'D_avg_avg', 'D_max_avg', 'R_g_max', 'D_avg_max', 'D_max_max', ]
-        metric_label_list = [r'$\text{avg}(R_{g}$)', r'$\text{avg}(D_\text{avg}$)', r'$\text{avg}(D_\text{max}$)',
-                             r'$\text{max}(R_{g}$)', r'$\text{max}(D_\text{avg}$)', r'$\text{max}(D_\text{max}$)']
         fig_v, axs_v = plt.subplots(nrows=3, ncols=2, figsize=(8, 10), dpi=200, subplot_kw=dict(projection='3d'))
         fig_v_flat, axs_v_flat = plt.subplots(nrows=3, ncols=2, figsize=(8, 10), dpi=200)
         fig_v_proj, axs_v_proj = plt.subplots(nrows=3, ncols=2, figsize=(10, 10), dpi=200)
         size = 40.0
 
-        for ax, key, metric_label in zip(axs_v.flatten(), key_list, metric_label_list):
+        for ax, key, metric_label in zip(axs_v.T.flatten(), key_list, metric_label_list):
             pc = ax.scatter(px, py, pz, c=qz[key], cmap='flare')
             fig_v.colorbar(pc, ax=ax, label=metric_label)
 
@@ -143,7 +158,7 @@ if __name__ == "__main__":
         # fig_v.tight_layout()
         fig_v.show()
 
-        for ax, key, metric_label in zip(axs_v_flat.flatten(), key_list, metric_label_list):
+        for ax, key, metric_label in zip(axs_v_flat.T.flatten(), key_list, metric_label_list):
             pc = ax.scatter(qx, qy, c=qz[key], s=size, cmap='flare')
             fig_v_flat.colorbar(pc, ax=ax, label=metric_label)
 
@@ -161,7 +176,7 @@ if __name__ == "__main__":
         fig_v_flat.show()
 
         tri = Triangulation(qx, qy)
-        for ax, key, metric_label in zip(axs_v_proj.flatten(), key_list, metric_label_list):
+        for ax, key, metric_label in zip(axs_v_proj.T.flatten(), key_list, metric_label_list):
             pc = ax.tripcolor(tri, qz[key], cmap='flare', antialiased=True)
             fig_v_proj.colorbar(pc, ax=ax, label=metric_label)
 
