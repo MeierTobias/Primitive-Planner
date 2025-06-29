@@ -82,6 +82,7 @@ def generate_launch_file(
             file.write('        <arg name="init_x"     value="{}"/>\n'.format(init_x))
             file.write('        <arg name="init_y"     value="{}"/>\n'.format(init_y))
             file.write('        <arg name="init_z"     value="0.5"/>\n')
+            file.write('        <arg name="flight_type" value="2"/>\n')
             file.write('        <arg name="target0_x"   value="{}"/>\n'.format(goal_center[0]))
             file.write('        <arg name="target0_y"   value="{}"/>\n'.format(goal_center[1]))
             file.write('        <arg name="target0_z"   value="{}"/>\n'.format(goal_center[2]))
