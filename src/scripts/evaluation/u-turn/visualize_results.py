@@ -18,6 +18,9 @@ if __name__ == "__main__":
     plot_lambda_d = True
     plot_lambda_v = True
 
+    dpi = 200
+    grid_size_3x2 = (8, 10)
+
     data_folder = os.path.join(os.path.dirname(__file__), "data")
     files = [f for f in os.listdir(data_folder)
              if f.startswith('u-turn_out_')
@@ -25,7 +28,7 @@ if __name__ == "__main__":
              and os.path.isfile(os.path.join(data_folder, f))]
     print(f"Found {len(files)} experiments.")
 
-    fig_all, axs_all = plt.subplots(nrows=3, ncols=1, figsize=(8, 10), dpi=200)
+    fig_all, axs_all = plt.subplots(nrows=3, ncols=1, figsize=grid_size_3x2, dpi=dpi)
 
     records = []
     for file in files:
@@ -81,7 +84,7 @@ if __name__ == "__main__":
 
     # lambda_d plot cosmetics
     if plot_lambda_d:
-        fig_d, axs_d = plt.subplots(nrows=3, ncols=2, figsize=(8, 10), dpi=200)
+        fig_d, axs_d = plt.subplots(nrows=3, ncols=2, figsize=grid_size_3x2, dpi=dpi)
         c = np.arange(len(df))
         for ax, key, metric_label in zip(axs_d.T.flatten(), key_list, metric_label_list):
             ax.scatter(df.index.get_level_values('lambda_d'), df[key], c=c, cmap='flare')
@@ -90,6 +93,48 @@ if __name__ == "__main__":
         fig_d.suptitle(r'U-Turn Experiment: $\lambda_d$ Evaluation')
         fig_d.tight_layout()
         fig_d.show()
+
+        fig_d_hist, axs_d_hist = plt.subplots(nrows=3, ncols=2, figsize=grid_size_3x2, dpi=dpi,
+                                              subplot_kw=dict(projection='3d'))
+        n_bins = 12
+        for ax, key, metric_label in zip(axs_d_hist.T.flatten(), key_list, metric_label_list):
+            bin_edges = np.logspace(np.log10(df[key].min()), np.log10(df[key].max()), n_bins + 1)
+            log_edges = np.log10(bin_edges)
+            log_widths = log_edges[1:] - log_edges[:-1]
+            log_centers = (log_edges[:-1] + log_edges[1:]) / 2
+            lambdas = np.sort(df.index.get_level_values('lambda_d').unique())
+            cmap = plt.get_cmap('flare')
+            colors = cmap(np.linspace(0, 1, len(lambdas)))
+
+            for l, c in zip(lambdas, colors):
+                sub_df = df.xs(l, level='lambda_d')
+                hist, bins = np.histogram(sub_df[key], bins=bin_edges, density=True)
+
+                ax.bar(log_centers, hist, zs=l, zdir='y',
+                       width=log_widths,
+                       alpha=0.9,
+                       edgecolor='none',
+                       linewidth=0,
+                       color=c,
+                       )
+
+            step = 2
+            tick_pos = log_centers[::step]
+            all_labels = [f"{10 ** c:.2g}" for c in log_centers]
+            tick_lbls = all_labels[::step]
+
+            ax.set_xticks(tick_pos)
+            ax.set_xticklabels(tick_lbls)
+            ax.set_xlabel(metric_label)
+
+            ax.set_yticks(lambdas)
+            ax.set_ylabel(r'$\lambda_d$')
+
+            ax.set_zlabel("Density")
+
+        fig_d_hist.suptitle(r'U-Turn Experiment: $\lambda_d$ Evaluation')
+        fig_d_hist.tight_layout()
+        fig_d_hist.show()
 
     # lambda plot
     if plot_lambda_v:
@@ -113,9 +158,9 @@ if __name__ == "__main__":
         df['u_coord'] = Pc.dot(u)
         df['v_coord'] = Pc.dot(v)
 
-        fig_v, axs_v = plt.subplots(nrows=3, ncols=2, figsize=(8, 10), dpi=200, subplot_kw=dict(projection='3d'))
-        fig_v_flat, axs_v_flat = plt.subplots(nrows=3, ncols=2, figsize=(8, 10), dpi=200)
-        fig_v_proj, axs_v_proj = plt.subplots(nrows=3, ncols=2, figsize=(10, 10), dpi=200)
+        fig_v, axs_v = plt.subplots(nrows=3, ncols=2, figsize=grid_size_3x2, dpi=dpi, subplot_kw=dict(projection='3d'))
+        fig_v_flat, axs_v_flat = plt.subplots(nrows=3, ncols=2, figsize=grid_size_3x2, dpi=dpi)
+        fig_v_proj, axs_v_proj = plt.subplots(nrows=3, ncols=2, figsize=(10, 10), dpi=dpi)
         size = 40.0
 
         sub_df = df.xs(fixed_lambda_d, level='lambda_d')
