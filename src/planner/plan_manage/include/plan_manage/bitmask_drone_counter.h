@@ -29,6 +29,12 @@ public:
     return isAtGoal_;
   }
 
+  bool allDronesArrived() const final override
+  {
+    ROS_ASSERT(isAtGoal_);
+    return DroneCounter::allDronesArrived();
+  }
+
   std::string getBitmask() const;
 
 private:

@@ -10,14 +10,8 @@
     <arg name="init_y"/>
     <arg name="init_z"/>
 
-    <!-- Goal region parameters -->
-    <arg name="goal_center_x" default="0.0"/>
-    <arg name="goal_center_y" default="0.0"/>
-    <arg name="goal_center_z" default="0.5"/>
-    <arg name="goal_radius" default="1.0"/>
-
     <!-- Flight path configuration -->
-    <arg name="flight_type" default="2"/>
+    <arg name="flight_type"/>
     <arg name="point_num" default="1"/>
     <arg name="target0_x" default="0.0"/>
     <arg name="target0_y" default="0.0"/>
@@ -31,13 +25,20 @@
     <arg name="sim_distributed_communication" default="false"/>
     <arg name="drone_com_r" default="15.0"/>
     <arg name="base_com_r" default="30.0"/>
+    <arg name="goal_radius" default="1.0"/>
     <arg name="launch_prefix" default=""/>
+    <arg name="lambda_l" default="20.0"/>
+    <arg name="lambda_b" default="5.0"/>
+    <arg name="lambda_d" default="1.0"/>
+    <arg name="lambda_heading_virtual" default="5.0"/>
+    <arg name="lambda_heading_neighbors" default="1.0"/>
+    <arg name="lambda_contraction" default="1.0"/>
 
     <!-- topic of your odometry such as VIO or LIO -->
     <arg name="odom_topic"/>
 
     <!-- Include core planner parameters -->
-    <include file="$(find primitive_planner)/launch/advanced_param.xml"> 
+    <include file="$(find primitive_planner)/launch/advanced_param.xml">
         <arg name="drone_id" value="$(arg drone_id)"/>
         <arg name="map_size_x_" value="$(arg map_size_x)"/>
         <arg name="map_size_y_" value="$(arg map_size_y)"/>
@@ -50,17 +51,19 @@
         <arg name="cy" value="243.44969177246094"/>
         <arg name="fx" value="387.229248046875"/>
         <arg name="fy" value="387.229248046875"/>
-        <arg name="flight_type" value="$(arg flight_type)" />
-        <arg name="point_num" value="$(arg point_num)" />
-        <arg name="point0_x" value="$(arg target0_x)" />
-        <arg name="point0_y" value="$(arg target0_y)" />
-        <arg name="point0_z" value="$(arg target0_z)" />
-        <arg name="point1_x" value="$(arg target1_x)" />
-        <arg name="point1_y" value="$(arg target1_y)" />
-        <arg name="point1_z" value="$(arg target1_z)" />
-        <arg name="point2_x" value="$(arg target2_x)" />
-        <arg name="point2_y" value="$(arg target2_y)" />
-        <arg name="point2_z" value="$(arg target2_z)" />
+        <!-- global waypoints -->
+        <!-- It generates a piecewise min-snap traj passing all waypoints -->
+        <arg name="flight_type" value="$(arg flight_type)"/>
+        <arg name="point_num" value="$(arg point_num)"/>
+        <arg name="point0_x" value="$(arg target0_x)"/>
+        <arg name="point0_y" value="$(arg target0_y)"/>
+        <arg name="point0_z" value="$(arg target0_z)"/>
+        <arg name="point1_x" value="$(arg target1_x)"/>
+        <arg name="point1_y" value="$(arg target1_y)"/>
+        <arg name="point1_z" value="$(arg target1_z)"/>
+        <arg name="point2_x" value="$(arg target2_x)"/>
+        <arg name="point2_y" value="$(arg target2_y)"/>
+        <arg name="point2_z" value="$(arg target2_z)"/>
         <arg name="max_vel" value="$(arg max_vel)"/>
         <arg name="sim_distributed_communication" value="$(arg sim_distributed_communication)"/>
         <arg name="drone_com_r" value="$(arg drone_com_r)"/>
@@ -68,6 +71,12 @@
         <arg name="total_drones" value="$(arg total_drones)"/>
         <arg name="launch_prefix" value="$(arg launch_prefix)"/>
         <arg name="goal_radius" value="$(arg goal_radius)"/>
+        <arg name="lambda_l" value="$(arg lambda_l)"/>
+        <arg name="lambda_b" value="$(arg lambda_b)"/>
+        <arg name="lambda_d" value="$(arg lambda_d)"/>
+        <arg name="lambda_heading_virtual" value="$(arg lambda_heading_virtual)"/>
+        <arg name="lambda_heading_neighbors" value="$(arg lambda_heading_neighbors)"/>
+        <arg name="lambda_contraction" value="$(arg lambda_contraction)"/>
     </include>
 
     <!-- Trajectory planner server node -->
@@ -78,7 +87,7 @@
         <remap from="~planning/yaw_cmd" to="drone_$(arg drone_id)_planning/yaw_cmd"/>
         <remap from="~heartbeat" to="/drone_$(arg drone_id)_traj_server/heartbeat"/>
         <remap from="~odom" to="/drone_$(arg drone_id)_$(arg odom_topic)"/>
-        <remap from="~stop_command" to = "/drone_$(arg drone_id)_planning/stop_command"/>
+        <remap from="~stop_command" to="/drone_$(arg drone_id)_planning/stop_command"/>
         <remap from="~planning/global_goal" to="drone_$(arg drone_id)_planning/global_goal"/>
         <remap from="~planning/select_path_end" to="drone_$(arg drone_id)_planning/select_path_end"/>
 
@@ -93,9 +102,6 @@
         <param name="init_z" value="$(arg init_z)"/>
 
         <!-- Goal region parameters -->
-        <param name="goal_center_x" value="$(arg goal_center_x)"/>
-        <param name="goal_center_y" value="$(arg goal_center_y)"/>
-        <param name="goal_center_z" value="$(arg goal_center_z)"/>
         <param name="goal_radius" value="$(arg goal_radius)"/>
     </node>
 

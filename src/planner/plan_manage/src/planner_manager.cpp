@@ -35,7 +35,7 @@ void PPPlannerManager::initPlanModules(ros::NodeHandle &nh, PlanningVisualizatio
   nh.param("manager/max_vel", max_vel_, -1.0);
   nh.param("manager/drone_id", drone_id, -1);
   nh.param("manager/swarm_clearance", swarm_clearance_, -1.0);
-  nh.param("goal_radius", goal_radius, 1.0);
+  nh.param("manager/goal_radius", goal_radius, 1.0);
   nh.param("manager/flight_type", flight_type_, 4);
 
   voxelNumX_ = int(boxX_ / voxelSize_);
@@ -254,35 +254,25 @@ vector<int> PPPlannerManager::scorePaths(const Eigen::Vector3d &start_pt,
       // calculate goal distance cost
       double goal_cost = 0;
 
-      // Check if endpoint is within the goal radius
-      double dist_to_goal = (endPoint - global_goal).norm();
-      if (dist_to_goal <= goal_radius)
+      // check if the goal is out of reach for the planned trajectory
+      if (((start_pt - global_goal).norm() > pathLengthMax_) || (rotWV.col(0).dot(global_goal - start_pt) <= 0))
       {
-        // Perfect goal match: set very low cost
-        goal_cost = 1e-6;
+        Eigen::Vector3d start_goal_vec = global_goal - start_pt;
+        goal_cost = (start_pt + pathLengthMax_ * start_goal_vec / start_goal_vec.norm() - endPoint).norm() / (2 * pathLengthMax_);
       }
       else
       {
-        // check if the goal is out of reach for the planned trajectory
-        if (((start_pt - global_goal).norm() > pathLengthMax_) || (rotWV.col(0).dot(global_goal - start_pt) <= 0))
+        double goal_dist = std::numeric_limits<double>::max();
+        for (size_t j = 0; j < pathAll_[i].size(); ++j)
         {
-          Eigen::Vector3d start_goal_vec = global_goal - start_pt;
-          goal_cost = (start_pt + pathLengthMax_ * start_goal_vec / start_goal_vec.norm() - endPoint).norm() / (2 * pathLengthMax_);
+          Eigen::Vector3d traj_pt = rotWV * pathAll_[i][j] + start_pt;
+          double dist = (traj_pt - global_goal).norm();
+          goal_dist = dist < goal_dist ? dist : goal_dist;
         }
-        else
-        {
-          double goal_dist = std::numeric_limits<double>::max();
-          for (size_t j = 0; j < pathAll_[i].size(); ++j)
-          {
-            Eigen::Vector3d traj_pt = rotWV * pathAll_[i][j] + start_pt;
-            double dist = (traj_pt - global_goal).norm();
-            goal_dist = dist < goal_dist ? dist : goal_dist;
-          }
-          goal_cost = goal_dist / (2 * pathLengthMax_);
-          // TODO: This normalization may scale to harshly since this statement only applies if we are close enough to the goal and hence the proportion compared to the other score metrics gets very small.
+        goal_cost = goal_dist / (2 * pathLengthMax_);
+        // TODO: This normalization may scale to harshly since this statement only applies if we are close enough to the goal and hence the proportion compared to the other score metrics gets very small.
 
-          // TODO: add a heading discount factor since the goal point is no longer at the end of the trajectory or calculate the actual heading of each point (not ony the end point) in advance and then select the corresponding one.
-        }
+        // TODO: add a heading discount factor since the goal point is no longer at the end of the trajectory or calculate the actual heading of each point (not ony the end point) in advance and then select the corresponding one.
       }
 
       flight_type_specific_cost = lambda_l_ * goal_cost;
@@ -708,7 +698,7 @@ bool PPPlannerManager::labelAgentCollisionPaths(const Eigen::Vector3d &start_pt,
         int indZCenter = floor((voxelZ_ - pos_v(2)) / voxelSize_);
 
         // calculate the offset time
-        // double other_cur_time = swarm_traj[i].start_time + j * 0.01; // TODO: Add this again after the time correspondences are fixed
+        double other_cur_time = swarm_traj[i].start_time + j * 0.01; // TODO: Add this again after the time correspondences are fixed
 
         // loop over the center voxel and all adjacent voxel which are inside the swarm_clearance
         for (int indX = max(x_offset, indXCenter - voxelNum_swarm_clearance_); indX <= min(indXCenter + voxelNum_swarm_clearance_, voxelNumX_ - 1); ++indX)
@@ -730,10 +720,10 @@ bool PPPlannerManager::labelAgentCollisionPaths(const Eigen::Vector3d &start_pt,
 
                 // TODO: The times of some trajectories are incorrect (i.e. the end time of id 132-179 is 0.0) and hence the commented condition below never holds. This results in a lot trajectories that are marked feasible who should be infeasible and vice versa. Since this needs more analytical work in the trajectory generation script so I removed the time constraint so now all trajectories that get to close (regardless of the time) are marked as infeasible.
 
-                // if (other_cur_time > start_time + allVelCorrespondences_[vel_id][ind][3 * k + 1] / 1000 && other_cur_time < start_time + allVelCorrespondences_[vel_id][ind][3 * k + 2] / 1000)
-                // {
-                clearPathList_[allVelCorrespondences_[vel_id][ind][3 * k]]++;
-                // }
+                if (other_cur_time > start_time + allVelCorrespondences_[vel_id][ind][3 * k + 1] / 1000 && other_cur_time < start_time + allVelCorrespondences_[vel_id][ind][3 * k + 2] / 1000)
+                {
+                  clearPathList_[allVelCorrespondences_[vel_id][ind][3 * k]]++;
+                }
               }
             }
           }
