@@ -15,6 +15,7 @@
     <arg name="sim_distributed_communication" value="true"/>
     <arg name="drone_com_r" value="15.0"/>
     <arg name="base_com_r" value="30.0"/>
+    <arg name="total_drones" value="5"/>
 
     <!-- swarm topic transmitter bridge -->
     <include file="$(find swarm_bridge)/launch/bridge_udp.launch">
@@ -46,6 +47,7 @@
         <arg name="lambda_heading_virtual" value="$(arg lambda_heading_virtual)"/>
         <arg name="lambda_heading_neighbors" value="$(arg lambda_heading_neighbors)"/>
         <arg name="lambda_contraction" value="$(arg lambda_contraction)"/>
+        <arg name="total_drones" value="$(arg total_drones)"/>
     </include>
 
     <!-- Drone 1 -->
@@ -68,6 +70,7 @@
         <arg name="lambda_heading_virtual" value="$(arg lambda_heading_virtual)"/>
         <arg name="lambda_heading_neighbors" value="$(arg lambda_heading_neighbors)"/>
         <arg name="lambda_contraction" value="$(arg lambda_contraction)"/>
+        <arg name="total_drones" value="$(arg total_drones)"/>
     </include>
 
     <!-- Drone 2 -->
@@ -90,6 +93,7 @@
         <arg name="lambda_heading_virtual" value="$(arg lambda_heading_virtual)"/>
         <arg name="lambda_heading_neighbors" value="$(arg lambda_heading_neighbors)"/>
         <arg name="lambda_contraction" value="$(arg lambda_contraction)"/>
+        <arg name="total_drones" value="$(arg total_drones)"/>
     </include>
 
     <!-- Drone 3 -->
@@ -112,6 +116,7 @@
         <arg name="lambda_heading_virtual" value="$(arg lambda_heading_virtual)"/>
         <arg name="lambda_heading_neighbors" value="$(arg lambda_heading_neighbors)"/>
         <arg name="lambda_contraction" value="$(arg lambda_contraction)"/>
+        <arg name="total_drones" value="$(arg total_drones)"/>
     </include>
 
     <!-- Drone 4 -->
@@ -134,6 +139,7 @@
         <arg name="lambda_heading_virtual" value="$(arg lambda_heading_virtual)"/>
         <arg name="lambda_heading_neighbors" value="$(arg lambda_heading_neighbors)"/>
         <arg name="lambda_contraction" value="$(arg lambda_contraction)"/>
+        <arg name="total_drones" value="$(arg total_drones)"/>
     </include>
 
 </launch>
