@@ -14,8 +14,8 @@ if __name__ == "__main__":
     matplotlib.pyplot.title(r'ABC123 vs $\mathrm{ABC123}^{123}$')
 
     fixed_lambda_d = 0.4
-    plot_overview = True
-    plot_lambda_d = True
+    plot_overview = False
+    plot_lambda_d = False
     plot_lambda_v = True
 
     dpi = 200
@@ -70,6 +70,8 @@ if __name__ == "__main__":
     key_list = ['R_g_avg', 'D_avg_avg', 'D_max_avg', 'R_g_max', 'D_avg_max', 'D_max_max', ]
     metric_label_list = [r'$\text{avg}(R_{g}$)', r'$\text{avg}(D_\text{avg}$)', r'$\text{avg}(D_\text{max}$)',
                          r'$\text{max}(R_{g}$)', r'$\text{max}(D_\text{avg}$)', r'$\text{max}(D_\text{max}$)']
+
+    selected_metrics = [0, 5]
 
     # overall plot cosmetics
     if plot_overview:
@@ -224,3 +226,44 @@ if __name__ == "__main__":
         fig_v_proj.suptitle('U-Turn Experiment: Parameter Evaluation Projected')
         fig_v_proj.tight_layout()
         fig_v_proj.show()
+
+        for i in selected_metrics:
+            fig_v_proj_selected, ax_v_proj_selected = plt.subplots(dpi=dpi)
+
+            pc = ax_v_proj_selected.tripcolor(tri, sub_df[key_list[i]], cmap='flare', antialiased=True)
+            fig_v_proj_selected.colorbar(pc, ax=ax_v_proj_selected, label=metric_label_list[i])
+
+            ax_v_proj_selected.annotate(r'$\lambda_\text{v} = 0.1$', xy=(-0.12, 0.04), xytext=(1e-2, 1e-2),
+                                        textcoords='offset points', ha='center', va='bottom',
+                                        fontsize=10, rotation=60)
+
+            ax_v_proj_selected.annotate(r'$\lambda_\text{v} = 0.4$', xy=(0.21, -0.14), xytext=(1e-2, 1e-2),
+                                        textcoords='offset points', ha='left', va='center',
+                                        fontsize=10, rotation=-30)
+
+            ax_v_proj_selected.annotate(r'$\lambda_\text{nh} = 0.1$', xy=(0.12, 0.04), xytext=(1e-2, 1e-2),
+                                        textcoords='offset points', ha='center', va='bottom',
+                                        fontsize=10, rotation=-60)
+
+            ax_v_proj_selected.annotate(r'$\lambda_\text{nh} = 0.4$', xy=(-0.21, -0.14), xytext=(1e-2, 1e-2),
+                                        textcoords='offset points', ha='right', va='center',
+                                        fontsize=10, rotation=30)
+
+            ax_v_proj_selected.annotate(r'$\lambda_\text{c} = 0.1$', xy=(0.0, -0.13), xytext=(1e-2, 1e-2),
+                                        textcoords='offset points', ha='center', va='top',
+                                        fontsize=10)
+
+            ax_v_proj_selected.annotate(r'$\lambda_\text{c} = 0.4$', xy=(0.0, 0.25), xytext=(1e-2, 1e-2),
+                                        textcoords='offset points', ha='center', va='bottom',
+                                        fontsize=10)
+
+            ax_v_proj_selected.set_xlim([-0.3, 0.3])
+            ax_v_proj_selected.set_ylim([-0.19, 0.3])
+            ax_v_proj_selected.set_aspect('equal', 'box')
+            
+            ax_v_proj_selected.set_xticks([])
+            ax_v_proj_selected.set_yticks([])
+
+            fig_v_proj_selected.suptitle('U-Turn Experiment: Parameter Evaluation Projected')
+            fig_v_proj_selected.tight_layout()
+            fig_v_proj_selected.show()
