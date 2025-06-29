@@ -730,7 +730,7 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
   case WAIT_TARGET: {
 
     // state transition condition
-    if (have_target_ && have_trigger_ && (flight_type_ == 4 || drone_counter_.allDronesArrived()) && (flight_type_ != 4 || virtual_vel_.norm() > 1e-3))
+    if (have_target_ && have_trigger_ && (flight_type_ != 3 || drone_counter_.allDronesArrived()) && (flight_type_ != 4 || virtual_vel_.norm() > 1e-3))
     {
       drone_counter_.unsetReachedGoal();
       changeFSMExecState(GEN_NEW_TRAJ, "FSM");
@@ -824,6 +824,7 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
   }
 
   case APPROACH_GOAL: {
+    ROS_ASSERT(flight_type_ != 4); // There is no goal to approach in mode 4
 
     pubPolyTraj(odom_pos_, odom_vel_, global_goal_, 1.0);
 
@@ -964,7 +965,7 @@ void PPReplanFSM::printFSMExecState()
   std::string msg = "[FSM] Drone " + std::to_string(planner_manager_->drone_id) + " State: " + state_str[int(exec_state_)];
 
   // some warnings
-  if (!have_odom_ || !have_target_ || !have_trigger_ || !drone_counter_.allDronesArrived())
+  if (!have_odom_ || !have_target_ || !have_trigger_ || (exec_state_ == WAIT_TARGET && !drone_counter_.allDronesArrived()))
   {
     msg += ". Waiting for ";
   }
@@ -980,7 +981,7 @@ void PPReplanFSM::printFSMExecState()
   {
     msg += "trigger,";
   }
-  if (!drone_counter_.allDronesArrived())
+  if (exec_state_ == WAIT_TARGET && !drone_counter_.allDronesArrived())
   {
     char buffer[25];
     if (have_trigger_ && have_target_ && have_odom_)
