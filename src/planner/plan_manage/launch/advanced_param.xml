@@ -98,6 +98,6 @@
         <param name="manager/max_vel" value="$(arg max_vel)"/>
         <!-- Drone radius r = 0.12 -->
         <param name="manager/swarm_clearance" value="0.4" type="double"/>
-        <param name="goal_radius" value="$(arg goal_radius)"/>
+	<param name="manager/goal_radius" value="$(arg goal_radius)"/>
     </node>
 </launch>
