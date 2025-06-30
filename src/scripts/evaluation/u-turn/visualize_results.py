@@ -14,8 +14,8 @@ if __name__ == "__main__":
     matplotlib.pyplot.title(r'ABC123 vs $\mathrm{ABC123}^{123}$')
 
     fixed_lambda_d = 0.4
-    plot_overview = False
-    plot_lambda_d = False
+    plot_overview = True
+    plot_lambda_d = True
     plot_lambda_v = True
 
     dpi = 200
@@ -95,6 +95,14 @@ if __name__ == "__main__":
         fig_d.suptitle(r'U-Turn Experiment: $\lambda_d$ Evaluation')
         fig_d.tight_layout()
         fig_d.show()
+
+        for i in selected_metrics:
+            fig_d_selected, ax_d_selected = plt.subplots(dpi=dpi)
+            ax_d_selected.scatter(df.index.get_level_values('lambda_d'), df[key_list[i]], c=c, cmap='flare')
+            ax_d_selected.set_xlabel(r'$\lambda_d$')
+            ax_d_selected.set_ylabel(metric_label_list[i])
+            fig_d_selected.tight_layout()
+            fig_d_selected.show()
 
         fig_d_hist, axs_d_hist = plt.subplots(nrows=3, ncols=2, figsize=grid_size_3x2, dpi=dpi,
                                               subplot_kw=dict(projection='3d'))
@@ -263,7 +271,8 @@ if __name__ == "__main__":
             
             ax_v_proj_selected.set_xticks([])
             ax_v_proj_selected.set_yticks([])
+            ax_v_proj_selected.set_facecolor("white")
 
-            fig_v_proj_selected.suptitle('U-Turn Experiment: Parameter Evaluation Projected')
+            # fig_v_proj_selected.suptitle('U-Turn Experiment: Parameter Evaluation Projected')
             fig_v_proj_selected.tight_layout()
             fig_v_proj_selected.show()
