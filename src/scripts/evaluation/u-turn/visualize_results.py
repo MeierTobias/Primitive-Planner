@@ -72,6 +72,7 @@ if __name__ == "__main__":
                          r'$\text{max}(R_{g}$)', r'$\text{max}(D_\text{avg}$)', r'$\text{max}(D_\text{max}$)']
 
     selected_metrics = [0, 5]
+    selected_figsize = (5, 4)
 
     # overall plot cosmetics
     if plot_overview:
@@ -97,7 +98,7 @@ if __name__ == "__main__":
         fig_d.show()
 
         for i in selected_metrics:
-            fig_d_selected, ax_d_selected = plt.subplots(dpi=dpi)
+            fig_d_selected, ax_d_selected = plt.subplots(figsize=selected_figsize, dpi=dpi)
             ax_d_selected.scatter(df.index.get_level_values('lambda_d'), df[key_list[i]], c=c, cmap='flare')
             ax_d_selected.set_xlabel(r'$\lambda_d$')
             ax_d_selected.set_ylabel(metric_label_list[i])
@@ -236,34 +237,34 @@ if __name__ == "__main__":
         fig_v_proj.show()
 
         for i in selected_metrics:
-            fig_v_proj_selected, ax_v_proj_selected = plt.subplots(dpi=dpi)
+            fig_v_proj_selected, ax_v_proj_selected = plt.subplots(figsize=selected_figsize, dpi=dpi)
 
             pc = ax_v_proj_selected.tripcolor(tri, sub_df[key_list[i]], cmap='flare', antialiased=True)
             fig_v_proj_selected.colorbar(pc, ax=ax_v_proj_selected, label=metric_label_list[i])
 
             ax_v_proj_selected.annotate(r'$\lambda_\text{v} = 0.1$', xy=(-0.12, 0.04), xytext=(1e-2, 1e-2),
                                         textcoords='offset points', ha='center', va='bottom',
-                                        fontsize=10, rotation=60)
+                                        fontsize=12, rotation=60)
 
             ax_v_proj_selected.annotate(r'$\lambda_\text{v} = 0.4$', xy=(0.21, -0.14), xytext=(1e-2, 1e-2),
                                         textcoords='offset points', ha='left', va='center',
-                                        fontsize=10, rotation=-30)
+                                        fontsize=12, rotation=-30)
 
             ax_v_proj_selected.annotate(r'$\lambda_\text{nh} = 0.1$', xy=(0.12, 0.04), xytext=(1e-2, 1e-2),
                                         textcoords='offset points', ha='center', va='bottom',
-                                        fontsize=10, rotation=-60)
+                                        fontsize=12, rotation=-60)
 
             ax_v_proj_selected.annotate(r'$\lambda_\text{nh} = 0.4$', xy=(-0.21, -0.14), xytext=(1e-2, 1e-2),
                                         textcoords='offset points', ha='right', va='center',
-                                        fontsize=10, rotation=30)
+                                        fontsize=12, rotation=30)
 
             ax_v_proj_selected.annotate(r'$\lambda_\text{c} = 0.1$', xy=(0.0, -0.13), xytext=(1e-2, 1e-2),
                                         textcoords='offset points', ha='center', va='top',
-                                        fontsize=10)
+                                        fontsize=12)
 
             ax_v_proj_selected.annotate(r'$\lambda_\text{c} = 0.4$', xy=(0.0, 0.25), xytext=(1e-2, 1e-2),
                                         textcoords='offset points', ha='center', va='bottom',
-                                        fontsize=10)
+                                        fontsize=12)
 
             ax_v_proj_selected.set_xlim([-0.3, 0.3])
             ax_v_proj_selected.set_ylim([-0.19, 0.3])
