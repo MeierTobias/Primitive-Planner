@@ -63,7 +63,8 @@ private:
   ros::Timer exec_timer_;
   ros::Subscriber trigger_sub_, odom_sub_, mandatory_stop_sub_, select_path_end_sub_, cmd_sub_, broadcast_primitive_sub_, waypoint_sub_, virtual_vel_sub_;
 
-  ros::Publisher path_id_pub_, stop_pub_, heartbeat_pub_, global_pub_, broadcast_primitive_pub_, poly_pub_, yaw_cmd_pub_;
+  ros::Publisher path_id_pub_, stop_pub_, heartbeat_pub_, global_pub_, broadcast_primitive_pub_, poly_pub_, yaw_cmd_pub_, publish_goals_reached_pub_;
+  bool publish_goals_reached_ = false;
 
   int flight_type_; // 1 manual select, 2 hard code, 3 decentralized global goal
 

@@ -1,0 +1,14 @@
+rule:
+    output: "data/points.bag"
+    shell: """ python gen_input.py {output} """
+
+rule:
+    input:
+        launchfile="goal_radius.launch",
+        inputbag="data/points.bag",
+    output: "data/goal_radius_{radius}.bag"
+    shell: """
+        roslaunch {input.launchfile} goal_radius:={wildcards.radius} &
+        rosbag record /drone_0_primitive_planner_node/planning/goals_reached -O {output} &
+        sleep 10 && rosbag play {input.inputbag} && sleep 20 && kill %1 && kill %2
+    """

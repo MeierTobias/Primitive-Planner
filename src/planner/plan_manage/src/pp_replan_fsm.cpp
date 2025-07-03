@@ -4,6 +4,7 @@
 #include <cmath>
 #include <ros/assert.h>
 #include <vector>
+#include <std_msgs/Int32.h>
 
 #define USE_SHARED_MEMORY false
 
@@ -103,6 +104,11 @@ void PPReplanFSM::init(ros::NodeHandle &nh)
   global_pub_ = nh.advertise<std_msgs::Float64MultiArray>("planning/global_goal", 100);
   poly_pub_ = nh.advertise<traj_utils::Polynomial>("planning/polynomial_traj", 100);
   yaw_cmd_pub_ = nh.advertise<std_msgs::Float64>("planning/yaw_cmd", 100);
+
+  if (planner_manager_->drone_id == 0)
+  {
+    publish_goals_reached_pub_ = nh.advertise<std_msgs::Int32>("planning/goals_reached", 100);
+  }
 
   // Wait 3s --- ensure to save 30 frames pointCloud
   ROS_INFO("Wait for 3 seconds.");
@@ -733,6 +739,12 @@ void PPReplanFSM::execFSMCallback(const ros::TimerEvent &e)
     if (have_target_ && have_trigger_ && (flight_type_ == 4 || drone_counter_.allDronesArrived()) && (flight_type_ != 4 || virtual_vel_.norm() > 1e-3))
     {
       drone_counter_.unsetReachedGoal();
+      if (planner_manager_->drone_id == 0)
+      {
+        std_msgs::Int32 msg;
+        msg.data = goal_tag_;
+        publish_goals_reached_pub_.publish(msg);
+      }
       changeFSMExecState(GEN_NEW_TRAJ, "FSM");
     }
     else
