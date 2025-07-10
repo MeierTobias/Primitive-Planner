@@ -11,4 +11,5 @@ rule:
         roslaunch {input.launchfile} goal_radius:={wildcards.radius} &
         rosbag record /drone_0_primitive_planner_node/planning/goals_reached -O {output} &
         sleep 10 && rosbag play {input.inputbag} && sleep 20 && kill %1 && kill %2
+	wait
     """
