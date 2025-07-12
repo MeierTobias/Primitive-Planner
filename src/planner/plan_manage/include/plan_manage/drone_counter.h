@@ -18,7 +18,7 @@ public:
   virtual void setReachedGoal(int goal_tag) = 0;
   virtual void unsetReachedGoal() = 0;
 
-  bool allDronesArrived() const
+  virtual bool allDronesArrived() const
   {
     return drones_at_goal >= drones_total;
   }
