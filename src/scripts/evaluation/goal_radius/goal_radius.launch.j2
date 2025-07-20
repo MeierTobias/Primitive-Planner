@@ -1,5 +1,6 @@
 <launch>
     <arg name="goal_radius"/>
+    <arg name="swarm_clearance"/>
 
     <arg name="lambda_l" value="0.4"/>
     <arg name="lambda_b" value="0"/>
@@ -50,6 +51,7 @@
         <arg name="lambda_contraction" value="$(arg lambda_contraction)"/>
         <arg name="total_drones" value="{{ num_drones }}"/>
         <arg name="goal_radius" value="$(arg goal_radius)"/>
+        <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     {% endfor %}
 </launch>

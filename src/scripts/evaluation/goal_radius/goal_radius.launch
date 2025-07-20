@@ -1,5 +1,6 @@
 <launch>
     <arg name="goal_radius"/>
+    <arg name="swarm_clearance"/>
 
     <arg name="lambda_l" value="0.4"/>
     <arg name="lambda_b" value="0"/>
@@ -50,6 +51,7 @@
         <arg name="lambda_contraction" value="$(arg lambda_contraction)"/>
         <arg name="total_drones" value="20"/>
         <arg name="goal_radius" value="$(arg goal_radius)"/>
+        <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     
     <!-- Drone 1 -->
@@ -74,6 +76,7 @@
         <arg name="lambda_contraction" value="$(arg lambda_contraction)"/>
         <arg name="total_drones" value="20"/>
         <arg name="goal_radius" value="$(arg goal_radius)"/>
+        <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     
     <!-- Drone 2 -->
@@ -98,6 +101,7 @@
         <arg name="lambda_contraction" value="$(arg lambda_contraction)"/>
         <arg name="total_drones" value="20"/>
         <arg name="goal_radius" value="$(arg goal_radius)"/>
+        <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     
     <!-- Drone 3 -->
@@ -122,6 +126,7 @@
         <arg name="lambda_contraction" value="$(arg lambda_contraction)"/>
         <arg name="total_drones" value="20"/>
         <arg name="goal_radius" value="$(arg goal_radius)"/>
+        <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     
     <!-- Drone 4 -->
@@ -146,6 +151,7 @@
         <arg name="lambda_contraction" value="$(arg lambda_contraction)"/>
         <arg name="total_drones" value="20"/>
         <arg name="goal_radius" value="$(arg goal_radius)"/>
+        <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     
     <!-- Drone 5 -->
@@ -170,6 +176,7 @@
         <arg name="lambda_contraction" value="$(arg lambda_contraction)"/>
         <arg name="total_drones" value="20"/>
         <arg name="goal_radius" value="$(arg goal_radius)"/>
+        <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     
     <!-- Drone 6 -->
@@ -194,6 +201,7 @@
         <arg name="lambda_contraction" value="$(arg lambda_contraction)"/>
         <arg name="total_drones" value="20"/>
         <arg name="goal_radius" value="$(arg goal_radius)"/>
+        <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     
     <!-- Drone 7 -->
@@ -218,6 +226,7 @@
         <arg name="lambda_contraction" value="$(arg lambda_contraction)"/>
         <arg name="total_drones" value="20"/>
         <arg name="goal_radius" value="$(arg goal_radius)"/>
+        <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     
     <!-- Drone 8 -->
@@ -242,6 +251,7 @@
         <arg name="lambda_contraction" value="$(arg lambda_contraction)"/>
         <arg name="total_drones" value="20"/>
         <arg name="goal_radius" value="$(arg goal_radius)"/>
+        <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     
     <!-- Drone 9 -->
@@ -266,6 +276,7 @@
         <arg name="lambda_contraction" value="$(arg lambda_contraction)"/>
         <arg name="total_drones" value="20"/>
         <arg name="goal_radius" value="$(arg goal_radius)"/>
+        <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     
     <!-- Drone 10 -->
@@ -290,6 +301,7 @@
         <arg name="lambda_contraction" value="$(arg lambda_contraction)"/>
         <arg name="total_drones" value="20"/>
         <arg name="goal_radius" value="$(arg goal_radius)"/>
+        <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     
     <!-- Drone 11 -->
@@ -314,6 +326,7 @@
         <arg name="lambda_contraction" value="$(arg lambda_contraction)"/>
         <arg name="total_drones" value="20"/>
         <arg name="goal_radius" value="$(arg goal_radius)"/>
+        <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     
     <!-- Drone 12 -->
@@ -338,6 +351,7 @@
         <arg name="lambda_contraction" value="$(arg lambda_contraction)"/>
         <arg name="total_drones" value="20"/>
         <arg name="goal_radius" value="$(arg goal_radius)"/>
+        <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     
     <!-- Drone 13 -->
@@ -362,6 +376,7 @@
         <arg name="lambda_contraction" value="$(arg lambda_contraction)"/>
         <arg name="total_drones" value="20"/>
         <arg name="goal_radius" value="$(arg goal_radius)"/>
+        <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     
     <!-- Drone 14 -->
@@ -386,6 +401,7 @@
         <arg name="lambda_contraction" value="$(arg lambda_contraction)"/>
         <arg name="total_drones" value="20"/>
         <arg name="goal_radius" value="$(arg goal_radius)"/>
+        <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     
     <!-- Drone 15 -->
@@ -410,6 +426,7 @@
         <arg name="lambda_contraction" value="$(arg lambda_contraction)"/>
         <arg name="total_drones" value="20"/>
         <arg name="goal_radius" value="$(arg goal_radius)"/>
+        <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     
     <!-- Drone 16 -->
@@ -434,6 +451,7 @@
         <arg name="lambda_contraction" value="$(arg lambda_contraction)"/>
         <arg name="total_drones" value="20"/>
         <arg name="goal_radius" value="$(arg goal_radius)"/>
+        <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     
     <!-- Drone 17 -->
@@ -458,6 +476,7 @@
         <arg name="lambda_contraction" value="$(arg lambda_contraction)"/>
         <arg name="total_drones" value="20"/>
         <arg name="goal_radius" value="$(arg goal_radius)"/>
+        <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     
     <!-- Drone 18 -->
@@ -482,6 +501,7 @@
         <arg name="lambda_contraction" value="$(arg lambda_contraction)"/>
         <arg name="total_drones" value="20"/>
         <arg name="goal_radius" value="$(arg goal_radius)"/>
+        <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     
     <!-- Drone 19 -->
@@ -506,6 +526,7 @@
         <arg name="lambda_contraction" value="$(arg lambda_contraction)"/>
         <arg name="total_drones" value="20"/>
         <arg name="goal_radius" value="$(arg goal_radius)"/>
+        <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     
 </launch>

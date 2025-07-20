@@ -35,6 +35,7 @@
     <arg name="lambda_heading_virtual" default="5.0"/>
     <arg name="lambda_heading_neighbors" default="1.0"/>
     <arg name="lambda_contraction" default="1.0"/>
+    <arg name="swarm_clearance" default="0.2"/>
 
     <!-- main node -->
     <node pkg="primitive_planner" name="drone_$(arg drone_id)_primitive_planner_node" type="primitive_planner_node" output="screen" launch-prefix="$(arg launch_prefix)">
@@ -97,7 +98,7 @@
         <param name="manager/map_size_z" value="$(arg map_size_z_)"/>
         <param name="manager/max_vel" value="$(arg max_vel)"/>
         <!-- Drone radius r = 0.12 -->
-        <param name="manager/swarm_clearance" value="0.4" type="double"/>
+	<param name="manager/swarm_clearance" value="$(arg swarm_clearance)" type="double"/>
         <param name="manager/goal_radius" value="$(arg goal_radius)"/>
     </node>
 </launch>
