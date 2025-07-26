@@ -26,9 +26,7 @@ def generate_teleop_heading_launch_file(
 
         # RViz configuration
         file.write(
-            '    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find primitive_planner)/launch/{}.rviz" required="true" />\n'.format(
-                "verbose" if num_drones <= 40 else "drone_1000"
-            )
+            '    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find primitive_planner)/launch/teleop.rviz" required="true" />\n'
         )
         file.write("\n")
 
@@ -52,7 +50,9 @@ def generate_teleop_heading_launch_file(
                 '    <include file="$(find primitive_planner)/launch/run_in_sim.xml">\n'
             )
             file.write('        <arg name="drone_id" value="{}"/>\n'.format(i))
-            file.write('        <arg name="total_drones" value="{}"/>\n'.format(num_drones))
+            file.write(
+                '        <arg name="total_drones" value="{}"/>\n'.format(num_drones)
+            )
             file.write('        <arg name="init_x" value="{}"/>\n'.format(init_x))
             file.write('        <arg name="init_y" value="{}"/>\n'.format(init_y[i]))
             file.write('        <arg name="init_z" value="1.0"/>\n')
