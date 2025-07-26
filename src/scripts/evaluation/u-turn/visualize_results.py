@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
+import pandas as pd
 from matplotlib.tri import Triangulation
 
 if __name__ == "__main__":
@@ -17,41 +18,35 @@ if __name__ == "__main__":
     plot_lambda_d = True
     plot_lambda_v = True
 
-    if plot_lambda_v:
-        b_1 = np.array([0.1, 0.4, 0.1])
-        b_2 = np.array([0.4, 0.1, 0.1])
-        b_3 = np.array([0.1, 0.1, 0.4])
-        v_1 = b_2 - b_1
-        v_2 = b_3 - b_1
-        n = np.cross(v_1, v_2)
-        n /= np.linalg.norm(n)
-        u = v_1 / np.linalg.norm(v_1)
-        v = np.cross(n, u)
-        px, py, pz, qx, qy = [], [], [], [], []
-        qz = {'R_g_avg': [],
-              'D_avg_avg': [],
-              'D_max_avg': [],
-              'R_g_max': [],
-              'D_avg_max': [],
-              'D_max_max': []}
-
-
-        def projector(p):
-            p_c = p - np.array([0.2, 0.2, 0.2])
-            u_coord = np.dot(p_c, u)
-            v_coord = np.dot(p_c, v)
-            return np.array([u_coord, v_coord])
+    dpi = 200
+    grid_size_3x2 = (8, 10)
 
     data_folder = os.path.join(os.path.dirname(__file__), "data")
     files = [f for f in os.listdir(data_folder)
              if f.startswith('u-turn_out_')
              and f.endswith('_post.npz')
              and os.path.isfile(os.path.join(data_folder, f))]
+    print(f"Found {len(files)} experiments.")
 
-    fig_all, axs_all = plt.subplots(nrows=3, ncols=1, figsize=(8, 10), dpi=200)
-    fig_d, axs_d = plt.subplots(nrows=3, ncols=2, figsize=(8, 10), dpi=200)
+    fig_all, axs_all = plt.subplots(nrows=3, ncols=1, figsize=grid_size_3x2, dpi=dpi)
+
+    records = []
     for file in files:
+        # load experiment data
         data = np.load(os.path.join(data_folder, file))
+        l_d, l_hv, l_hn, l_c = [float(ps) for ps in file[11:-9].split('_')]
+        records.append({
+            'lambda_d': l_d,
+            'lambda_heading_virtual': l_hv,
+            'lambda_heading_neighbors': l_hn,
+            'lambda_contraction': l_c,
+            'R_g_avg': float(data['R_g_avg']),
+            'D_avg_avg': float(data['D_avg_avg']),
+            'D_max_avg': float(data['D_max_avg']),
+            'R_g_max': float(data['R_g_max']),
+            'D_avg_max': float(data['D_avg_max']),
+            'D_max_max': float(data['D_max_max'])
+        })
 
         # plot overview
         if plot_overview:
@@ -60,39 +55,24 @@ if __name__ == "__main__":
             axs_all[1].plot(t, data['D_avg'])
             axs_all[2].plot(t, data['D_max'])
 
-        # get parameters
-        params = dict(zip(['lambda_d', 'lambda_heading_virtual', 'lambda_heading_neighbors', 'lambda_contraction'],
-                          [float(ps) for ps in file[11:-9].split('_')]))
-
-        # lambda_d scatter plot
-        if plot_lambda_d:
-            axs_d[0, 0].scatter(params['lambda_d'], data['R_g_avg'])
-            axs_d[1, 0].scatter(params['lambda_d'], data['D_avg_avg'])
-            axs_d[2, 0].scatter(params['lambda_d'], data['D_max_avg'])
-            axs_d[0, 1].scatter(params['lambda_d'], data['R_g_max'])
-            axs_d[1, 1].scatter(params['lambda_d'], data['D_avg_max'])
-            axs_d[2, 1].scatter(params['lambda_d'], data['D_max_max'])
-
-        # 3d scatter
-        if plot_lambda_v:
-            if abs(params['lambda_d'] - fixed_lambda_d) <= 1e-6:
-                p = np.array([params['lambda_heading_virtual'],
-                              params['lambda_heading_neighbors'],
-                              params['lambda_contraction']])
-                px.append(p[0])
-                py.append(p[1])
-                pz.append(p[2])
-                q = projector(p)
-                qx.append(q[0])
-                qy.append(q[1])
-                qz['R_g_avg'].append(data['R_g_avg'])
-                qz['D_avg_avg'].append(data['D_avg_avg'])
-                qz['D_max_avg'].append(data['D_max_avg'])
-                qz['R_g_max'].append(data['R_g_max'])
-                qz['D_avg_max'].append(data['D_avg_max'])
-                qz['D_max_max'].append(data['D_max_max'])
-
         data.close()
+
+    # prepare data index
+    df = pd.DataFrame.from_records(records)
+    df = df.set_index([
+        'lambda_d',
+        'lambda_heading_virtual',
+        'lambda_heading_neighbors',
+        'lambda_contraction'
+    ])
+
+    # metric list and lables
+    key_list = ['R_g_avg', 'D_avg_avg', 'D_max_avg', 'R_g_max', 'D_avg_max', 'D_max_max', ]
+    metric_label_list = [r'$\text{avg}(R_{g}$)', r'$\text{avg}(D_\text{avg}$)', r'$\text{avg}(D_\text{max}$)',
+                         r'$\text{max}(R_{g}$)', r'$\text{max}(D_\text{avg}$)', r'$\text{max}(D_\text{max}$)']
+
+    selected_metrics = [0, 5]
+    selected_figsize = (5, 4)
 
     # overall plot cosmetics
     if plot_overview:
@@ -107,30 +87,101 @@ if __name__ == "__main__":
 
     # lambda_d plot cosmetics
     if plot_lambda_d:
-        axs_d[0, 0].set_ylabel(r'$\text{avg}(R_{g}$)')
-        axs_d[1, 0].set_ylabel(r'$\text{avg}(D_\text{avg}$)')
-        axs_d[2, 0].set_ylabel(r'$\text{avg}(D_\text{max}$)')
-        axs_d[0, 1].set_ylabel(r'$\text{max}(R_{g}$)')
-        axs_d[1, 1].set_ylabel(r'$\text{max}(D_\text{avg}$)')
-        axs_d[2, 1].set_ylabel(r'$\text{max}(D_\text{max}$)')
-        for ax in axs_d.flatten():
+        fig_d, axs_d = plt.subplots(nrows=3, ncols=2, figsize=grid_size_3x2, dpi=dpi)
+        c = np.arange(len(df))
+        for ax, key, metric_label in zip(axs_d.T.flatten(), key_list, metric_label_list):
+            ax.scatter(df.index.get_level_values('lambda_d'), df[key], c=c, cmap='flare')
             ax.set_xlabel(r'$\lambda_d$')
+            ax.set_ylabel(metric_label)
         fig_d.suptitle(r'U-Turn Experiment: $\lambda_d$ Evaluation')
         fig_d.tight_layout()
         fig_d.show()
 
+        for i in selected_metrics:
+            fig_d_selected, ax_d_selected = plt.subplots(figsize=selected_figsize, dpi=dpi)
+            ax_d_selected.scatter(df.index.get_level_values('lambda_d'), df[key_list[i]], c=c, cmap='flare')
+            ax_d_selected.set_xlabel(r'$\lambda_d$')
+            ax_d_selected.set_ylabel(metric_label_list[i])
+            fig_d_selected.tight_layout()
+            fig_d_selected.show()
+
+        fig_d_hist, axs_d_hist = plt.subplots(nrows=3, ncols=2, figsize=grid_size_3x2, dpi=dpi,
+                                              subplot_kw=dict(projection='3d'))
+        n_bins = 12
+        for ax, key, metric_label in zip(axs_d_hist.T.flatten(), key_list, metric_label_list):
+            bin_edges = np.logspace(np.log10(df[key].min()), np.log10(df[key].max()), n_bins + 1)
+            log_edges = np.log10(bin_edges)
+            log_widths = log_edges[1:] - log_edges[:-1]
+            log_centers = (log_edges[:-1] + log_edges[1:]) / 2
+            lambdas = np.sort(df.index.get_level_values('lambda_d').unique())
+            cmap = plt.get_cmap('flare')
+            colors = cmap(np.linspace(0, 1, len(lambdas)))
+
+            for l, c in zip(lambdas, colors):
+                sub_df = df.xs(l, level='lambda_d')
+                hist, bins = np.histogram(sub_df[key], bins=bin_edges, density=True)
+
+                ax.bar(log_centers, hist, zs=l, zdir='y',
+                       width=log_widths,
+                       alpha=0.9,
+                       edgecolor='none',
+                       linewidth=0,
+                       color=c,
+                       )
+
+            step = 2
+            tick_pos = log_centers[::step]
+            all_labels = [f"{10 ** c:.2g}" for c in log_centers]
+            tick_lbls = all_labels[::step]
+
+            ax.set_xticks(tick_pos)
+            ax.set_xticklabels(tick_lbls)
+            ax.set_xlabel(metric_label)
+
+            ax.set_yticks(lambdas)
+            ax.set_ylabel(r'$\lambda_d$')
+
+            ax.set_zlabel("Density")
+
+        fig_d_hist.suptitle(r'U-Turn Experiment: $\lambda_d$ Evaluation')
+        fig_d_hist.tight_layout()
+        fig_d_hist.show()
+
     # lambda plot
     if plot_lambda_v:
-        key_list = ['R_g_avg', 'D_avg_avg', 'D_max_avg', 'R_g_max', 'D_avg_max', 'D_max_max', ]
-        metric_label_list = [r'$\text{avg}(R_{g}$)', r'$\text{avg}(D_\text{avg}$)', r'$\text{avg}(D_\text{max}$)',
-                             r'$\text{max}(R_{g}$)', r'$\text{max}(D_\text{avg}$)', r'$\text{max}(D_\text{max}$)']
-        fig_v, axs_v = plt.subplots(nrows=3, ncols=2, figsize=(8, 10), dpi=200, subplot_kw=dict(projection='3d'))
-        fig_v_flat, axs_v_flat = plt.subplots(nrows=3, ncols=2, figsize=(8, 10), dpi=200)
-        fig_v_proj, axs_v_proj = plt.subplots(nrows=3, ncols=2, figsize=(10, 10), dpi=200)
+        b_1 = np.array([0.1, 0.4, 0.1])
+        b_2 = np.array([0.4, 0.1, 0.1])
+        b_3 = np.array([0.1, 0.1, 0.4])
+        v_1 = b_2 - b_1
+        v_2 = b_3 - b_1
+        n = np.cross(v_1, v_2)
+        n /= np.linalg.norm(n)
+        u = v_1 / np.linalg.norm(v_1)
+        v = np.cross(n, u)
+        center = np.array([0.2, 0.2, 0.2])
+
+        P = np.vstack([
+            df.index.get_level_values('lambda_heading_virtual'),
+            df.index.get_level_values('lambda_heading_neighbors'),
+            df.index.get_level_values('lambda_contraction'),
+        ]).T
+        Pc = P - center
+        df['u_coord'] = Pc.dot(u)
+        df['v_coord'] = Pc.dot(v)
+
+        fig_v, axs_v = plt.subplots(nrows=3, ncols=2, figsize=grid_size_3x2, dpi=dpi, subplot_kw=dict(projection='3d'))
+        fig_v_flat, axs_v_flat = plt.subplots(nrows=3, ncols=2, figsize=grid_size_3x2, dpi=dpi)
+        fig_v_proj, axs_v_proj = plt.subplots(nrows=3, ncols=2, figsize=(10, 10), dpi=dpi)
         size = 40.0
 
-        for ax, key, metric_label in zip(axs_v.flatten(), key_list, metric_label_list):
-            pc = ax.scatter(px, py, pz, c=qz[key], cmap='flare')
+        sub_df = df.xs(fixed_lambda_d, level='lambda_d')
+
+        for ax, key, metric_label in zip(axs_v.T.flatten(), key_list, metric_label_list):
+            pc = ax.scatter(sub_df.index.get_level_values('lambda_heading_virtual'),
+                            sub_df.index.get_level_values('lambda_heading_neighbors'),
+                            sub_df.index.get_level_values('lambda_contraction'),
+                            c=sub_df[key],
+                            cmap='flare')
             fig_v.colorbar(pc, ax=ax, label=metric_label)
 
             ax.set_facecolor("white")
@@ -143,11 +194,15 @@ if __name__ == "__main__":
         # fig_v.tight_layout()
         fig_v.show()
 
-        for ax, key, metric_label in zip(axs_v_flat.flatten(), key_list, metric_label_list):
-            pc = ax.scatter(qx, qy, c=qz[key], s=size, cmap='flare')
+        for ax, key, metric_label in zip(axs_v_flat.T.flatten(), key_list, metric_label_list):
+            pc = ax.scatter(sub_df['u_coord'], sub_df['v_coord'], c=sub_df[key], s=size, cmap='flare')
             fig_v_flat.colorbar(pc, ax=ax, label=metric_label)
 
-            for x, y, z, u, v in zip(px, py, pz, qx, qy):
+            for x, y, z, u, v in zip(sub_df.index.get_level_values('lambda_heading_virtual'),
+                                     sub_df.index.get_level_values('lambda_heading_neighbors'),
+                                     sub_df.index.get_level_values('lambda_contraction'),
+                                     sub_df['u_coord'],
+                                     sub_df['v_coord']):
                 label = f"({x:.1f}; {y:.1f}; {z:.1f})"
                 ax.annotate(label, xy=(u, v), xytext=(1e-2, 1e-2),
                             textcoords='offset points', ha='center', va='bottom',
@@ -160,12 +215,16 @@ if __name__ == "__main__":
         fig_v_flat.tight_layout()
         fig_v_flat.show()
 
-        tri = Triangulation(qx, qy)
-        for ax, key, metric_label in zip(axs_v_proj.flatten(), key_list, metric_label_list):
-            pc = ax.tripcolor(tri, qz[key], cmap='flare', antialiased=True)
+        tri = Triangulation(sub_df['u_coord'], sub_df['v_coord'])
+        for ax, key, metric_label in zip(axs_v_proj.T.flatten(), key_list, metric_label_list):
+            pc = ax.tripcolor(tri, sub_df[key], cmap='flare', antialiased=True)
             fig_v_proj.colorbar(pc, ax=ax, label=metric_label)
 
-            for x, y, z, u, v in zip(px, py, pz, qx, qy):
+            for x, y, z, u, v in zip(sub_df.index.get_level_values('lambda_heading_virtual'),
+                                     sub_df.index.get_level_values('lambda_heading_neighbors'),
+                                     sub_df.index.get_level_values('lambda_contraction'),
+                                     sub_df['u_coord'],
+                                     sub_df['v_coord']):
                 label = f"({x:.1f}; {y:.1f}; {z:.1f})"
                 ax.annotate(label, xy=(u, v), xytext=(1e-2, 1e-2),
                             textcoords='offset points', ha='center', va='bottom',
@@ -176,3 +235,45 @@ if __name__ == "__main__":
         fig_v_proj.suptitle('U-Turn Experiment: Parameter Evaluation Projected')
         fig_v_proj.tight_layout()
         fig_v_proj.show()
+
+        for i in selected_metrics:
+            fig_v_proj_selected, ax_v_proj_selected = plt.subplots(figsize=selected_figsize, dpi=dpi)
+
+            pc = ax_v_proj_selected.tripcolor(tri, sub_df[key_list[i]], cmap='flare', antialiased=True)
+            fig_v_proj_selected.colorbar(pc, ax=ax_v_proj_selected, label=metric_label_list[i])
+
+            ax_v_proj_selected.annotate(r'$\lambda_\text{v} = 0.1$', xy=(-0.12, 0.04), xytext=(1e-2, 1e-2),
+                                        textcoords='offset points', ha='center', va='bottom',
+                                        fontsize=12, rotation=60)
+
+            ax_v_proj_selected.annotate(r'$\lambda_\text{v} = 0.4$', xy=(0.21, -0.14), xytext=(1e-2, 1e-2),
+                                        textcoords='offset points', ha='left', va='center',
+                                        fontsize=12, rotation=-30)
+
+            ax_v_proj_selected.annotate(r'$\lambda_\text{nh} = 0.1$', xy=(0.12, 0.04), xytext=(1e-2, 1e-2),
+                                        textcoords='offset points', ha='center', va='bottom',
+                                        fontsize=12, rotation=-60)
+
+            ax_v_proj_selected.annotate(r'$\lambda_\text{nh} = 0.4$', xy=(-0.21, -0.14), xytext=(1e-2, 1e-2),
+                                        textcoords='offset points', ha='right', va='center',
+                                        fontsize=12, rotation=30)
+
+            ax_v_proj_selected.annotate(r'$\lambda_\text{c} = 0.1$', xy=(0.0, -0.13), xytext=(1e-2, 1e-2),
+                                        textcoords='offset points', ha='center', va='top',
+                                        fontsize=12)
+
+            ax_v_proj_selected.annotate(r'$\lambda_\text{c} = 0.4$', xy=(0.0, 0.25), xytext=(1e-2, 1e-2),
+                                        textcoords='offset points', ha='center', va='bottom',
+                                        fontsize=12)
+
+            ax_v_proj_selected.set_xlim([-0.3, 0.3])
+            ax_v_proj_selected.set_ylim([-0.19, 0.3])
+            ax_v_proj_selected.set_aspect('equal', 'box')
+            
+            ax_v_proj_selected.set_xticks([])
+            ax_v_proj_selected.set_yticks([])
+            ax_v_proj_selected.set_facecolor("white")
+
+            # fig_v_proj_selected.suptitle('U-Turn Experiment: Parameter Evaluation Projected')
+            fig_v_proj_selected.tight_layout()
+            fig_v_proj_selected.show()
