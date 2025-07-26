@@ -33,7 +33,7 @@
         <param name="min_distance" value="0.8"/>
     </node>
 
-    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find primitive_planner)/launch/verbose.rviz" required="true" />
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find primitive_planner)/launch/rviz/verbose.rviz" required="true" />
 
     {%- for i in range(20) %}
     <include file="$(find primitive_planner)/launch/run_in_sim.xml">

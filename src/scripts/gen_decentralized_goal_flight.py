@@ -31,7 +31,7 @@ def generate_launch_file(
 
         # rviz setup
         file.write(
-            '    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find primitive_planner)/launch/{}.rviz" required="true" />\n'.format(
+            '    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find primitive_planner)/launch/rviz/{}.rviz" required="true" />\n'.format(
                 "verbose" if num_drones <= 40 else "drone_1000"
             )
         )

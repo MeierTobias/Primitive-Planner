@@ -26,7 +26,7 @@ def generate_teleop_heading_launch_file(
 
         # RViz configuration
         file.write(
-            '    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find primitive_planner)/launch/teleop.rviz" required="true" />\n'
+            '    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find primitive_planner)/launch/rviz/teleop.rviz" required="true" />\n'
         )
         file.write("\n")
 
