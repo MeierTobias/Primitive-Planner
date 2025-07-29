@@ -992,7 +992,7 @@ void PPReplanFSM::printFSMExecState()
     msg += buffer;
   }
 
-  ROS_DEBUG("%s; Goal: [%f, %f, %f], %d/%zu goals", msg.c_str(), global_goal_[0], global_goal_[1], global_goal_[2], goal_id_, all_goal_.size());
+  ROS_INFO("%s; Goal: [%f, %f, %f], %d/%zu goals", msg.c_str(), global_goal_[0], global_goal_[1], global_goal_[2], goal_id_, all_goal_.size());
 }
 
 bool PPReplanFSM::planPrimitive(bool first_plan, double xV_offset /*= 0.0*/)
