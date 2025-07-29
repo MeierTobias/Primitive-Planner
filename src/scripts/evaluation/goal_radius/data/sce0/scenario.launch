@@ -24,16 +24,16 @@
         <arg name="broadcast_ip" value="127.0.0.255"/>
     </include>
 
-    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find primitive_planner)/launch/verbose.rviz" required="true"/>
+    <!--<node name="rviz" pkg="rviz" type="rviz" args="-d $(find primitive_planner)/launch/verbose.rviz" required="true"/>-->
 
     <node pkg="assign_goals" name="assign_goals_node" type="assign_goals_node" output="screen"/>
 
     
-    <!-- Drone 0 -->
+    <!-- Drone  -->
     <include file="$(find primitive_planner)/launch/run_in_sim.xml">
         <arg name="drone_id" value="0"/>
-        <arg name="init_x" value="-8.0"/>
-        <arg name="init_y" value="0.0"/>
+        <arg name="init_x" value="0.0"/>
+        <arg name="init_y" value="-8.0"/>
         <arg name="init_z" value="1.0"/>
         <arg name="flight_type" value="3"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
@@ -54,11 +54,11 @@
         <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     
-    <!-- Drone 1 -->
+    <!-- Drone  -->
     <include file="$(find primitive_planner)/launch/run_in_sim.xml">
         <arg name="drone_id" value="1"/>
-        <arg name="init_x" value="-8.0"/>
-        <arg name="init_y" value="1.0"/>
+        <arg name="init_x" value="1.0"/>
+        <arg name="init_y" value="-8.0"/>
         <arg name="init_z" value="1.0"/>
         <arg name="flight_type" value="3"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
@@ -79,11 +79,11 @@
         <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     
-    <!-- Drone 2 -->
+    <!-- Drone  -->
     <include file="$(find primitive_planner)/launch/run_in_sim.xml">
         <arg name="drone_id" value="2"/>
-        <arg name="init_x" value="-8.0"/>
-        <arg name="init_y" value="2.0"/>
+        <arg name="init_x" value="2.0"/>
+        <arg name="init_y" value="-8.0"/>
         <arg name="init_z" value="1.0"/>
         <arg name="flight_type" value="3"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
@@ -104,11 +104,11 @@
         <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     
-    <!-- Drone 3 -->
+    <!-- Drone  -->
     <include file="$(find primitive_planner)/launch/run_in_sim.xml">
         <arg name="drone_id" value="3"/>
-        <arg name="init_x" value="-8.0"/>
-        <arg name="init_y" value="3.0"/>
+        <arg name="init_x" value="3.0"/>
+        <arg name="init_y" value="-8.0"/>
         <arg name="init_z" value="1.0"/>
         <arg name="flight_type" value="3"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
@@ -129,11 +129,11 @@
         <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     
-    <!-- Drone 4 -->
+    <!-- Drone  -->
     <include file="$(find primitive_planner)/launch/run_in_sim.xml">
         <arg name="drone_id" value="4"/>
-        <arg name="init_x" value="-8.0"/>
-        <arg name="init_y" value="4.0"/>
+        <arg name="init_x" value="4.0"/>
+        <arg name="init_y" value="-8.0"/>
         <arg name="init_z" value="1.0"/>
         <arg name="flight_type" value="3"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
@@ -154,11 +154,11 @@
         <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     
-    <!-- Drone 5 -->
+    <!-- Drone  -->
     <include file="$(find primitive_planner)/launch/run_in_sim.xml">
         <arg name="drone_id" value="5"/>
-        <arg name="init_x" value="-8.0"/>
-        <arg name="init_y" value="5.0"/>
+        <arg name="init_x" value="5.0"/>
+        <arg name="init_y" value="-8.0"/>
         <arg name="init_z" value="1.0"/>
         <arg name="flight_type" value="3"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
@@ -179,11 +179,11 @@
         <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     
-    <!-- Drone 6 -->
+    <!-- Drone  -->
     <include file="$(find primitive_planner)/launch/run_in_sim.xml">
         <arg name="drone_id" value="6"/>
-        <arg name="init_x" value="-8.0"/>
-        <arg name="init_y" value="6.0"/>
+        <arg name="init_x" value="6.0"/>
+        <arg name="init_y" value="-8.0"/>
         <arg name="init_z" value="1.0"/>
         <arg name="flight_type" value="3"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
@@ -204,11 +204,11 @@
         <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     
-    <!-- Drone 7 -->
+    <!-- Drone  -->
     <include file="$(find primitive_planner)/launch/run_in_sim.xml">
         <arg name="drone_id" value="7"/>
-        <arg name="init_x" value="-8.0"/>
-        <arg name="init_y" value="7.0"/>
+        <arg name="init_x" value="7.0"/>
+        <arg name="init_y" value="-8.0"/>
         <arg name="init_z" value="1.0"/>
         <arg name="flight_type" value="3"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
@@ -229,11 +229,11 @@
         <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     
-    <!-- Drone 8 -->
+    <!-- Drone  -->
     <include file="$(find primitive_planner)/launch/run_in_sim.xml">
         <arg name="drone_id" value="8"/>
-        <arg name="init_x" value="-8.0"/>
-        <arg name="init_y" value="8.0"/>
+        <arg name="init_x" value="8.0"/>
+        <arg name="init_y" value="-8.0"/>
         <arg name="init_z" value="1.0"/>
         <arg name="flight_type" value="3"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
@@ -254,11 +254,11 @@
         <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     
-    <!-- Drone 9 -->
+    <!-- Drone  -->
     <include file="$(find primitive_planner)/launch/run_in_sim.xml">
         <arg name="drone_id" value="9"/>
-        <arg name="init_x" value="-8.0"/>
-        <arg name="init_y" value="9.0"/>
+        <arg name="init_x" value="9.0"/>
+        <arg name="init_y" value="-8.0"/>
         <arg name="init_z" value="1.0"/>
         <arg name="flight_type" value="3"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
@@ -279,11 +279,11 @@
         <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     
-    <!-- Drone 10 -->
+    <!-- Drone  -->
     <include file="$(find primitive_planner)/launch/run_in_sim.xml">
         <arg name="drone_id" value="10"/>
-        <arg name="init_x" value="-8.0"/>
-        <arg name="init_y" value="10.0"/>
+        <arg name="init_x" value="10.0"/>
+        <arg name="init_y" value="-8.0"/>
         <arg name="init_z" value="1.0"/>
         <arg name="flight_type" value="3"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
@@ -304,11 +304,11 @@
         <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     
-    <!-- Drone 11 -->
+    <!-- Drone  -->
     <include file="$(find primitive_planner)/launch/run_in_sim.xml">
         <arg name="drone_id" value="11"/>
-        <arg name="init_x" value="-8.0"/>
-        <arg name="init_y" value="11.0"/>
+        <arg name="init_x" value="11.0"/>
+        <arg name="init_y" value="-8.0"/>
         <arg name="init_z" value="1.0"/>
         <arg name="flight_type" value="3"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
@@ -329,11 +329,11 @@
         <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     
-    <!-- Drone 12 -->
+    <!-- Drone  -->
     <include file="$(find primitive_planner)/launch/run_in_sim.xml">
         <arg name="drone_id" value="12"/>
-        <arg name="init_x" value="-8.0"/>
-        <arg name="init_y" value="12.0"/>
+        <arg name="init_x" value="12.0"/>
+        <arg name="init_y" value="-8.0"/>
         <arg name="init_z" value="1.0"/>
         <arg name="flight_type" value="3"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
@@ -354,11 +354,11 @@
         <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     
-    <!-- Drone 13 -->
+    <!-- Drone  -->
     <include file="$(find primitive_planner)/launch/run_in_sim.xml">
         <arg name="drone_id" value="13"/>
-        <arg name="init_x" value="-8.0"/>
-        <arg name="init_y" value="13.0"/>
+        <arg name="init_x" value="13.0"/>
+        <arg name="init_y" value="-8.0"/>
         <arg name="init_z" value="1.0"/>
         <arg name="flight_type" value="3"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
@@ -379,11 +379,11 @@
         <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     
-    <!-- Drone 14 -->
+    <!-- Drone  -->
     <include file="$(find primitive_planner)/launch/run_in_sim.xml">
         <arg name="drone_id" value="14"/>
-        <arg name="init_x" value="-8.0"/>
-        <arg name="init_y" value="14.0"/>
+        <arg name="init_x" value="14.0"/>
+        <arg name="init_y" value="-8.0"/>
         <arg name="init_z" value="1.0"/>
         <arg name="flight_type" value="3"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
@@ -404,11 +404,11 @@
         <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     
-    <!-- Drone 15 -->
+    <!-- Drone  -->
     <include file="$(find primitive_planner)/launch/run_in_sim.xml">
         <arg name="drone_id" value="15"/>
-        <arg name="init_x" value="-8.0"/>
-        <arg name="init_y" value="15.0"/>
+        <arg name="init_x" value="15.0"/>
+        <arg name="init_y" value="-8.0"/>
         <arg name="init_z" value="1.0"/>
         <arg name="flight_type" value="3"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
@@ -429,11 +429,11 @@
         <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     
-    <!-- Drone 16 -->
+    <!-- Drone  -->
     <include file="$(find primitive_planner)/launch/run_in_sim.xml">
         <arg name="drone_id" value="16"/>
-        <arg name="init_x" value="-8.0"/>
-        <arg name="init_y" value="16.0"/>
+        <arg name="init_x" value="16.0"/>
+        <arg name="init_y" value="-8.0"/>
         <arg name="init_z" value="1.0"/>
         <arg name="flight_type" value="3"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
@@ -454,11 +454,11 @@
         <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     
-    <!-- Drone 17 -->
+    <!-- Drone  -->
     <include file="$(find primitive_planner)/launch/run_in_sim.xml">
         <arg name="drone_id" value="17"/>
-        <arg name="init_x" value="-8.0"/>
-        <arg name="init_y" value="17.0"/>
+        <arg name="init_x" value="17.0"/>
+        <arg name="init_y" value="-8.0"/>
         <arg name="init_z" value="1.0"/>
         <arg name="flight_type" value="3"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
@@ -479,11 +479,11 @@
         <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     
-    <!-- Drone 18 -->
+    <!-- Drone  -->
     <include file="$(find primitive_planner)/launch/run_in_sim.xml">
         <arg name="drone_id" value="18"/>
-        <arg name="init_x" value="-8.0"/>
-        <arg name="init_y" value="18.0"/>
+        <arg name="init_x" value="18.0"/>
+        <arg name="init_y" value="-8.0"/>
         <arg name="init_z" value="1.0"/>
         <arg name="flight_type" value="3"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
@@ -504,11 +504,11 @@
         <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>
     
-    <!-- Drone 19 -->
+    <!-- Drone  -->
     <include file="$(find primitive_planner)/launch/run_in_sim.xml">
         <arg name="drone_id" value="19"/>
-        <arg name="init_x" value="-8.0"/>
-        <arg name="init_y" value="19.0"/>
+        <arg name="init_x" value="19.0"/>
+        <arg name="init_y" value="-8.0"/>
         <arg name="init_z" value="1.0"/>
         <arg name="flight_type" value="3"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>

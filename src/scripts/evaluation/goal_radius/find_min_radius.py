@@ -2,8 +2,8 @@
 import subprocess
 import rosbag
 
-def passes(radius: float, clearance: float) -> bool:
-    file = f"data/goal_radius_{radius}_{clearance}.bag"
+def passes(radius: float, clearance: float, scenario: int) -> bool:
+    file = f"data/sce{scenario}/goal_radius_{radius}_{clearance}.bag"
     subprocess.run(["snakemake", "-c", "1", file], stdout=subprocess.DEVNULL)
     with rosbag.Bag(file, 'r') as bag:
         return (sum(1 for _ in bag) >= 3)
@@ -27,4 +27,5 @@ if __name__ == "__main__":
     import sys
 
     clearance = float(sys.argv[1])
-    print(f"{clearance}: {bisect(clearance)}")
+    scenario = int(sys.argv[2])
+    print(f"{clearance}: {bisect(clearance, scenario=scenario)}")

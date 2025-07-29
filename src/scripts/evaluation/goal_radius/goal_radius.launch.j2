@@ -28,12 +28,12 @@
 
     <node pkg="assign_goals" name="assign_goals_node" type="assign_goals_node" output="screen"/>
 
-    {% for i in range(num_drones) %}
+    {% for x, y in starting_positions %}
     <!-- Drone {{ i }} -->
     <include file="$(find primitive_planner)/launch/run_in_sim.xml">
-        <arg name="drone_id" value="{{ i }}"/>
-        <arg name="init_x" value="-8.0"/>
-        <arg name="init_y" value="{{ i }}.0"/>
+        <arg name="drone_id" value="{{ loop.index0 }}"/>
+        <arg name="init_x" value="{{ x }}"/>
+        <arg name="init_y" value="{{ y }}"/>
         <arg name="init_z" value="1.0"/>
         <arg name="flight_type" value="3"/>
         <arg name="map_size_x" value="$(arg map_size_x)"/>
@@ -49,7 +49,7 @@
         <arg name="lambda_heading_virtual" value="$(arg lambda_heading_virtual)"/>
         <arg name="lambda_heading_neighbors" value="$(arg lambda_heading_neighbors)"/>
         <arg name="lambda_contraction" value="$(arg lambda_contraction)"/>
-        <arg name="total_drones" value="{{ num_drones }}"/>
+        <arg name="total_drones" value="{{ starting_positions | length }}"/>
         <arg name="goal_radius" value="$(arg goal_radius)"/>
         <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
     </include>

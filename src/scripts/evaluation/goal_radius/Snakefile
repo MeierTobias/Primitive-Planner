@@ -1,13 +1,22 @@
 rule:
-    output: "data/points.bag"
-    shell: """ python gen_input.py {output} """
+    output: "data/sce{scenario}/positions.yaml"
+    shell: "python gen_input.py --out-yaml-starting-positions -s {wildcards.scenario} > {output}"
+
+rule:
+    output: "data/sce{scenario}/scenario.launch"
+    input: "data/sce{scenario}/positions.yaml"
+    shell: "cat {input} | jinja2 goal_radius.launch.j2 -o {output} --format=yaml"
+
+rule:
+    output: "data/sce{scenario}/points.bag"
+    shell: """ python gen_input.py -s {wildcards.scenario} -o {output} """
 
 rule:
     input:
-        launchfile="goal_radius.launch",
-        inputbag="data/points.bag",
+        launchfile="data/sce{scenario}/scenario.launch",
+        inputbag="data/sce{scenario}/points.bag",
         executable="../../../../devel/lib/primitive_planner/primitive_planner_node"
-    output: "data/goal_radius_{radius}_{clearance}.bag"
+    output: "data/sce{scenario}/goal_radius_{radius}_{clearance}.bag"
     shell: """
         roslaunch {input.launchfile} goal_radius:={wildcards.radius} swarm_clearance:={wildcards.clearance} &
         rosbag record /drone_0_primitive_planner_node/planning/goals_reached -O {output} &
@@ -16,7 +25,7 @@ rule:
     """
 
 rule:
-    output: "data/clearance{clearance}.v"
+    output: "data/sce{scenario}/clearance{clearance}.v"
     shell: """
-        python find_min_radius.py {wildcards.clearance} | tee {output}
+        python find_min_radius.py {wildcards.clearance} {wildcards.scenario} | tee {output}
     """
