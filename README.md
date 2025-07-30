@@ -135,7 +135,7 @@ You can publish a goal by clicking on the "3D Nav Goal" button and the selecting
 <img src="misc/3d_Nav_Goal.png" alt="3d_Nav_Goal" width="250"/>
 </p>
 
-Initially, only drone 0 is set to receive the goal message. To modify this, click "Select Points Publisher", select the drones you want to sent the message to, and confirm your selection by pressing `Ctrl + P`. The "3D Nav Goal" will now be published to the drones you selected. Remember if the drones are in local communication range they will forward the goal to each other. If they are fully connected (like at the start of the scenario) then its sufficient to send the goal to only one drone.
+Initially, only drone 0 is set to receive the goal message. To modify this, click "Select Points Publisher", select the drones you want to sent the message to, and confirm your selection by pressing `Shift + P`. The "3D Nav Goal" will now be published to the drones you selected. Remember if the drones are in local communication range they will forward the goal to each other. If they are fully connected (like at the start of the scenario) then its sufficient to send the goal to only one drone.
 
 ### Decentralized goal flight with obstacles
 
@@ -197,6 +197,10 @@ If you are working with vscode you can add the following lines to your `settings
 
 "editor.formatOnSave": true
 ```
+
+### Slow Down Simulation Time
+
+If you want to debug or if your computer is not powerful enough you can slow down the simulation time using the `clock_publisher`. An example launch config can be found in `src/Utils/clock_publisher/launch`.
 
 ## Troubleshooting
 
