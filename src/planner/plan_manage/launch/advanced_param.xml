@@ -98,7 +98,7 @@
         <param name="manager/map_size_z" value="$(arg map_size_z_)"/>
         <param name="manager/max_vel" value="$(arg max_vel)"/>
         <!-- Drone radius r = 0.12 -->
-	<param name="manager/swarm_clearance" value="$(arg swarm_clearance)" type="double"/>
+	      <param name="manager/swarm_clearance" value="$(arg swarm_clearance)" type="double"/>
         <param name="manager/goal_radius" value="$(arg goal_radius)"/>
     </node>
 </launch>
