@@ -66,7 +66,7 @@ private:
   ros::Publisher path_id_pub_, stop_pub_, heartbeat_pub_, global_pub_, broadcast_primitive_pub_, poly_pub_, yaw_cmd_pub_, publish_goals_reached_pub_;
   bool publish_goals_reached_ = false;
 
-  int flight_type_; // 1 manual select, 2 hard code, 3 decentralized global goal
+  int flight_type_; // 1 manual select, 2 hard code, 3 decentralized global goal, 4 virtual heading flight
 
   std::vector<Eigen::Vector3d> all_goal_;
   std::vector<int> all_goal_tags_;

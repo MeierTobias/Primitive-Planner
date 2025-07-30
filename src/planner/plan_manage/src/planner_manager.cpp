@@ -698,7 +698,7 @@ bool PPPlannerManager::labelAgentCollisionPaths(const Eigen::Vector3d &start_pt,
         int indZCenter = floor((voxelZ_ - pos_v(2)) / voxelSize_);
 
         // calculate the offset time
-        // double other_cur_time = swarm_traj[i].start_time + j * 0.01; // TODO: Add this again after the time correspondences are fixed
+        double other_cur_time = swarm_traj[i].start_time + j * 0.01; // TODO: Add this again after the time correspondences are fixed
 
         // loop over the center voxel and all adjacent voxel which are inside the swarm_clearance
         for (int indX = max(x_offset, indXCenter - voxelNum_swarm_clearance_); indX <= min(indXCenter + voxelNum_swarm_clearance_, voxelNumX_ - 1); ++indX)
@@ -720,10 +720,10 @@ bool PPPlannerManager::labelAgentCollisionPaths(const Eigen::Vector3d &start_pt,
 
                 // TODO: The times of some trajectories are incorrect (i.e. the end time of id 132-179 is 0.0) and hence the commented condition below never holds. This results in a lot trajectories that are marked feasible who should be infeasible and vice versa. Since this needs more analytical work in the trajectory generation script so I removed the time constraint so now all trajectories that get to close (regardless of the time) are marked as infeasible.
 
-                // if (other_cur_time > start_time + allVelCorrespondences_[vel_id][ind][3 * k + 1] / 1000 && other_cur_time < start_time + allVelCorrespondences_[vel_id][ind][3 * k + 2] / 1000)
-                // {
-                clearPathList_[allVelCorrespondences_[vel_id][ind][3 * k]]++;
-                // }
+                if (other_cur_time > start_time + allVelCorrespondences_[vel_id][ind][3 * k + 1] / 1000 && other_cur_time < start_time + allVelCorrespondences_[vel_id][ind][3 * k + 2] / 1000)
+                {
+                  clearPathList_[allVelCorrespondences_[vel_id][ind][3 * k]]++;
+                }
               }
             }
           }

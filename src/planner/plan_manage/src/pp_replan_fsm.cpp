@@ -126,7 +126,7 @@ void PPReplanFSM::init(ros::NodeHandle &nh)
   // We need odom for getRobotPos() to be a valid value
   int total_drones;
   nh.param("total_drones", total_drones, 0);
-  ROS_INFO("Total drones is %d", total_drones);
+  ROS_DEBUG("Total drones is %d", total_drones);
   this->drone_counter_.init(nh, planner_manager_->getRobotPos(), planner_manager_->drone_com_r_, static_cast<unsigned int>(total_drones), planner_manager_->drone_id);
 
   exec_timer_ = nh.createTimer(ros::Duration(0.01), &PPReplanFSM::execFSMCallback, this);
@@ -1004,7 +1004,17 @@ void PPReplanFSM::printFSMExecState()
     msg += buffer;
   }
 
-  ROS_INFO("%s; Goal: [%f, %f, %f], %d/%zu goals", msg.c_str(), global_goal_[0], global_goal_[1], global_goal_[2], goal_id_, all_goal_.size());
+  std::stringstream ss;
+  ss << msg << "; Goal: [" << global_goal_[0] << ", " << global_goal_[1] << ", " << global_goal_[2] << "], " << goal_id_ << "/" << all_goal_.size() << " goals";
+
+  if (exec_state_ == WAIT_TARGET)
+  {
+    ROS_INFO(ss.str().c_str());
+  }
+  else
+  {
+    ROS_DEBUG(ss.str().c_str());
+  }
 }
 
 bool PPReplanFSM::planPrimitive(bool first_plan, double xV_offset /*= 0.0*/)
@@ -1147,7 +1157,7 @@ bool PPReplanFSM::planPrimitive(bool first_plan, double xV_offset /*= 0.0*/)
   }
 
   ros::Time t2 = ros::Time::now();
-  ROS_DEBUG("\033[44;97mDroneID=%d, plan_time=%.2f ms \033[0m\n", planner_manager_->drone_id, (t2 - t0).toSec() * 1000);
+  ROS_INFO("\033[44;97mDroneID=%d, plan_time=%.2f ms \033[0m\n", planner_manager_->drone_id, (t2 - t0).toSec() * 1000);
   return plan_success;
 }
 

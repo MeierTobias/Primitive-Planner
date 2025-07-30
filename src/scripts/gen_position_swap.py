@@ -94,6 +94,7 @@ def generate_launch_file(
             file.write(
                 '        <arg name="total_drones" value="{}"/>\n'.format(total_num)
             )
+            file.write('        <arg name="lambda_d" value="0.0"/>\n')
             file.write("    </include>\n")
 
         file.write("</launch>")
