@@ -36,10 +36,10 @@ def generate_teleop_heading_launch_file(
         )
 
         # Keyboard-based teleoperation node
-        file.write("    <!-- teleop_twist_keyboard node for keyboard control -->\n")
-        file.write(
-            '    <node pkg="teleop_twist_keyboard" type="teleop_twist_keyboard.py" name="teleop_twist_keyboard" output="screen"/>\n'
-        )
+        # file.write("    <!-- teleop_twist_keyboard node for keyboard control -->\n")
+        # file.write(
+        #     '    <node pkg="teleop_twist_keyboard" type="teleop_twist_keyboard.py" name="teleop_twist_keyboard" output="screen"/>\n'
+        # )
 
         # Drone spawns
         init_y = [init_y_spacing * i for i in range(num_drones)]

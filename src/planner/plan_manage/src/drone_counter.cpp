@@ -9,13 +9,13 @@ void DroneCounter::init(ros::NodeHandle &nh, const Eigen::Vector3d &position, do
   this->position = &position;
   this->drones_total = total_drones;
   this->drone_com_r = drone_com_r;
-  ROS_INFO("[COUNT] init, position is %f, %f, %f", position[0], position[1], position[2]);
+  ROS_DEBUG("[COUNT] init, position is %f, %f, %f", position[0], position[1], position[2]);
   debug_sub_ = nh.subscribe<const std_msgs::Empty &>("/debug_count", 100, &DroneCounter::debugMessageCallback, this);
 }
 
 void DroneCounter::debugMessageCallback(const std_msgs::Empty &msg)
 {
-  ROS_INFO("[COUNT]: total %d/%d", drones_at_goal, drones_total);
+  ROS_DEBUG("[COUNT]: total %d/%d", drones_at_goal, drones_total);
 }
 
 /*
