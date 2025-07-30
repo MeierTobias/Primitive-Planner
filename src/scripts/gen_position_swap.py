@@ -64,7 +64,7 @@ def generate_launch_file(
         file.write("    </node> \n")
         file.write("\n")
         file.write(
-            '    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find primitive_planner)/launch/{}.rviz" required="true" />\n'.format(
+            '    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find primitive_planner)/launch/rviz/{}.rviz" required="true" />\n'.format(
                 "verbose" if total_num <= 40 else "drone_1000"
             )
         )
@@ -91,7 +91,9 @@ def generate_launch_file(
             file.write('        <arg name="map_size_y" value="$(arg map_size_y)"/>\n')
             file.write('        <arg name="map_size_z" value="$(arg map_size_z)"/>\n')
             file.write('        <arg name="odom_topic" value="$(arg odom_topic)"/>\n')
-            file.write('        <arg name="total_drones" value="{}"/>\n'.format(total_num))
+            file.write(
+                '        <arg name="total_drones" value="{}"/>\n'.format(total_num)
+            )
             file.write("    </include>\n")
 
         file.write("</launch>")

@@ -1,7 +1,7 @@
 <launch>
 
-    <arg name="map_size_x" value="30"/>
-    <arg name="map_size_y" value="20"/>
+    <arg name="map_size_x" value="100"/>
+    <arg name="map_size_y" value="100"/>
     <arg name="map_size_z" value="3.0"/>
     <arg name="goal_radius" value="5.0"/>
     <arg name="odom_topic" value="visual_slam/odom" />
@@ -21,8 +21,8 @@
         <param name="map/obs_num"    value="300"/>
         <param name="ObstacleShape/lower_rad" value="0.2"/>
         <param name="ObstacleShape/upper_rad" value="0.5"/>
-        <param name="ObstacleShape/lower_hei" value="0.0"/>
-        <param name="ObstacleShape/upper_hei" value="3.0"/>
+        <param name="ObstacleShape/lower_hei" value="-0.5"/>
+        <param name="ObstacleShape/upper_hei" value="3.5"/>
         <param name="map/circle_num" value="50"/>
         <param name="ObstacleShape/radius_l" value="0.7"/>
         <param name="ObstacleShape/radius_h" value="0.5"/>
@@ -33,7 +33,7 @@
         <param name="min_distance" value="0.8"/>
     </node>
 
-    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find primitive_planner)/launch/verbose.rviz" required="true" />
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find primitive_planner)/launch/rviz/decentralized_goal.rviz" required="true" />
 
     {%- for i in range(20) %}
     <include file="$(find primitive_planner)/launch/run_in_sim.xml">

@@ -1,0 +1,31 @@
+rule:
+    output: "data/sce{scenario}/positions.yaml"
+    shell: "python gen_input.py --out-yaml-starting-positions -s {wildcards.scenario} > {output}"
+
+rule:
+    output: "data/sce{scenario}/scenario.launch"
+    input: "data/sce{scenario}/positions.yaml"
+    shell: "cat {input} | jinja2 goal_radius.launch.j2 -o {output} --format=yaml"
+
+rule:
+    output: "data/sce{scenario}/points.bag"
+    shell: """ python gen_input.py -s {wildcards.scenario} -o {output} """
+
+rule:
+    input:
+        launchfile="data/sce{scenario}/scenario.launch",
+        inputbag="data/sce{scenario}/points.bag",
+        executable="../../../../devel/lib/primitive_planner/primitive_planner_node"
+    output: "data/sce{scenario}/goal_radius_{radius}_{clearance}.bag"
+    shell: """
+        roslaunch {input.launchfile} goal_radius:={wildcards.radius} swarm_clearance:={wildcards.clearance} &
+        rosbag record /drone_0_primitive_planner_node/planning/goals_reached -O {output} &
+        sleep 10 && rosbag play {input.inputbag} && sleep 20 && kill %1 && kill %2
+	wait
+    """
+
+rule:
+    output: "data/sce{scenario}/clearance{clearance}.v"
+    shell: """
+        python find_min_radius.py {wildcards.clearance} {wildcards.scenario} | tee {output}
+    """

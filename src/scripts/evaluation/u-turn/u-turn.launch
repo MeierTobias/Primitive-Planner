@@ -23,7 +23,7 @@
         <arg name="broadcast_ip" value="127.0.0.255"/>
     </include>
 
-    <!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(find primitive_planner)/launch/verbose.rviz" required="true"/> -->
+    <!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(find primitive_planner)/launch/rviz/verbose.rviz" required="true"/> -->
 
     <node pkg="assign_goals" name="assign_goals_node" type="assign_goals_node" output="screen"/>
 
