@@ -26,6 +26,7 @@
     <arg name="drone_com_r" default="15.0"/>
     <arg name="base_com_r" default="30.0"/>
     <arg name="goal_radius" default="1.0"/>
+    <arg name="swarm_clearance" default="0.2"/>
     <arg name="launch_prefix" default=""/>
     <arg name="lambda_l" default="20.0"/>
     <arg name="lambda_b" default="5.0"/>
@@ -70,7 +71,8 @@
         <arg name="base_com_r" value="$(arg base_com_r)"/>
         <arg name="total_drones" value="$(arg total_drones)"/>
         <arg name="launch_prefix" value="$(arg launch_prefix)"/>
-        <arg name="goal_radius" value="$(arg goal_radius)"/>
+	<arg name="goal_radius" value="$(arg goal_radius)"/>
+	<arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
         <arg name="lambda_l" value="$(arg lambda_l)"/>
         <arg name="lambda_b" value="$(arg lambda_b)"/>
         <arg name="lambda_d" value="$(arg lambda_d)"/>
